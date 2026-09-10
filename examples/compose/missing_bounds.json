@@ -1,0 +1,27 @@
+{
+  "ir_version": "1.0",
+  "domain": "compose",
+  "name": "vf1012_no_bounds",
+  "nodes": [
+    {
+      "id": "gen",
+      "kind": "tool",
+      "tool": "test_generator"
+    },
+    {
+      "id": "review",
+      "kind": "human_gate",
+      "assignee_role": "problemsetter",
+      "on_fail": "reject"
+    },
+    {
+      "id": "pub",
+      "kind": "tool",
+      "tool": "publish_problem"
+    }
+  ],
+  "edges": [
+    { "from": "gen", "to": "review" },
+    { "from": "review", "to": "pub" }
+  ]
+}

@@ -67,6 +67,20 @@ CREATE TABLE IF NOT EXISTS stress_runs (
   counterexample_json TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS compose_projects (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  source_nl TEXT NOT NULL,
+  ir_json TEXT,
+  check_errors_json TEXT,
+  attack_json TEXT,
+  gate_status TEXT NOT NULL DEFAULT 'pending',
+  status TEXT NOT NULL,
+  published_problem_id TEXT,
+  compiler TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 """
 
 

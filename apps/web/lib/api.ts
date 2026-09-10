@@ -42,6 +42,46 @@ export type StressKit = {
   memory_limit_mb: number;
 };
 
+export type WorkflowIR = {
+  ir_version: string;
+  domain: string;
+  name: string;
+  nodes: {
+    id: string;
+    kind: string;
+    tool?: string | null;
+    expr?: string | null;
+    on_fail?: string | null;
+    assignee_role?: string | null;
+  }[];
+  edges: { from: string; to: string }[];
+};
+
+export type ComposeError = { code: string; message: string; node_id?: string | null };
+export type ComposeAttack = { tag: string; message: string; node_id?: string };
+
+export type ComposeProject = {
+  id: number;
+  source_nl: string;
+  ir: WorkflowIR | null;
+  errors: ComposeError[];
+  attack: ComposeAttack[];
+  gate_status: string;
+  status: string;
+  published_problem_id: string | null;
+  compiler: string | null;
+  updated_at: string;
+};
+
+export type ComposeSummary = {
+  id: number;
+  source_nl: string;
+  status: string;
+  gate_status: string;
+  published_problem_id: string | null;
+  updated_at: string;
+};
+
 export type StressResult = {
   status: string;
   rounds_ran: number;
@@ -153,6 +193,35 @@ export const api = {
     }),
   submissions: () => request<{ submissions: SubmissionRow[] }>("/api/submissions"),
   kit: (id: string) => request<StressKit>(`/api/problems/${id}/kit`),
+  composeCreate: (nl: string) =>
+    request<ComposeProject>("/api/compose", {
+      method: "POST",
+      body: JSON.stringify({ nl }),
+    }),
+  composeExample: (name: string) =>
+    request<ComposeProject>("/api/compose/example", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  composeList: () => request<{ projects: ComposeSummary[] }>("/api/compose"),
+  composeGet: (id: number) => request<ComposeProject>(`/api/compose/${id}`),
+  composeSaveIr: (id: number, ir: WorkflowIR) =>
+    request<ComposeProject>(`/api/compose/${id}/ir`, {
+      method: "POST",
+      body: JSON.stringify({ ir }),
+    }),
+  composeRepair: (id: number, nl: string) =>
+    request<ComposeProject>(`/api/compose/${id}/repair`, {
+      method: "POST",
+      body: JSON.stringify({ nl }),
+    }),
+  composeGate: (id: number, decision: "approved" | "rejected") =>
+    request<ComposeProject>(`/api/compose/${id}/gate`, {
+      method: "POST",
+      body: JSON.stringify({ decision }),
+    }),
+  composePublish: (id: number) =>
+    request<ComposeProject>(`/api/compose/${id}/publish`, { method: "POST" }),
   stress: (
     id: string,
     body: {

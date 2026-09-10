@@ -619,3 +619,110 @@ h1 {
 .stress-log .ok { color: var(--ac); }
 .stress-log .bad { color: var(--wa); }
 .stress-log .err { color: var(--tle); }
+
+.compose-nl {
+  width: 100%;
+  background: #14150f;
+  color: var(--paper);
+  border: 1px solid var(--line);
+  padding: 12px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.compose-nl.tight {
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+.compose-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.compose-actions button,
+.compose-actions .primary {
+  background: #1a1b14;
+  color: var(--paper);
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.compose-actions .primary {
+  color: var(--ac);
+  border-color: #31543a;
+}
+
+.compose-desk {
+  height: calc(100vh - 52px);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  min-height: 0;
+}
+
+.compose-split {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  min-height: 0;
+}
+
+.compose-canvas {
+  min-height: 0;
+  background: #0e0f0c;
+}
+
+.rf-node {
+  min-width: 160px;
+  max-width: 210px;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--brass-dim);
+  background: #16170f;
+  color: var(--paper);
+  font-size: 12px;
+}
+
+.rf-node strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.rf-kind {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 4px;
+}
+
+.rf-node.kind-human_gate {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper-edge);
+}
+
+.rf-node.kind-human_gate .rf-kind {
+  color: var(--margin);
+}
+
+.rf-node.kind-guard {
+  border-color: var(--wa);
+}
+
+.rf-node.err {
+  border-color: var(--ce);
+  box-shadow: 0 0 0 1px var(--ce);
+}
+
+.react-flow__edge-path {
+  stroke: var(--brass-dim) !important;
+}

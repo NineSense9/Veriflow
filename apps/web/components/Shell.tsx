@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/problems", label: "题库" },
   { href: "/status", label: "状态" },
   { href: "/stress", label: "对拍" },
+  { href: "/compose", label: "出题" },
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {
@@ -65,9 +66,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               {link.label}
             </Link>
           ))}
-          <span className="dead" title="下一期">
-            出题
-          </span>
         </nav>
         <div className="top-meta">
           <span className={sandbox === "down" ? "dot down" : "dot"} />

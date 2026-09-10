@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from veriflow_api.auth import create_session, revoke_session, user_for_token, verify_password
+from veriflow_api import compose_service
 from veriflow_api.db import connect, init_db
 from veriflow_api.seed import pack_file, seed
 from veriflow_ir.workflow import WorkflowIR
@@ -41,6 +42,22 @@ class LoginBody(BaseModel):
 class SubmitBody(BaseModel):
     lang: Literal["python3", "cpp17"]
     source: str = Field(min_length=1, max_length=200_000)
+
+
+class ComposeNL(BaseModel):
+    nl: str = Field(min_length=1, max_length=20_000)
+
+
+class ComposeExample(BaseModel):
+    name: str
+
+
+class ComposeIRBody(BaseModel):
+    ir: dict
+
+
+class ComposeGate(BaseModel):
+    decision: Literal["approved", "rejected"]
 
 
 class StressBody(BaseModel):
@@ -397,6 +414,87 @@ def _register_routes(application: FastAPI) -> None:
                 else None
             )
             payload["time_ms"] = submission["time_ms"]
+        return payload
+
+    @application.post("/api/compose")
+    def compose_create(body: ComposeNL, user=Depends(current_user)):
+        return compose_service.create_from_nl(user["id"], body.nl)
+
+    @application.post("/api/compose/example")
+    def compose_example(body: ComposeExample, user=Depends(current_user)):
+        try:
+            return compose_service.create_from_example(user["id"], body.name)
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail={"code": "bad_example", "message": "unknown example"}
+            )
+
+    @application.get("/api/compose")
+    def compose_list(user=Depends(current_user)):
+        return {"projects": compose_service.list_projects(user["id"])}
+
+    @application.get("/api/compose/{project_id}")
+    def compose_get(project_id: int, user=Depends(current_user)):
+        row = compose_service.get_project(user["id"], project_id)
+        if row is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "project not found"}
+            )
+        return compose_service.project_payload(row)
+
+    @application.post("/api/compose/{project_id}/ir")
+    def compose_save_ir(project_id: int, body: ComposeIRBody, user=Depends(current_user)):
+        ir = WorkflowIR.model_validate(body.ir)
+        payload = compose_service.save_ir(user["id"], project_id, ir)
+        if payload is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "project not found"}
+            )
+        return payload
+
+    @application.post("/api/compose/{project_id}/repair")
+    def compose_repair(project_id: int, body: ComposeNL, user=Depends(current_user)):
+        payload = compose_service.repair(user["id"], project_id, body.nl)
+        if payload is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "project not found"}
+            )
+        return payload
+
+    @application.post("/api/compose/{project_id}/gate")
+    def compose_gate(project_id: int, body: ComposeGate, user=Depends(current_user)):
+        try:
+            payload = compose_service.set_gate(user["id"], project_id, body.decision)
+        except PermissionError:
+            raise HTTPException(
+                status_code=409,
+                detail={"code": "blocked", "message": "静态错误未清，不能过审"},
+            )
+        if payload is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "project not found"}
+            )
+        return payload
+
+    @application.post("/api/compose/{project_id}/publish")
+    def compose_publish(project_id: int, user=Depends(current_user)):
+        try:
+            payload = compose_service.publish(user["id"], project_id)
+        except PermissionError as exc:
+            code = str(exc)
+            messages = {
+                "static errors": "静态检查未通过",
+                "gate": "审题门尚未通过",
+                "weak_tests": "弱测资攻击未解除，不能入库",
+            }
+            raise HTTPException(
+                status_code=409,
+                detail={"code": code, "message": messages.get(code, "不能入库")},
+            )
+        if payload is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "project not found"}
+            )
         return payload
 
     @application.get("/api/submissions")
