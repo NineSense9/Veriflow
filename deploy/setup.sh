@@ -24,11 +24,16 @@ if ! command -v node >/dev/null 2>&1; then
   apt-get install -y nodejs
 fi
 
-if [ ! -d "$APP/.git" ]; then
-  git clone https://github.com/NineSense9/Veriflow.git "$APP"
-else
-  git -C "$APP" fetch origin
-  git -C "$APP" reset --hard origin/main
+if [ ! -f "$APP/pyproject.toml" ]; then
+  if git clone https://github.com/NineSense9/Veriflow.git "$APP"; then
+    true
+  else
+    echo "git clone failed; put source in $APP first" >&2
+    exit 1
+  fi
+elif [ -d "$APP/.git" ]; then
+  git -C "$APP" fetch origin || true
+  git -C "$APP" reset --hard origin/main || true
 fi
 
 python3 -m venv "$APP/.venv"
