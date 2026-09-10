@@ -1,8 +1,14 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { ComposeError, WorkflowIR } from "@/lib/api";
 
-export function irToFlow(ir: WorkflowIR, errors: ComposeError[]): { nodes: Node[]; edges: Edge[] } {
+export function irToFlow(
+  ir: WorkflowIR,
+  errors: ComposeError[],
+  highlight?: { nodes: string[]; path: string[] },
+): { nodes: Node[]; edges: Edge[] } {
   const errorIds = new Set(errors.map((item) => item.node_id).filter(Boolean) as string[]);
+  const selected = new Set(highlight?.nodes ?? []);
+  const pathSet = new Set(highlight?.path ?? []);
   const indeg = new Map<string, number>();
   ir.nodes.forEach((node) => indeg.set(node.id, 0));
   const outgoing = new Map<string, string[]>();
@@ -43,6 +49,8 @@ export function irToFlow(ir: WorkflowIR, errors: ComposeError[]): { nodes: Node[
         label,
         kind: node.kind,
         error: errorIds.has(node.id),
+        selected: selected.has(node.id) || pathSet.has(node.id),
+        onPath: pathSet.has(node.id),
       },
     };
   });
@@ -50,6 +58,10 @@ export function irToFlow(ir: WorkflowIR, errors: ComposeError[]): { nodes: Node[
     id: `e${index}`,
     source: edge.from,
     target: edge.to,
+    style:
+      pathSet.has(edge.from) && pathSet.has(edge.to)
+        ? { stroke: "var(--wa)", strokeWidth: 2 }
+        : undefined,
   }));
   return { nodes, edges };
 }

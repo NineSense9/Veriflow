@@ -63,7 +63,7 @@ export default function ComposeIndexPage() {
       <main className="page wide">
         <header className="page-head">
           <h1>出题编译</h1>
-          <p className="lead">自然语言进图。缺审题门、缺守卫、白名单外工具会在编译期拦住。</p>
+          <p className="lead">自然语言先变成规格，再验证出题图。点草稿进入 Verification Studio，可用受约束修复，而不是让模型整图重写。</p>
         </header>
         <div className="field">
           <label htmlFor="compose-nl">题意</label>

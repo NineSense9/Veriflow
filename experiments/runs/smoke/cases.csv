@@ -1,0 +1,10 @@
+fault,category,expected,detected,localized,repaired,repair_iterations,codes
+orphan_node,structural,DEAD_NODE,True,True,True,1,DEAD_NODE
+broken_edge,structural,DEAD_NODE,True,False,False,2,DEAD_NODE|MISSING_HUMAN_GATE|ORDER_VIOLATION
+missing_required_action,semantic,MISSING_HUMAN_GATE,True,True,True,1,MISSING_HUMAN_GATE|MISSING_REQUIRED_ACTION
+wrong_order,semantic,ORDER_VIOLATION,True,True,False,2,DEAD_NODE|MISSING_HUMAN_GATE|ORDER_VIOLATION|ORDER_VIOLATION
+missing_branch,branch,WEAK_BOUNDS,True,True,True,1,MISSING_REQUIRED_ACTION|WEAK_BOUNDS
+wrong_parameter,parameter,GUARD_NOT_EXPR,True,True,True,1,GUARD_NOT_EXPR|WEAK_BOUNDS
+broken_binding,dataflow,BROKEN_BINDING,True,False,False,2,DEAD_NODE|DEAD_NODE|MISSING_HUMAN_GATE|ORDER_VIOLATION|ORDER_VIOLATION|ORDER_VIOLATION|BROKEN_BINDING
+hardcoded_secret,safety,HARDCODED_SECRET,True,True,True,1,HARDCODED_SECRET
+unsafe_webhook,safety,UNRESTRICTED_WEBHOOK,True,True,False,1,UNRESTRICTED_WEBHOOK

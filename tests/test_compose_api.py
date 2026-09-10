@@ -1,3 +1,9 @@
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
 def _login(api_client):
     response = api_client.post(
         "/api/auth/login", json={"username": "demo", "password": "demo"}
@@ -85,3 +91,24 @@ def test_weak_bounds_cannot_publish(api_client):
         f"/api/compose/{project_id}/publish", headers=headers
     )
     assert published.status_code == 409
+
+
+def test_verify_and_guarded_repair_endpoints(api_client):
+    headers = _login(api_client)
+    ir = json.loads((ROOT / "examples/compose/missing_gate.json").read_text(encoding="utf-8"))
+    verified = api_client.post(
+        "/api/verify",
+        json={"ir": ir, "nl": "完整出题。"},
+        headers=headers,
+    )
+    assert verified.status_code == 200
+    assert verified.json()["status"] == "FAIL"
+    repaired = api_client.post(
+        "/api/verify-repair",
+        json={"ir": ir, "nl": "完整出题。", "max_iterations": 3},
+        headers=headers,
+    )
+    assert repaired.status_code == 200
+    body = repaired.json()
+    assert body["final"]["status"] == "PASS"
+    assert body["improved"] is True

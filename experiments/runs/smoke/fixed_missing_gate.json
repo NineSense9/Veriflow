@@ -1,0 +1,65 @@
+{
+  "ir_version": "1.0",
+  "domain": "compose",
+  "name": "vf1012_compose_broken",
+  "nodes": [
+    {
+      "id": "gen",
+      "kind": "tool",
+      "tool": "test_generator",
+      "expr": null,
+      "on_fail": null,
+      "assignee_role": null,
+      "in_type": null,
+      "out_type": null,
+      "config": {}
+    },
+    {
+      "id": "pub",
+      "kind": "tool",
+      "tool": "publish_problem",
+      "expr": null,
+      "on_fail": null,
+      "assignee_role": null,
+      "in_type": null,
+      "out_type": null,
+      "config": {}
+    },
+    {
+      "id": "review",
+      "kind": "human_gate",
+      "tool": null,
+      "expr": null,
+      "on_fail": "reject",
+      "assignee_role": "problemsetter",
+      "in_type": null,
+      "out_type": null,
+      "config": {}
+    },
+    {
+      "id": "g_bounds",
+      "kind": "guard",
+      "tool": null,
+      "expr": "spec.n_min >= 1 && spec.n_max <= 100000",
+      "on_fail": "reject",
+      "assignee_role": null,
+      "in_type": null,
+      "out_type": null,
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "from": "review",
+      "to": "pub"
+    },
+    {
+      "from": "g_bounds",
+      "to": "review"
+    },
+    {
+      "from": "gen",
+      "to": "g_bounds"
+    }
+  ]
+}

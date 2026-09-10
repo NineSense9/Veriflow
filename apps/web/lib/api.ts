@@ -60,6 +60,39 @@ export type WorkflowIR = {
 export type ComposeError = { code: string; message: string; node_id?: string | null };
 export type ComposeAttack = { tag: string; message: string; node_id?: string };
 
+export type VerifyIssue = {
+  id: string;
+  category: string;
+  severity: string;
+  code: string;
+  title: string;
+  description: string;
+  requirement?: string | null;
+  affected_nodes: string[];
+  witness_path: string[];
+  expected?: string | null;
+  actual?: string | null;
+  repair_hint?: string | null;
+};
+
+export type Verification = {
+  status: string;
+  risk_level: string;
+  confidence: number;
+  issues: VerifyIssue[];
+  requirements_passed: number;
+  requirements_total: number;
+  dimensions: { name: string; status: string; issue_count: number }[];
+};
+
+export type RepairPatch = {
+  operation: string;
+  source?: string | null;
+  target?: string | null;
+  node_id?: string | null;
+  reason?: string;
+};
+
 export type ComposeProject = {
   id: number;
   source_nl: string;
@@ -71,6 +104,15 @@ export type ComposeProject = {
   published_problem_id: string | null;
   compiler: string | null;
   updated_at: string;
+  spec?: { goal: string; compiler: string };
+  verification?: Verification;
+  repair?: {
+    improved: boolean;
+    iterations: number;
+    steps: { iteration: number; accepted: boolean; reason: string; patches: RepairPatch[] }[];
+    initial: Verification;
+    final: Verification;
+  };
 };
 
 export type ComposeSummary = {
@@ -235,6 +277,8 @@ export const api = {
     }),
   composePublish: (id: number) =>
     request<ComposeProject>(`/api/compose/${id}/publish`, { method: "POST" }),
+  composeVerifyRepair: (id: number) =>
+    request<ComposeProject>(`/api/compose/${id}/verify-repair`, { method: "POST" }),
   sets: () =>
     request<{
       sets: { id: string; title: string; ids: string[]; problems: { id: string; title: string }[] }[];

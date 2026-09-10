@@ -1042,6 +1042,13 @@ h1 {
   color: var(--text);
 }
 
+button.sample {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
 .sample-head {
   display: flex;
   align-items: center;
@@ -1070,7 +1077,8 @@ h1 {
   min-height: 72px;
 }
 
-.diff .fail {
+.diff .fail,
+.sample.fail {
   border-color: var(--wa);
   background: var(--wa-soft);
 }
@@ -1268,6 +1276,11 @@ h1 {
 .rf-node.err {
   border-color: var(--error);
   box-shadow: none;
+}
+
+.rf-node.selected {
+  border-color: var(--wa);
+  outline: 2px solid var(--wa-soft);
 }
 
 .react-flow {

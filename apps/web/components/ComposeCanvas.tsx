@@ -8,9 +8,11 @@ import { irToFlow } from "@/lib/ir-flow";
 import { readTheme } from "@/lib/theme";
 
 function KindNode({ data }: NodeProps) {
-  const payload = data as { label: string; kind: string; error: boolean };
+  const payload = data as { label: string; kind: string; error: boolean; selected?: boolean };
   return (
-    <div className={`rf-node kind-${payload.kind} ${payload.error ? "err" : ""}`}>
+    <div
+      className={`rf-node kind-${payload.kind} ${payload.error ? "err" : ""} ${payload.selected ? "selected" : ""}`}
+    >
       <Handle type="target" position={Position.Left} />
       <span className="rf-kind">{payload.kind}</span>
       <strong>{payload.label}</strong>
@@ -24,11 +26,16 @@ const nodeTypes = { kind: KindNode };
 export default function ComposeCanvas({
   ir,
   errors,
+  highlight,
 }: {
   ir: WorkflowIR;
   errors: ComposeError[];
+  highlight?: { nodes: string[]; path: string[] };
 }) {
-  const { nodes, edges } = useMemo(() => irToFlow(ir, errors), [ir, errors]);
+  const { nodes, edges } = useMemo(
+    () => irToFlow(ir, errors, highlight),
+    [ir, errors, highlight],
+  );
   const [dark, setDark] = useState(false);
 
   useEffect(() => {

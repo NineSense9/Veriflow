@@ -69,6 +69,27 @@ class ComposeGate(BaseModel):
     decision: Literal["approved", "rejected"]
 
 
+class SpecCompileBody(BaseModel):
+    nl: str = Field(min_length=1, max_length=20_000)
+    domain: Literal["compose", "campus"] = "compose"
+
+
+class VerifyBody(BaseModel):
+    ir: dict
+    nl: str = ""
+
+
+class RepairLoopBody(BaseModel):
+    ir: dict
+    nl: str = ""
+    max_iterations: int = Field(default=3, ge=1, le=5)
+
+
+class MutateBody(BaseModel):
+    ir: dict
+    fault: str
+
+
 class TutorBody(BaseModel):
     submission_id: int
 
@@ -215,6 +236,53 @@ def _register_routes(application: FastAPI) -> None:
     def compose_check(ir: WorkflowIR) -> dict[str, object]:
         errors = check_workflow(ir)
         return {"ok": len(errors) == 0, "errors": [error.model_dump() for error in errors]}
+
+    @application.post("/api/spec/compile")
+    def spec_compile(body: SpecCompileBody, user=Depends(current_user)):
+        del user
+        from veriflow_spec.compiler import compile_spec
+
+        return compile_spec(body.nl, body.domain).model_dump(mode="json")
+
+    @application.post("/api/verify")
+    def api_verify(body: VerifyBody, user=Depends(current_user)):
+        del user
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.result import verify_workflow
+
+        ir = WorkflowIR.model_validate(body.ir)
+        spec = compile_spec(body.nl, ir.domain)
+        return verify_workflow(ir, spec).model_dump(mode="json")
+
+    @application.post("/api/repair")
+    @application.post("/api/verify-repair")
+    def api_verify_repair(body: RepairLoopBody, user=Depends(current_user)):
+        del user
+        from veriflow_repair.loop import verify_repair_loop
+        from veriflow_spec.compiler import compile_spec
+
+        ir = WorkflowIR.model_validate(body.ir)
+        spec = compile_spec(body.nl, ir.domain)
+        report = verify_repair_loop(ir, spec, max_iterations=body.max_iterations)
+        return json.loads(report.model_dump_json())
+
+    @application.post("/api/mutate")
+    def api_mutate(body: MutateBody, user=Depends(current_user)):
+        del user
+        from veriflow_mutate.ir_faults import mutate_ir
+
+        ir = WorkflowIR.model_validate(body.ir)
+        return json.loads(mutate_ir(ir, body.fault).model_dump_json())
+
+    @application.get("/api/bench/latest")
+    def api_bench_latest(user=Depends(current_user)):
+        del user
+        from pathlib import Path
+
+        path = Path("experiments/runs/smoke/metrics.json")
+        if not path.exists():
+            return {"status": "NOT RUN", "metrics": None}
+        return {"status": "ok", "metrics": json.loads(path.read_text(encoding="utf-8"))}
 
     @application.post("/api/auth/login")
     def login(body: LoginBody):
@@ -584,6 +652,15 @@ def _register_routes(application: FastAPI) -> None:
     @application.post("/api/compose/{project_id}/repair")
     def compose_repair(project_id: int, body: ComposeNL, user=Depends(current_user)):
         payload = compose_service.repair(user["id"], project_id, body.nl)
+        if payload is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "project not found"}
+            )
+        return payload
+
+    @application.post("/api/compose/{project_id}/verify-repair")
+    def compose_verify_repair(project_id: int, user=Depends(current_user)):
+        payload = compose_service.guarded_repair(user["id"], project_id)
         if payload is None:
             raise HTTPException(
                 status_code=404, detail={"code": "not_found", "message": "project not found"}

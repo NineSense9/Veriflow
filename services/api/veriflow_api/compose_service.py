@@ -28,10 +28,11 @@ def _analyze(ir: WorkflowIR) -> tuple[list[dict], list[dict], str]:
 
 
 def project_payload(row) -> dict:
-    return {
+    ir_data = json.loads(row["ir_json"]) if row["ir_json"] else None
+    payload = {
         "id": row["id"],
         "source_nl": row["source_nl"],
-        "ir": json.loads(row["ir_json"]) if row["ir_json"] else None,
+        "ir": ir_data,
         "errors": json.loads(row["check_errors_json"] or "[]"),
         "attack": json.loads(row["attack_json"] or "[]"),
         "gate_status": row["gate_status"],
@@ -40,6 +41,16 @@ def project_payload(row) -> dict:
         "compiler": row["compiler"],
         "updated_at": row["updated_at"],
     }
+    if ir_data:
+        from veriflow_ir.workflow import WorkflowIR
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.result import verify_workflow
+
+        ir = WorkflowIR.model_validate(ir_data)
+        spec = compile_spec(row["source_nl"] or "", ir.domain)
+        payload["spec"] = spec.model_dump(mode="json")
+        payload["verification"] = verify_workflow(ir, spec).model_dump(mode="json")
+    return payload
 
 
 def _insert(user_id: int, nl: str, ir: WorkflowIR, compiler: str) -> dict:
@@ -197,6 +208,23 @@ def set_gate(user_id: int, project_id: int, decision: str) -> dict:
         )
         connection.commit()
     return project_payload(get_project(user_id, project_id))
+
+
+def guarded_repair(user_id: int, project_id: int, max_iterations: int = 3) -> dict:
+    row = get_project(user_id, project_id)
+    if row is None or not row["ir_json"]:
+        return None
+    from veriflow_repair.loop import verify_repair_loop
+    from veriflow_spec.compiler import compile_spec
+
+    ir = WorkflowIR.model_validate_json(row["ir_json"])
+    spec = compile_spec(row["source_nl"] or "", ir.domain)
+    report = verify_repair_loop(ir, spec, max_iterations=max_iterations)
+    payload = save_ir(user_id, project_id, report.ir)
+    if payload is None:
+        return None
+    payload["repair"] = json.loads(report.model_dump_json())
+    return payload
 
 
 def publish(user_id: int, project_id: int) -> dict:

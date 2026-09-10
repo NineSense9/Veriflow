@@ -1,0 +1,139 @@
+{
+  "timestamp": "2026-09-10T13:31:19.240278+00:00",
+  "gold": "vf1012_compose",
+  "n": 9,
+  "detection_precision": 1.0,
+  "detection_recall": 1.0,
+  "detection_f1": 1.0,
+  "false_positive_rate": 0.0,
+  "false_negative_rate": 0.0,
+  "fault_localization_accuracy": 0.7777777777777778,
+  "repair_success_rate": 0.5555555555555556,
+  "post_repair_pass_rate": 0.5555555555555556,
+  "average_repair_iterations": 1.3333333333333333,
+  "cases": [
+    {
+      "fault": "orphan_node",
+      "category": "structural",
+      "expected": "DEAD_NODE",
+      "detected": true,
+      "localized": true,
+      "codes": [
+        "DEAD_NODE"
+      ],
+      "repaired": true,
+      "repair_iterations": 1
+    },
+    {
+      "fault": "broken_edge",
+      "category": "structural",
+      "expected": "DEAD_NODE",
+      "detected": true,
+      "localized": false,
+      "codes": [
+        "DEAD_NODE",
+        "MISSING_HUMAN_GATE",
+        "ORDER_VIOLATION"
+      ],
+      "repaired": false,
+      "repair_iterations": 2
+    },
+    {
+      "fault": "missing_required_action",
+      "category": "semantic",
+      "expected": "MISSING_HUMAN_GATE",
+      "detected": true,
+      "localized": true,
+      "codes": [
+        "MISSING_HUMAN_GATE",
+        "MISSING_REQUIRED_ACTION"
+      ],
+      "repaired": true,
+      "repair_iterations": 1
+    },
+    {
+      "fault": "wrong_order",
+      "category": "semantic",
+      "expected": "ORDER_VIOLATION",
+      "detected": true,
+      "localized": true,
+      "codes": [
+        "DEAD_NODE",
+        "MISSING_HUMAN_GATE",
+        "ORDER_VIOLATION",
+        "ORDER_VIOLATION"
+      ],
+      "repaired": false,
+      "repair_iterations": 2
+    },
+    {
+      "fault": "missing_branch",
+      "category": "branch",
+      "expected": "WEAK_BOUNDS",
+      "detected": true,
+      "localized": true,
+      "codes": [
+        "MISSING_REQUIRED_ACTION",
+        "WEAK_BOUNDS"
+      ],
+      "repaired": true,
+      "repair_iterations": 1
+    },
+    {
+      "fault": "wrong_parameter",
+      "category": "parameter",
+      "expected": "GUARD_NOT_EXPR",
+      "detected": true,
+      "localized": true,
+      "codes": [
+        "GUARD_NOT_EXPR",
+        "WEAK_BOUNDS"
+      ],
+      "repaired": true,
+      "repair_iterations": 1
+    },
+    {
+      "fault": "broken_binding",
+      "category": "dataflow",
+      "expected": "BROKEN_BINDING",
+      "detected": true,
+      "localized": false,
+      "codes": [
+        "DEAD_NODE",
+        "DEAD_NODE",
+        "MISSING_HUMAN_GATE",
+        "ORDER_VIOLATION",
+        "ORDER_VIOLATION",
+        "ORDER_VIOLATION",
+        "BROKEN_BINDING"
+      ],
+      "repaired": false,
+      "repair_iterations": 2
+    },
+    {
+      "fault": "hardcoded_secret",
+      "category": "safety",
+      "expected": "HARDCODED_SECRET",
+      "detected": true,
+      "localized": true,
+      "codes": [
+        "HARDCODED_SECRET"
+      ],
+      "repaired": true,
+      "repair_iterations": 1
+    },
+    {
+      "fault": "unsafe_webhook",
+      "category": "safety",
+      "expected": "UNRESTRICTED_WEBHOOK",
+      "detected": true,
+      "localized": true,
+      "codes": [
+        "UNRESTRICTED_WEBHOOK"
+      ],
+      "repaired": false,
+      "repair_iterations": 1
+    }
+  ],
+  "note": "measured on gold compose IR + synthetic mutations; NOT a published leaderboard"
+}
