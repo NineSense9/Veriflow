@@ -56,7 +56,7 @@ export default function LoginPage() {
             {busy ? "检录中…" : "入场"}
           </button>
         </form>
-        <div className="hint">本地演示席位 demo / demo。评委环境会换口令。</div>
+        <div className="hint">席位 demo / demo。过样例不算完。</div>
       </div>
     </div>
   );

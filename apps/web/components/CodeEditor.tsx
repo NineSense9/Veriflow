@@ -18,6 +18,7 @@ export default function CodeEditor({
       height={height}
       language={language === "python" ? "python" : "cpp"}
       theme="vs-dark"
+      loading={<div className="editor-loading">装卷</div>}
       value={value}
       onChange={(next) => onChange(next ?? "")}
       options={{

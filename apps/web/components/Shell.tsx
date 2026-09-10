@@ -5,14 +5,18 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, clearSession, currentUsername } from "@/lib/api";
 
-const LINKS = [
-  { href: "/", label: "训练桌" },
-  { href: "/problems", label: "题库" },
-  { href: "/status", label: "状态" },
-  { href: "/stress", label: "对拍" },
-  { href: "/compose", label: "出题" },
-  { href: "/sets", label: "题单" },
-  { href: "/report", label: "报告" },
+const GROUPS = [
+  [{ href: "/", label: "训练桌" }],
+  [
+    { href: "/problems", label: "题库" },
+    { href: "/sets", label: "题单" },
+    { href: "/status", label: "状态" },
+  ],
+  [
+    { href: "/stress", label: "对拍" },
+    { href: "/compose", label: "出题" },
+  ],
+  [{ href: "/report", label: "报告" }],
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {
@@ -51,22 +55,27 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <span>验流 · 夜场</span>
         </Link>
         <nav className="nav">
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={
-                link.href === "/"
-                  ? pathname === "/"
-                    ? "active"
-                    : ""
-                  : pathname.startsWith(link.href)
-                    ? "active"
-                    : ""
-              }
-            >
-              {link.label}
-            </Link>
+          {GROUPS.map((group, index) => (
+            <span key={group[0].href} style={{ display: "contents" }}>
+              {index > 0 ? <span className="nav-split" /> : null}
+              {group.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={
+                    link.href === "/"
+                      ? pathname === "/"
+                        ? "active"
+                        : ""
+                      : pathname.startsWith(link.href)
+                        ? "active"
+                        : ""
+                  }
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </span>
           ))}
         </nav>
         <div className="top-meta">

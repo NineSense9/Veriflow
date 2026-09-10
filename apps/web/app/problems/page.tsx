@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import { api, ProblemListItem } from "@/lib/api";
@@ -10,9 +10,16 @@ function rate(value: number | null) {
   return `${Math.round(value * 100)}%`;
 }
 
+function diffClass(value: number) {
+  if (value < 1000) return "diff-easy";
+  if (value < 1400) return "diff-mid";
+  return "diff-hard";
+}
+
 export default function ProblemsPage() {
   const [rows, setRows] = useState<ProblemListItem[]>([]);
   const [error, setError] = useState("");
+  const [tag, setTag] = useState("全部");
 
   useEffect(() => {
     api
@@ -21,12 +28,32 @@ export default function ProblemsPage() {
       .catch(() => setError("题库还没挂上。确认 API 已启动。"));
   }, []);
 
+  const tags = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((row) => row.tags.forEach((item) => set.add(item)));
+    return ["全部", ...Array.from(set).sort()];
+  }, [rows]);
+
+  const visible = tag === "全部" ? rows : rows.filter((row) => row.tags.includes(tag));
+
   return (
     <Shell>
-      <main className="page">
+      <main className="page wide">
         <div className="kicker">Problemset</div>
         <h1>题库</h1>
         {error ? <p className="ghost">{error}</p> : null}
+        <div className="filters">
+          {tags.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={item === tag ? "on" : ""}
+              onClick={() => setTag(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -39,7 +66,7 @@ export default function ProblemsPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {visible.map((row) => (
               <tr key={row.id}>
                 <td>
                   <Link href={`/problems/${row.id}`}>{row.id}</Link>
@@ -47,11 +74,11 @@ export default function ProblemsPage() {
                 <td>
                   <Link href={`/problems/${row.id}`}>{row.title}</Link>
                 </td>
-                <td>{row.difficulty}</td>
+                <td className={diffClass(row.difficulty)}>{row.difficulty}</td>
                 <td>
-                  {row.tags.map((tag) => (
-                    <span className="tag" key={tag}>
-                      {tag}
+                  {row.tags.map((item) => (
+                    <span className="tag" key={item}>
+                      {item}
                     </span>
                   ))}
                 </td>
