@@ -1,0 +1,20 @@
+{
+  "ir_version": "1.0",
+  "domain": "compose",
+  "name": "vf1012_compose_broken",
+  "nodes": [
+    {
+      "id": "gen",
+      "kind": "tool",
+      "tool": "test_generator"
+    },
+    {
+      "id": "pub",
+      "kind": "tool",
+      "tool": "publish_problem"
+    }
+  ],
+  "edges": [
+    { "from": "gen", "to": "pub" }
+  ]
+}
