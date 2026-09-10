@@ -70,6 +70,37 @@ def test_submit_ac_and_status(api_client):
     assert listing.json()["submissions"][0]["verdict"] == "AC"
 
 
+def test_stress_mismatch(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    kit = api_client.get("/api/problems/VF1001/kit", headers=headers)
+    assert kit.status_code == 200
+    assert kit.json()["has_brute"] is True
+    response = api_client.post(
+        "/api/problems/VF1001/stress",
+        headers=headers,
+        json={
+            "sol_lang": "python3",
+            "sol_source": WA_SOURCE,
+            "gen_source": "print(3)\nprint('1 2 3')\n",
+            "rounds": 5,
+        },
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "mismatch"
+    assert body["counterexample"]["source"] == "stress"
+    assert body["counterexample"]["stdin"]
+
+
+def test_stress_requires_login(api_client):
+    response = api_client.post(
+        "/api/problems/VF1001/stress",
+        json={"sol_lang": "python3", "sol_source": AC_SOURCE, "rounds": 1},
+    )
+    assert response.status_code == 401
+
+
 def test_submit_wa_counterexample(api_client):
     token = _login(api_client)
     headers = {"Authorization": f"Bearer {token}"}

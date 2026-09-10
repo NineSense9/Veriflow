@@ -57,6 +57,16 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id INTEGER NOT NULL,
   expires_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS stress_runs (
+  id INTEGER PRIMARY KEY,
+  problem_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  rounds INTEGER NOT NULL,
+  round_hit INTEGER,
+  counterexample_json TEXT,
+  created_at TEXT NOT NULL
+);
 """
 
 

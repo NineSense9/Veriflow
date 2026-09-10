@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/", label: "训练桌" },
   { href: "/problems", label: "题库" },
   { href: "/status", label: "状态" },
+  { href: "/stress", label: "对拍" },
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {
@@ -64,9 +65,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               {link.label}
             </Link>
           ))}
-          <span className="dead" title="下一期">
-            对拍
-          </span>
           <span className="dead" title="下一期">
             出题
           </span>

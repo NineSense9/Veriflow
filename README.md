@@ -11,6 +11,7 @@
 - Workflow IR / Spec IR 与七条静态检查
 - 进程沙箱评测（本机 Docker 未启动时自动回退）；镜像定义在 `deploy/sandbox/Dockerfile`
 - 登录、题库、提交：CE / WA / TLE / RE / AC；WA 带最小反例
+- 对拍台：生成器 × 暴力 × 选手，停在第一条反例；暴力超时记 stress_error
 - 题包 VF1001「签到时长」（公开样例 + 隐藏 `n=1` 与 32 位溢出）
 - 尚未接入 DeepSeek、对拍、教练、训练站 UI
 

@@ -26,7 +26,32 @@ export type ProblemDetail = {
     languages: string[];
     signature?: { input: string; output: string };
   };
+  has_brute?: boolean;
+  has_gen?: boolean;
   public_tests: PublicTest[];
+};
+
+export type StressKit = {
+  id: string;
+  title: string;
+  has_brute: boolean;
+  has_gen: boolean;
+  gen_source: string | null;
+  brute_source: string | null;
+  time_limit_ms: number;
+  memory_limit_mb: number;
+};
+
+export type StressResult = {
+  status: string;
+  rounds_ran: number;
+  time_ms: number;
+  sandbox: string;
+  counterexample: Counterexample | null;
+  compile_log: string | null;
+  detail: string | null;
+  failed_role: string | null;
+  log: { round: number; status: string; role?: string }[];
 };
 
 export type Counterexample = {
@@ -95,7 +120,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw error;
   }
   if (!response.ok) {
-    const error = new Error(`http_${response.status}`) as Error & { status: number };
+    let message = `http_${response.status}`;
+    try {
+      const body = (await response.json()) as { detail?: { message?: string } | string };
+      if (typeof body.detail === "string") message = body.detail;
+      else if (body.detail?.message) message = body.detail.message;
+    } catch {
+      /* keep fallback */
+    }
+    const error = new Error(message) as Error & { status: number };
     error.status = response.status;
     throw error;
   }
@@ -119,6 +152,23 @@ export const api = {
       body: JSON.stringify({ lang, source }),
     }),
   submissions: () => request<{ submissions: SubmissionRow[] }>("/api/submissions"),
+  kit: (id: string) => request<StressKit>(`/api/problems/${id}/kit`),
+  stress: (
+    id: string,
+    body: {
+      sol_lang: "python3" | "cpp17";
+      sol_source: string;
+      gen_lang?: "python3" | "cpp17";
+      gen_source?: string;
+      brute_lang?: "python3" | "cpp17";
+      brute_source?: string;
+      rounds: number;
+    },
+  ) =>
+    request<StressResult>(`/api/problems/${id}/stress`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
 
 export const PYTHON_STUB = `n = int(input())

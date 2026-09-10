@@ -89,6 +89,13 @@ export default function ProblemPage() {
             <option value="python3">Python3</option>
             <option value="cpp17">C++17</option>
           </select>
+          {problem?.has_brute ? (
+            <Link href={`/stress?id=${id}`}>对拍</Link>
+          ) : (
+            <span className="dead" title="本题不提供暴力解">
+              对拍
+            </span>
+          )}
           <button className="primary" type="button" disabled={busy} onClick={submit}>
             {busy ? "判定中" : "提交"}
           </button>

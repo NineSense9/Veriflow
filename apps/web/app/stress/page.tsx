@@ -1,0 +1,183 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import Shell from "@/components/Shell";
+import {
+  PYTHON_STUB,
+  ProblemListItem,
+  StressKit,
+  StressResult,
+  api,
+} from "@/lib/api";
+
+const CodeEditor = dynamic(() => import("@/components/CodeEditor"), { ssr: false });
+
+function StressInner() {
+  const search = useSearchParams();
+  const initialId = search.get("id") || "VF1001";
+  const [problems, setProblems] = useState<ProblemListItem[]>([]);
+  const [problemId, setProblemId] = useState(initialId);
+  const [kit, setKit] = useState<StressKit | null>(null);
+  const [gen, setGen] = useState("");
+  const [brute, setBrute] = useState("");
+  const [sol, setSol] = useState(PYTHON_STUB);
+  const [rounds, setRounds] = useState(50);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<StressResult | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.problems().then((data) => setProblems(data.problems)).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    setResult(null);
+    setError("");
+    api
+      .kit(problemId)
+      .then((next) => {
+        setKit(next);
+        setGen(next.gen_source ?? "");
+        setBrute(next.brute_source ?? "");
+      })
+      .catch((err: Error & { status?: number }) => {
+        if (err.status !== 401) setError(err.message || "题包加载失败");
+      });
+  }, [problemId]);
+
+  async function run() {
+    setBusy(true);
+    setError("");
+    try {
+      const next = await api.stress(problemId, {
+        sol_lang: "python3",
+        sol_source: sol,
+        gen_lang: "python3",
+        gen_source: gen,
+        brute_lang: "python3",
+        brute_source: brute,
+        rounds,
+      });
+      setResult(next);
+    } catch (err) {
+      setError((err as Error).message || "对拍失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const disabled = !kit?.has_brute;
+
+  return (
+    <Shell>
+      <div className="stress">
+        <div className="arena-top">
+          <span className="pid">STRESS</span>
+          <select value={problemId} onChange={(e) => setProblemId(e.target.value)}>
+            {(problems.length ? problems : [{ id: problemId, title: problemId }]).map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.id} {row.title ?? ""}
+              </option>
+            ))}
+          </select>
+          <h1>{kit?.title ?? "对拍台"}</h1>
+          <label>
+            轮次
+            <input
+              type="number"
+              min={1}
+              max={200}
+              value={rounds}
+              onChange={(e) => setRounds(Number(e.target.value))}
+              style={{ width: 64, marginLeft: 8 }}
+            />
+          </label>
+          <button className="primary" type="button" disabled={busy || disabled} onClick={run}>
+            {busy ? "对拍中" : "开拍"}
+          </button>
+        </div>
+        {disabled ? (
+          <p className="ghost" style={{ padding: 16 }}>
+            本题不提供暴力解，对拍按钮禁用。
+          </p>
+        ) : null}
+        <div className="stress-cols">
+          <div className="stress-col">
+            <h2>生成器</h2>
+            <CodeEditor language="python" value={gen} onChange={setGen} />
+          </div>
+          <div className="stress-col">
+            <h2>暴力解</h2>
+            <CodeEditor language="python" value={brute} onChange={setBrute} />
+          </div>
+          <div className="stress-col">
+            <h2>选手程序</h2>
+            <CodeEditor language="python" value={sol} onChange={setSol} />
+          </div>
+        </div>
+        <div className="stress-floor">
+          <div className="stress-log">
+            <div className="kicker">log</div>
+            {error ? <div className="err">{error}</div> : null}
+            {busy ? <div>循环中…</div> : null}
+            {result ? (
+              <div>
+                <span className={`verdict ${result.status === "mismatch" ? "WA" : result.status === "no_fail" ? "AC" : "TLE"}`}>
+                  {result.status}
+                </span>
+                {"  "}
+                {result.rounds_ran} 轮 · {result.time_ms} ms · {result.sandbox}
+                {result.detail ? ` · ${result.detail}` : ""}
+              </div>
+            ) : null}
+            {result?.log.map((line) => (
+              <div
+                key={line.round}
+                className={
+                  line.status === "ok" ? "ok" : line.status === "mismatch" ? "bad" : "err"
+                }
+              >
+                #{line.round} {line.role ? `${line.role} ` : ""}
+                {line.status}
+              </div>
+            ))}
+          </div>
+          <aside className="side">
+            <h2>第一条反例</h2>
+            {result?.counterexample ? (
+              <div className="diff">
+                <div>
+                  <strong>输入</strong>
+                  {"\n"}
+                  {result.counterexample.stdin}
+                </div>
+                <div>
+                  <strong>暴力</strong>
+                  {"\n"}
+                  {result.counterexample.expected}
+                </div>
+                <div className="fail">
+                  <strong>选手</strong>
+                  {"\n"}
+                  {result.counterexample.actual}
+                </div>
+              </div>
+            ) : (
+              <p className="ghost">拍到不一致会停在这里。暴力超时记 stress_error，不是你的 WA。</p>
+            )}
+          </aside>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+export default function StressPage() {
+  return (
+    <Suspense fallback={<Shell><p className="page ghost">对拍台展开中…</p></Shell>}>
+      <StressInner />
+    </Suspense>
+  );
+}

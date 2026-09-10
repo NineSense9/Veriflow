@@ -12,10 +12,11 @@ from pydantic import BaseModel, Field
 
 from veriflow_api.auth import create_session, revoke_session, user_for_token, verify_password
 from veriflow_api.db import connect, init_db
-from veriflow_api.seed import seed
+from veriflow_api.seed import pack_file, seed
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_sandbox.factory import get_sandbox, sandbox_mode
 from veriflow_sandbox.judge import Case, judge_submission
+from veriflow_sandbox.stress import StressProgram, run_stress
 from veriflow_staticcheck.check import check_workflow
 
 
@@ -40,6 +41,16 @@ class LoginBody(BaseModel):
 class SubmitBody(BaseModel):
     lang: Literal["python3", "cpp17"]
     source: str = Field(min_length=1, max_length=200_000)
+
+
+class StressBody(BaseModel):
+    sol_lang: Literal["python3", "cpp17"]
+    sol_source: str = Field(min_length=1, max_length=200_000)
+    gen_lang: Literal["python3", "cpp17"] = "python3"
+    gen_source: str | None = Field(default=None, max_length=200_000)
+    brute_lang: Literal["python3", "cpp17"] = "python3"
+    brute_source: str | None = Field(default=None, max_length=200_000)
+    rounds: int = Field(default=50, ge=1, le=200)
 
 
 def _bearer_token(authorization: str | None, vf_session: str | None) -> str | None:
@@ -162,6 +173,8 @@ def _register_routes(application: FastAPI) -> None:
             )
         spec = json.loads(row["spec_json"])
         spec.pop("hidden_policy", None)
+        has_brute = bool(spec.get("has_brute") and pack_file(problem_id, "brute.py"))
+        has_gen = pack_file(problem_id, "gen.py") is not None
         return {
             "id": row["id"],
             "title": spec.get("title"),
@@ -169,10 +182,38 @@ def _register_routes(application: FastAPI) -> None:
             "difficulty": row["difficulty"],
             "tags": json.loads(row["tags"]),
             "spec": spec,
+            "has_brute": has_brute,
+            "has_gen": has_gen,
             "public_tests": [
                 {"name": item["name"], "stdin": item["stdin"], "stdout": item["stdout"]}
                 for item in public_tests
             ],
+        }
+
+    @application.get("/api/problems/{problem_id}/kit")
+    def problem_kit(problem_id: str, user=Depends(current_user)):
+        del user
+        with connect() as connection:
+            row = connection.execute(
+                "SELECT id, spec_json FROM problems WHERE id = ? AND published = 1",
+                (problem_id,),
+            ).fetchone()
+        if row is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "problem not found"}
+            )
+        spec = json.loads(row["spec_json"])
+        brute_source = pack_file(problem_id, "brute.py")
+        gen_source = pack_file(problem_id, "gen.py")
+        return {
+            "id": problem_id,
+            "title": spec.get("title"),
+            "has_brute": bool(brute_source),
+            "has_gen": bool(gen_source),
+            "gen_source": gen_source,
+            "brute_source": brute_source,
+            "time_limit_ms": spec.get("time_limit_ms", 1000),
+            "memory_limit_mb": spec.get("memory_limit_mb", 256),
         }
 
     @application.post("/api/problems/{problem_id}/submit")
@@ -258,6 +299,72 @@ def _register_routes(application: FastAPI) -> None:
             "time_ms": result.time_ms,
             "counterexample": result.counterexample,
             "sandbox": result.sandbox,
+        }
+
+    @application.post("/api/problems/{problem_id}/stress")
+    def stress_problem(problem_id: str, body: StressBody, user=Depends(current_user)):
+        with connect() as connection:
+            problem = connection.execute(
+                "SELECT id, spec_json FROM problems WHERE id = ? AND published = 1",
+                (problem_id,),
+            ).fetchone()
+        if problem is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "problem not found"}
+            )
+        spec = json.loads(problem["spec_json"])
+        gen_source = body.gen_source or pack_file(problem_id, "gen.py")
+        brute_source = body.brute_source or pack_file(problem_id, "brute.py")
+        if not brute_source:
+            raise HTTPException(
+                status_code=400,
+                detail={"code": "no_brute", "message": "本题不提供暴力解，对拍不可用"},
+            )
+        if not gen_source:
+            raise HTTPException(
+                status_code=400,
+                detail={"code": "no_gen", "message": "本题没有生成器"},
+            )
+        result = run_stress(
+            get_sandbox(),
+            StressProgram(lang=body.gen_lang, source=gen_source, role="gen"),
+            StressProgram(lang=body.brute_lang, source=brute_source, role="brute"),
+            StressProgram(lang=body.sol_lang, source=body.sol_source, role="sol"),
+            body.rounds,
+            spec.get("time_limit_ms", 1000),
+            spec.get("memory_limit_mb", 256),
+        )
+        now = datetime.now(timezone.utc).isoformat()
+        with connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO stress_runs(
+                    problem_id, user_id, status, rounds, round_hit, counterexample_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    problem_id,
+                    user["id"],
+                    result.status,
+                    result.rounds_ran,
+                    result.rounds_ran if result.status != "no_fail" else None,
+                    json.dumps(result.counterexample, ensure_ascii=False)
+                    if result.counterexample
+                    else None,
+                    now,
+                ),
+            )
+            connection.commit()
+        return {
+            "status": result.status,
+            "rounds_ran": result.rounds_ran,
+            "time_ms": result.time_ms,
+            "sandbox": result.sandbox,
+            "counterexample": result.counterexample,
+            "compile_log": result.compile_log,
+            "detail": result.detail,
+            "failed_role": result.failed_role,
+            "log": result.log,
         }
 
     @application.get("/api/jobs/{job_id}")

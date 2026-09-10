@@ -12,6 +12,13 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PROBLEMS_DIR = REPO_ROOT / "examples" / "problems"
 
 
+def pack_file(problem_id: str, name: str) -> str | None:
+    path = PROBLEMS_DIR / problem_id / name
+    if not path.is_file():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
 def seed() -> None:
     with connect() as connection:
         _seed_users(connection)

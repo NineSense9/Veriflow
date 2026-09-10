@@ -6,14 +6,16 @@ export default function CodeEditor({
   language,
   value,
   onChange,
+  height = "100%",
 }: {
   language: "python" | "cpp";
   value: string;
   onChange: (value: string) => void;
+  height?: string;
 }) {
   return (
     <Editor
-      height="100%"
+      height={height}
       language={language === "python" ? "python" : "cpp"}
       theme="vs-dark"
       value={value}
