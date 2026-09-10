@@ -17,9 +17,9 @@ dependencies = [
 dev = ["pytest>=8", "httpx>=0.27"]
 
 [tool.setuptools.packages.find]
-where = ["packages/ir", "packages/staticcheck", "packages/compare", "packages/sandbox", "services/api"]
-include = ["veriflow_ir*", "veriflow_staticcheck*", "veriflow_compare*", "veriflow_sandbox*", "veriflow_api*"]
+where = ["packages/ir", "packages/staticcheck", "packages/compare", "packages/sandbox", "packages/mutate", "services/api"]
+include = ["veriflow_ir*", "veriflow_staticcheck*", "veriflow_compare*", "veriflow_sandbox*", "veriflow_mutate*", "veriflow_api*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["packages/ir", "packages/staticcheck", "packages/compare", "packages/sandbox", "services/api"]
+pythonpath = ["packages/ir", "packages/staticcheck", "packages/compare", "packages/sandbox", "packages/mutate", "services/api"]

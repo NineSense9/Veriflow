@@ -1,0 +1,38 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1028",
+  "title": "快速幂",
+  "tags": [
+    "math"
+  ],
+  "difficulty": 1100,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "2 10\n",
+      "stdout": "1024\n"
+    },
+    {
+      "stdin": "3 0\n",
+      "stdout": "1\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

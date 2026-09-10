@@ -230,6 +230,12 @@ export const api = {
     }),
   composePublish: (id: number) =>
     request<ComposeProject>(`/api/compose/${id}/publish`, { method: "POST" }),
+  sets: () =>
+    request<{
+      sets: { id: string; title: string; ids: string[]; problems: { id: string; title: string }[] }[];
+    }>("/api/sets"),
+  report: () => request<Record<string, number | null>>("/api/report/summary"),
+  mutate: (id: string) => request<{ problem_id: string; kill_rate: number | null }>(`/api/problems/${id}/mutate`, { method: "POST" }),
   stress: (
     id: string,
     body: {

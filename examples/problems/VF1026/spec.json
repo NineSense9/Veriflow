@@ -1,0 +1,39 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1026",
+  "title": "最大公约",
+  "tags": [
+    "math",
+    "number-theory"
+  ],
+  "difficulty": 800,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "12 18\n",
+      "stdout": "6\n"
+    },
+    {
+      "stdin": "1 1\n",
+      "stdout": "1\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

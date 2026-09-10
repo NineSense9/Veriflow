@@ -1,0 +1,35 @@
+{
+  "ir_version": "1.0",
+  "domain": "campus",
+  "name": "club_reimburse",
+  "nodes": [
+    {
+      "id": "ocr",
+      "kind": "tool",
+      "tool": "invoice_ocr",
+      "out_type": { "type": "object", "required": ["amount"] }
+    },
+    {
+      "id": "g_amount",
+      "kind": "guard",
+      "expr": "invoice.amount > 0 && invoice.amount <= 5000",
+      "on_fail": "reject"
+    },
+    {
+      "id": "review",
+      "kind": "human_gate",
+      "assignee_role": "committee",
+      "on_fail": "reject"
+    },
+    {
+      "id": "pay",
+      "kind": "tool",
+      "tool": "form_fill"
+    }
+  ],
+  "edges": [
+    { "from": "ocr", "to": "g_amount" },
+    { "from": "g_amount", "to": "review" },
+    { "from": "review", "to": "pay" }
+  ]
+}

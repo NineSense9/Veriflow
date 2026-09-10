@@ -1,0 +1,35 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1011",
+  "title": "覆盖线段",
+  "tags": [
+    "two-pointers",
+    "greedy"
+  ],
+  "difficulty": 1300,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "3\n1 2\n2 4\n6 7\n",
+      "stdout": "2\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

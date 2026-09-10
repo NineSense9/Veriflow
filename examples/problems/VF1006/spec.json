@@ -1,0 +1,38 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1006",
+  "title": "单科最高",
+  "tags": [
+    "implementation"
+  ],
+  "difficulty": 800,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "1\n-3\n",
+      "stdout": "-3\n"
+    },
+    {
+      "stdin": "4\n1 9 2 8\n",
+      "stdout": "9\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

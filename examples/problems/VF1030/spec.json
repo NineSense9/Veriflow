@@ -1,0 +1,38 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1030",
+  "title": "配对和",
+  "tags": [
+    "data-structures"
+  ],
+  "difficulty": 1100,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "4 9\n2 7 11 15\n",
+      "stdout": "Yes\n"
+    },
+    {
+      "stdin": "1 2\n2\n",
+      "stdout": "No\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

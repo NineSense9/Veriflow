@@ -101,6 +101,16 @@ def test_stress_requires_login(api_client):
     assert response.status_code == 401
 
 
+def test_mutate_vf1001(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    response = api_client.post("/api/problems/VF1001/mutate", headers=headers)
+    assert response.status_code == 200
+    rate = response.json()["kill_rate"]
+    assert rate is not None
+    assert 0 < rate <= 1
+
+
 def test_tutor_on_wa(api_client):
     token = _login(api_client)
     headers = {"Authorization": f"Bearer {token}"}

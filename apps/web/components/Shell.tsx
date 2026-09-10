@@ -11,6 +11,8 @@ const LINKS = [
   { href: "/status", label: "状态" },
   { href: "/stress", label: "对拍" },
   { href: "/compose", label: "出题" },
+  { href: "/sets", label: "题单" },
+  { href: "/report", label: "报告" },
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {

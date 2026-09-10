@@ -1,0 +1,43 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1004",
+  "title": "括号匹配",
+  "tags": [
+    "implementation",
+    "stack"
+  ],
+  "difficulty": 800,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "()\n",
+      "stdout": "Yes\n"
+    },
+    {
+      "stdin": "(()\n",
+      "stdout": "No\n"
+    },
+    {
+      "stdin": "()()\n",
+      "stdout": "Yes\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

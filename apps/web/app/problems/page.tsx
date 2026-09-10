@@ -56,7 +56,7 @@ export default function ProblemsPage() {
                   ))}
                 </td>
                 <td>{rate(row.ac_rate)}</td>
-                <td>{row.kill_rate ?? "—"}</td>
+                <td>{rate(row.kill_rate)}</td>
               </tr>
             ))}
           </tbody>

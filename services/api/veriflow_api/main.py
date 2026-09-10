@@ -6,14 +6,16 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
-from fastapi import Cookie, Depends, FastAPI, Header, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from veriflow_api.auth import create_session, revoke_session, user_for_token, verify_password
 from veriflow_api import compose_service
 from veriflow_api.db import connect, init_db
 from veriflow_api.seed import pack_file, seed
+from veriflow_api.mutate_service import ensure_kill_rate
+from veriflow_api.report import export_markdown, sets_payload, summary
 from veriflow_api.tutor import ask_tutor
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_sandbox.factory import get_sandbox, sandbox_mode
@@ -98,6 +100,23 @@ def _register_routes(application: FastAPI) -> None:
         mode = sandbox_mode()
         return {"ok": mode != "sandbox_down", "sandbox": mode}
 
+    @application.get("/api/sets")
+    def list_sets():
+        return sets_payload()
+
+    @application.get("/api/report/summary")
+    def report_summary(user=Depends(current_user)):
+        del user
+        return summary()
+
+    @application.get("/api/report/export")
+    def report_export(user=Depends(current_user), format: str = Query("md")):
+        del user
+        data = summary()
+        if format == "json":
+            return JSONResponse(data)
+        return PlainTextResponse(export_markdown(), media_type="text/markdown")
+
     @application.post("/api/compose/check")
     def compose_check(ir: WorkflowIR) -> dict[str, object]:
         errors = check_workflow(ir)
@@ -178,11 +197,17 @@ def _register_routes(application: FastAPI) -> None:
             )
         return {"problems": items}
 
+    @application.post("/api/problems/{problem_id}/mutate")
+    def mutate_problem(problem_id: str, user=Depends(current_user)):
+        del user
+        rate = ensure_kill_rate(problem_id)
+        return {"problem_id": problem_id, "kill_rate": rate}
+
     @application.get("/api/problems/{problem_id}")
     def get_problem(problem_id: str):
         with connect() as connection:
             row = connection.execute(
-                "SELECT id, spec_json, statement, difficulty, tags FROM problems WHERE id = ?",
+                "SELECT id, spec_json, statement, difficulty, tags, kill_rate FROM problems WHERE id = ?",
                 (problem_id,),
             ).fetchone()
             public_tests = connection.execute(
@@ -206,6 +231,7 @@ def _register_routes(application: FastAPI) -> None:
             "spec": spec,
             "has_brute": has_brute,
             "has_gen": has_gen,
+            "kill_rate": row["kill_rate"],
             "public_tests": [
                 {"name": item["name"], "stdin": item["stdin"], "stdout": item["stdout"]}
                 for item in public_tests
@@ -313,6 +339,9 @@ def _register_routes(application: FastAPI) -> None:
                 ("completed", result.detail, job_id),
             )
             connection.commit()
+        kill = None
+        if result.verdict == "AC":
+            kill = ensure_kill_rate(problem_id)
         return {
             "job_id": job_id,
             "submission_id": submission_id,
@@ -321,6 +350,7 @@ def _register_routes(application: FastAPI) -> None:
             "time_ms": result.time_ms,
             "counterexample": result.counterexample,
             "sandbox": result.sandbox,
+            "kill_rate": kill,
         }
 
     @application.post("/api/problems/{problem_id}/tutor")

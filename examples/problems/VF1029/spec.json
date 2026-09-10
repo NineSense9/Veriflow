@@ -1,0 +1,35 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1029",
+  "title": "下一项更大",
+  "tags": [
+    "data-structures",
+    "stack"
+  ],
+  "difficulty": 1400,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "4\n2 1 2 4\n",
+      "stdout": "4 2 4 -1\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

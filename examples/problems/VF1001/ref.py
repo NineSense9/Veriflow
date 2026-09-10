@@ -1,3 +1,6 @@
 n = int(input())
-times = list(map(int, input().split()))
-print(sum(times))
+a = list(map(int, input().split()))
+total = 0
+for i in range(n):
+    total += a[i]
+print(total)

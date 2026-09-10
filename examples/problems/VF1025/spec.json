@@ -1,0 +1,35 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1025",
+  "title": "朋友圈",
+  "tags": [
+    "graphs",
+    "dsu"
+  ],
+  "difficulty": 1300,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "5 3\n1 2\n2 3\n4 5\n",
+      "stdout": "3\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}

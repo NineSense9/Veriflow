@@ -1,0 +1,34 @@
+{
+  "ir_version": "1.0",
+  "id": "VF1007",
+  "title": "第一个不小于",
+  "tags": [
+    "binary-search"
+  ],
+  "difficulty": 1100,
+  "languages": [
+    "cpp17",
+    "python3"
+  ],
+  "time_limit_ms": 1000,
+  "memory_limit_mb": 256,
+  "signature": {
+    "input": "见题面",
+    "output": "见题面"
+  },
+  "pre": [],
+  "post": [],
+  "invariants": [],
+  "public_tests": [
+    {
+      "stdin": "5 4\n1 3 3 7 9\n",
+      "stdout": "4\n"
+    }
+  ],
+  "hidden_policy": "bank",
+  "has_brute": true,
+  "forbidden": [
+    "交互",
+    "读额外文件"
+  ]
+}
