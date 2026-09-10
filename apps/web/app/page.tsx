@@ -9,6 +9,7 @@ export default function HomePage() {
   const [subs, setSubs] = useState<SubmissionRow[]>([]);
   const [problems, setProblems] = useState<ProblemListItem[]>([]);
   const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     api
@@ -17,7 +18,8 @@ export default function HomePage() {
       .catch((err: { status?: number }) => {
         if (err.status === 401) return;
         setError("训练记录暂时读不到。");
-      });
+      })
+      .finally(() => setLoaded(true));
     api.problems().then((data) => setProblems(data.problems)).catch(() => undefined);
   }, []);
 
@@ -29,81 +31,83 @@ export default function HomePage() {
     <Shell>
       <main className="page">
         <header className="page-head">
-          <p className="kicker">工作台</p>
           <h1>把样例骗术拆掉</h1>
           <p className="lead">公开样例很小。隐藏测资、对拍和变异才是裁判。</p>
         </header>
 
-        <div className="stat-grid">
-          <div className="stat">
-            <b>{problems.length || "—"}</b>
-            <span>题库</span>
-          </div>
-          <div className="stat">
-            <b>{subs.length}</b>
-            <span>提交</span>
-          </div>
-          <div className="stat">
-            <b>{acCount}</b>
-            <span>AC</span>
-          </div>
-          <div className="stat">
-            <b>{latest?.verdict ?? "—"}</b>
-            <span>最近判定</span>
-          </div>
+        <div className="hero-action">
+          <Link className="btn btn-primary" href="/problems/VF1001">
+            开始 VF1001
+          </Link>
+          <Link className="btn" href="/problems">
+            题库
+          </Link>
+          <Link className="btn btn-ghost" href="/stress?id=VF1001">
+            对拍
+          </Link>
+          <Link className="btn btn-ghost" href="/compose">
+            出题
+          </Link>
+        </div>
+        <p className="caption">
+          VF1001《签到时长》隐藏数据里有 n=1 和 32 位整数溢出。过样例不要得意。
+        </p>
+
+        <div className="follow">
+          {error ? <p className="ghost">{error}</p> : null}
+          {latest ? (
+            <p className="latest-line">
+              <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict}</span>
+              <Link href={`/problems/${latest.problem_id}`}>{latest.problem_id}</Link>
+              <span className="ghost">
+                {latest.lang} · {latest.time_ms ?? "—"} ms
+              </span>
+            </p>
+          ) : loaded ? (
+            <p className="caption">还没有提交。从题库写一发即可。</p>
+          ) : null}
+          {wa ? (
+            <p className="caption">最近有 WA。回原题看反例三列，或点教练，不要先翻题解。</p>
+          ) : null}
         </div>
 
-        <div className="desk-grid">
-          <section className="panel">
-            <h2>下一题</h2>
-            <p className="ghost">
-              从 VF1001《签到时长》开始。公开样例很小，隐藏数据里有 n=1 和 32
-              位整数溢出。过样例不要得意。
-            </p>
-            <Link className="btn btn-primary" href="/problems/VF1001">
-              开始 VF1001
-            </Link>
-          </section>
-          <section className="panel">
-            <h2>最近一次提交</h2>
-            {error ? <p className="ghost">{error}</p> : null}
-            {!latest ? (
-              <p className="ghost">还没有提交。从题库写一发即可。</p>
-            ) : (
-              <p>
-                <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict}</span>
-                {"  "}
-                <Link href={`/problems/${latest.problem_id}`}>{latest.problem_id}</Link>
-                {" · "}
-                {latest.lang} · {latest.time_ms ?? "—"} ms
-              </p>
-            )}
-            {wa ? (
-              <p className="ghost">最近有 WA。回原题看反例三列，或点教练，不要先翻题解。</p>
-            ) : null}
-            <div className="compose-actions">
-              <Link className="btn" href="/stress?id=VF1001">
-                对拍台
-              </Link>
-              <Link className="btn" href="/compose">
-                出题画布
-              </Link>
-            </div>
-          </section>
-        </div>
+        <dl className="metric-strip">
+          <div>
+            <dt>题库</dt>
+            <dd>{problems.length || "—"}</dd>
+          </div>
+          <div>
+            <dt>提交</dt>
+            <dd>{subs.length}</dd>
+          </div>
+          <div>
+            <dt>AC</dt>
+            <dd>{acCount}</dd>
+          </div>
+          <div>
+            <dt>最近判定</dt>
+            <dd>{latest?.verdict ?? "—"}</dd>
+          </div>
+        </dl>
 
         <section className="section">
           <h2 className="section-title">最近提交</h2>
-          {!subs.length ? (
+          {!loaded ? (
+            <div aria-hidden="true">
+              <div className="skel wide" />
+              <div className="skel mid" />
+              <div className="skel short" />
+            </div>
+          ) : !subs.length ? (
             <div className="empty">
               <p>提交之后这里会变成成绩条。</p>
-              <Link className="btn btn-primary" href="/problems">
+              <Link className="btn" href="/problems">
                 去题库
               </Link>
             </div>
           ) : (
             <div className="table-wrap">
-              <table className="table">
+              <table className="table tight">
                 <thead>
                   <tr>
                     <th className="num">#</th>

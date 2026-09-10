@@ -39,7 +39,7 @@ export default function LoginPage() {
         <ThemeToggle theme={theme} onToggle={setTheme} />
       </div>
       <div className="login-card">
-        <div className="brand" style={{ marginBottom: 8 }}>
+        <div className="brand login-brand">
           <span className="brand-mark" aria-hidden="true">
             V
           </span>

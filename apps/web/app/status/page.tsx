@@ -11,6 +11,7 @@ export default function StatusPage() {
   const [rows, setRows] = useState<SubmissionRow[]>([]);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("全部");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     api
@@ -18,7 +19,8 @@ export default function StatusPage() {
       .then((data) => setRows(data.submissions))
       .catch((err: { status?: number }) => {
         if (err.status !== 401) setError("状态页读不到提交。");
-      });
+      })
+      .finally(() => setLoaded(true));
   }, []);
 
   const visible = useMemo(
@@ -30,11 +32,10 @@ export default function StatusPage() {
     <Shell>
       <main className="page wide">
         <header className="page-head">
-          <p className="kicker">状态</p>
           <h1>提交记录</h1>
           <p className="lead">按判定筛选。耗时来自沙箱实测。</p>
         </header>
-        {error ? <p className="ghost">{error}</p> : null}
+        {error ? <p className="err" role="alert">{error}</p> : null}
         <div className="filters" aria-label="判定筛选">
           {FILTERS.map((item) => (
             <button
@@ -48,7 +49,12 @@ export default function StatusPage() {
             </button>
           ))}
         </div>
-        {!visible.length ? (
+        {!loaded ? (
+          <div aria-hidden="true">
+            <div className="skel wide" />
+            <div className="skel mid" />
+          </div>
+        ) : !visible.length ? (
           <div className="empty">
             <p>这一栏是空的。</p>
             <Link className="btn" href="/problems">

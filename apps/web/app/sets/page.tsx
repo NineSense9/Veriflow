@@ -12,26 +12,33 @@ type SetRow = {
 };
 
 export default function SetsPage() {
-  const [rows, setRows] = useState<SetRow[]>([]);
+  const [rows, setRows] = useState<SetRow[] | null>(null);
   useEffect(() => {
-    api.sets().then((data) => setRows(data.sets)).catch(() => undefined);
+    api
+      .sets()
+      .then((data) => setRows(data.sets))
+      .catch(() => setRows([]));
   }, []);
   return (
     <Shell>
-      <main className="page wide">
+      <main className="page">
         <header className="page-head">
-          <p className="kicker">题单</p>
-          <h1>训练谱系</h1>
-          <p className="lead">按 ACM 训练路径拆开。每张是一组题目，不是营销卡片。</p>
+          <h1>题单</h1>
+          <p className="lead">按 ACM 训练路径拆开。每组是一条谱系，不是营销卡片。</p>
         </header>
-        {!rows.length ? (
+        {rows === null ? (
+          <div aria-hidden="true">
+            <div className="skel wide" />
+            <div className="skel mid" />
+          </div>
+        ) : !rows.length ? (
           <div className="empty">
             <p>题单还没挂上。</p>
           </div>
         ) : (
-          <div className="set-grid">
+          <div className="set-list">
             {rows.map((row) => (
-              <section className="panel set-card" key={row.id}>
+              <section className="set-block" key={row.id}>
                 <h2>{row.title}</h2>
                 <ol>
                   {row.problems.map((problem) => (

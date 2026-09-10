@@ -18,9 +18,14 @@ export default function ComposeIndexPage() {
   const [rows, setRows] = useState<ComposeSummary[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   function refresh() {
-    api.composeList().then((data) => setRows(data.projects)).catch(() => undefined);
+    api
+      .composeList()
+      .then((data) => setRows(data.projects))
+      .catch(() => undefined)
+      .finally(() => setLoaded(true));
   }
 
   useEffect(() => {
@@ -57,42 +62,40 @@ export default function ComposeIndexPage() {
     <Shell>
       <main className="page wide">
         <header className="page-head">
-          <p className="kicker">出题</p>
           <h1>出题编译</h1>
-          <p className="lead">自然语言进图，静态检查拦住缺门、缺守卫和白名单外的工具。</p>
+          <p className="lead">自然语言进图。缺审题门、缺守卫、白名单外工具会在编译期拦住。</p>
         </header>
-        <div className="compose-hero">
-          <div>
-            <label className="sr-only" htmlFor="compose-nl">
-              题意
-            </label>
-            <textarea
-              id="compose-nl"
-              className="compose-nl"
-              rows={6}
-              value={nl}
-              onChange={(event) => setNl(event.target.value)}
-            />
-            <div className="compose-actions">
-              <button className="primary" type="button" disabled={busy} onClick={compile}>
-                {busy ? "编译中" : "编译"}
-              </button>
-              {EXAMPLES.map((item) => (
-                <button key={item.name} type="button" disabled={busy} onClick={() => loadExample(item.name)}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            {error ? <p className="err" role="alert">{error}</p> : null}
-          </div>
-          <section className="panel">
-            <h2>编译期拦住什么</h2>
-            <p className="ghost">缺审题门、类型对不上、守卫写成自然语言、工具不在白名单，都会在图上标红，不能入库。</p>
-            <p className="ghost">弱测资攻击专门砸「生成器从不打上界」。过不了攻击的题，审题通过也发不出去。</p>
-          </section>
+        <div className="field">
+          <label htmlFor="compose-nl">题意</label>
+          <textarea
+            id="compose-nl"
+            className="compose-nl"
+            rows={6}
+            value={nl}
+            onChange={(event) => setNl(event.target.value)}
+          />
         </div>
+        <div className="compose-actions">
+          <button className="primary" type="button" disabled={busy} onClick={compile}>
+            {busy ? "编译中" : "编译"}
+          </button>
+          {EXAMPLES.map((item) => (
+            <button key={item.name} type="button" disabled={busy} onClick={() => loadExample(item.name)}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {error ? <p className="err" role="alert">{error}</p> : null}
+        <p className="caption follow">
+          弱测资攻击专门砸「生成器从不打上界」。过不了攻击的题，审题通过也发不出去。
+        </p>
         <h2 className="section-title">草稿</h2>
-        {!rows.length ? (
+        {!loaded ? (
+          <div aria-hidden="true">
+            <div className="skel wide" />
+            <div className="skel mid" />
+          </div>
+        ) : !rows.length ? (
           <div className="empty">
             <p>还没有草稿。先编译一题。</p>
           </div>
@@ -114,7 +117,7 @@ export default function ComposeIndexPage() {
                     <td className="num">
                       <Link href={`/compose/${row.id}`}>{row.id}</Link>
                     </td>
-                    <td>
+                    <td className="wrap">
                       <Link href={`/compose/${row.id}`}>{row.source_nl.slice(0, 36)}</Link>
                     </td>
                     <td>

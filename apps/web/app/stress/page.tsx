@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Shell from "@/components/Shell";
+import CopyButton from "@/components/CopyButton";
 import {
   PYTHON_STUB,
   ProblemListItem,
@@ -151,23 +152,32 @@ function StressInner() {
           <aside className="side">
             <h2>第一条反例</h2>
             {result?.counterexample ? (
-              <div className="diff">
-                <div>
-                  <strong>输入</strong>
-                  {"\n"}
-                  {result.counterexample.stdin}
+              <>
+                <div className="sample-head">
+                  <span>第一条反例</span>
+                  <CopyButton
+                    text={`stdin\n${result.counterexample.stdin}\nbrute\n${result.counterexample.expected}\nsol\n${result.counterexample.actual}`}
+                    label="复制反例"
+                  />
                 </div>
-                <div>
-                  <strong>暴力</strong>
-                  {"\n"}
-                  {result.counterexample.expected}
+                <div className="diff">
+                  <div>
+                    <strong>输入</strong>
+                    {"\n"}
+                    {result.counterexample.stdin}
+                  </div>
+                  <div>
+                    <strong>暴力</strong>
+                    {"\n"}
+                    {result.counterexample.expected}
+                  </div>
+                  <div className="fail">
+                    <strong>选手</strong>
+                    {"\n"}
+                    {result.counterexample.actual}
+                  </div>
                 </div>
-                <div className="fail">
-                  <strong>选手</strong>
-                  {"\n"}
-                  {result.counterexample.actual}
-                </div>
-              </div>
+              </>
             ) : (
               <p className="ghost">拍到不一致会停在这里。暴力超时记 stress_error，不是你的 WA。</p>
             )}

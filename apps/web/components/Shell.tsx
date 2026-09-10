@@ -65,7 +65,26 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="shell">
+        <header className="topbar">
+          <span className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              V
+            </span>
+            <span className="brand-text">
+              <strong>验流</strong>
+              <span>Veriflow</span>
+            </span>
+          </span>
+        </header>
+        <div id="main">
+          <p className="page ghost">正在校验会话…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="shell">

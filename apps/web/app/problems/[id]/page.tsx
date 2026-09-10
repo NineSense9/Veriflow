@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Shell from "@/components/Shell";
 import Statement from "@/components/Statement";
+import CopyButton from "@/components/CopyButton";
 import {
   CPP_STUB,
   PYTHON_STUB,
@@ -167,7 +168,14 @@ export default function ProblemPage() {
             <h2>公开样例</h2>
             {problem?.public_tests.map((test) => (
               <div className="sample" key={test.name}>
-                <div>#{test.name} in</div>
+                <div className="sample-head">
+                  <span>#{test.name}</span>
+                  <CopyButton
+                    text={`${test.stdin}\n${test.stdout}`}
+                    label={`复制样例 ${test.name}`}
+                  />
+                </div>
+                <div>in</div>
                 {test.stdin}
                 <div>out</div>
                 {test.stdout}
@@ -175,31 +183,38 @@ export default function ProblemPage() {
             ))}
             <h2>最小反例</h2>
             {result?.counterexample ? (
-              <div className="diff">
-                <div>
-                  <strong>输入</strong>
-                  {"\n"}
-                  {result.counterexample.stdin}
+              <>
+                <div className="sample-head">
+                  <span>{result.verdict} · 第一条反例</span>
+                  <CopyButton
+                    text={`stdin\n${result.counterexample.stdin}\nexpected\n${result.counterexample.expected}\nactual\n${result.counterexample.actual}`}
+                    label="复制反例"
+                  />
                 </div>
-                <div>
-                  <strong>期望</strong>
-                  {"\n"}
-                  {result.counterexample.expected}
+                <div className="diff">
+                  <div>
+                    <strong>输入</strong>
+                    {"\n"}
+                    {result.counterexample.stdin}
+                  </div>
+                  <div>
+                    <strong>期望</strong>
+                    {"\n"}
+                    {result.counterexample.expected}
+                  </div>
+                  <div className="fail">
+                    <strong>实际</strong>
+                    {"\n"}
+                    {result.counterexample.actual}
+                  </div>
                 </div>
-                <div className="fail">
-                  <strong>实际</strong>
-                  {"\n"}
-                  {result.counterexample.actual}
-                </div>
-              </div>
+              </>
             ) : (
               <p className="ghost">提交后若 WA，三列会停在这里。有反例才能请教。</p>
             )}
             <h2>教练</h2>
             {coach ? (
-              <div className="panel" style={{ padding: 14 }}>
-                <p style={{ margin: 0 }}>{coach}</p>
-              </div>
+              <p className="note">{coach}</p>
             ) : (
               <p className="ghost">
                 {canTutor ? "只问不讲。点顶栏「教练」。" : "先交一发失败的。"}
@@ -217,7 +232,9 @@ export default function ProblemPage() {
             <span className={stageClass("samples")}>样例</span>
             <span className={stageClass("hidden")}>隐藏</span>
           </div>
-          <span>{result ? `${result.time_ms} ms · ${result.sandbox}` : "等待提交"}</span>
+          <span className="verdict-meta">
+            {busy ? "判定中" : result ? `${result.time_ms} ms · ${result.sandbox}` : "尚未提交"}
+          </span>
         </div>
       </div>
     </Shell>

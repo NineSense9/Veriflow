@@ -21,12 +21,14 @@ export default function ProblemsPage() {
   const [error, setError] = useState("");
   const [tag, setTag] = useState("全部");
   const [query, setQuery] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     api
       .problems()
       .then((data) => setRows(data.problems))
-      .catch(() => setError("题库还没挂上。确认 API 已启动。"));
+      .catch(() => setError("题库还没挂上。确认 API 已启动。"))
+      .finally(() => setLoaded(true));
   }, []);
 
   const tags = useMemo(() => {
@@ -50,11 +52,10 @@ export default function ProblemsPage() {
     <Shell>
       <main className="page wide">
         <header className="page-head">
-          <p className="kicker">题库</p>
-          <h1>题目</h1>
+          <h1>题库</h1>
           <p className="lead">按标签和关键词筛选。通过率和变异杀死率来自服务端统计。</p>
         </header>
-        {error ? <p className="ghost">{error}</p> : null}
+        {error ? <p className="err" role="alert">{error}</p> : null}
         <div className="toolbar">
           <label className="sr-only" htmlFor="problem-search">
             搜索题目
@@ -62,7 +63,7 @@ export default function ProblemsPage() {
           <input
             id="problem-search"
             className="search"
-            placeholder="搜索题号、标题或标签"
+            placeholder="VF1001、签到、implementation"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -81,10 +82,16 @@ export default function ProblemsPage() {
             </button>
           ))}
         </div>
-        {!visible.length ? (
+        {!loaded ? (
+          <div aria-hidden="true">
+            <div className="skel wide" />
+            <div className="skel mid" />
+            <div className="skel short" />
+          </div>
+        ) : !visible.length ? (
           <div className="empty">
-            <p>没有匹配的题目</p>
-            <p className="ghost">换个标签，或清空搜索。</p>
+            <p>没有匹配的题目。</p>
+            <p className="caption">换个标签，或清空搜索。</p>
           </div>
         ) : (
           <div className="table-wrap">
@@ -105,7 +112,7 @@ export default function ProblemsPage() {
                     <td>
                       <Link href={`/problems/${row.id}`}>{row.id}</Link>
                     </td>
-                    <td>
+                    <td className="wrap">
                       <Link href={`/problems/${row.id}`}>{row.title}</Link>
                     </td>
                     <td className={`num ${diffClass(row.difficulty)}`}>{row.difficulty}</td>
