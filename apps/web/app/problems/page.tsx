@@ -20,6 +20,7 @@ export default function ProblemsPage() {
   const [rows, setRows] = useState<ProblemListItem[]>([]);
   const [error, setError] = useState("");
   const [tag, setTag] = useState("全部");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     api
@@ -34,7 +35,16 @@ export default function ProblemsPage() {
     return ["全部", ...Array.from(set).sort()];
   }, [rows]);
 
-  const visible = tag === "全部" ? rows : rows.filter((row) => row.tags.includes(tag));
+  const visible = rows.filter((row) => {
+    const tagOk = tag === "全部" || row.tags.includes(tag);
+    const q = query.trim().toLowerCase();
+    const textOk =
+      !q ||
+      row.id.toLowerCase().includes(q) ||
+      row.title.toLowerCase().includes(q) ||
+      row.tags.some((item) => item.toLowerCase().includes(q));
+    return tagOk && textOk;
+  });
 
   return (
     <Shell>
@@ -42,6 +52,12 @@ export default function ProblemsPage() {
         <div className="kicker">Problemset</div>
         <h1>题库</h1>
         {error ? <p className="ghost">{error}</p> : null}
+        <input
+          className="search"
+          placeholder="搜索题号、标题或标签"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
         <div className="filters">
           {tags.map((item) => (
             <button

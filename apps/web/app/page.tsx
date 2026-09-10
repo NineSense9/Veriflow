@@ -27,8 +27,8 @@ export default function HomePage() {
   return (
     <Shell>
       <main className="page">
-        <div className="kicker">Night contest desk</div>
-        <h1>今晚先把样例骗术拆掉</h1>
+        <div className="kicker">Training hub</div>
+        <h1>把样例骗术拆掉</h1>
         <div className="desk-grid">
           <section className="paper-card">
             <h2 style={{ marginTop: 0, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: 12 }}>

@@ -1,6 +1,8 @@
 "use client";
 
-import Editor from "@monaco-editor/react";
+import Editor, { type OnMount } from "@monaco-editor/react";
+import { useEffect, useRef } from "react";
+import { readTheme } from "@/lib/theme";
 
 export default function CodeEditor({
   language,
@@ -13,11 +15,26 @@ export default function CodeEditor({
   onChange: (value: string) => void;
   height?: string;
 }) {
+  const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
+
+  function apply(monaco: Parameters<OnMount>[1]) {
+    const dark = readTheme() === "dark";
+    monaco.editor.setTheme(dark ? "veriflow-night" : "veriflow-day");
+  }
+
+  useEffect(() => {
+    const onTheme = () => {
+      if (monacoRef.current) apply(monacoRef.current);
+    };
+    window.addEventListener("vf-theme", onTheme);
+    return () => window.removeEventListener("vf-theme", onTheme);
+  }, []);
+
   return (
     <Editor
       height={height}
       language={language === "python" ? "python" : "cpp"}
-      theme="vs-dark"
+      theme={readTheme() === "dark" ? "veriflow-night" : "veriflow-day"}
       loading={<div className="editor-loading">装卷</div>}
       value={value}
       onChange={(next) => onChange(next ?? "")}
@@ -45,9 +62,23 @@ export default function CodeEditor({
             "editor.lineHighlightBackground": "#16170f",
           },
         });
+        monaco.editor.defineTheme("veriflow-day", {
+          base: "vs",
+          inherit: true,
+          rules: [],
+          colors: {
+            "editor.background": "#fbf8f1",
+            "editor.foreground": "#1c1915",
+            "editorLineNumber.foreground": "#8a8478",
+            "editor.selectionBackground": "#e6dcc4",
+            "editorCursor.foreground": "#8a6230",
+            "editor.lineHighlightBackground": "#f3ece0",
+          },
+        });
       }}
       onMount={(_editor, monaco) => {
-        monaco.editor.setTheme("veriflow-night");
+        monacoRef.current = monaco;
+        apply(monaco);
       }}
     />
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, clearSession, currentUsername } from "@/lib/api";
+import { readTheme, toggleTheme, type Theme } from "@/lib/theme";
 
 const GROUPS = [
   [{ href: "/", label: "训练桌" }],
@@ -16,7 +17,10 @@ const GROUPS = [
     { href: "/stress", label: "对拍" },
     { href: "/compose", label: "出题" },
   ],
-  [{ href: "/report", label: "报告" }],
+  [
+    { href: "/report", label: "报告" },
+    { href: "/settings", label: "设置" },
+  ],
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {
@@ -24,6 +28,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<string | null>(null);
   const [sandbox, setSandbox] = useState("…");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     const name = currentUsername();
@@ -43,6 +48,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       .health()
       .then((h) => setSandbox(h.sandbox))
       .catch(() => setSandbox("down"));
+    setTheme(readTheme());
   }, [router]);
 
   if (!user) return null;
@@ -52,7 +58,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <header className="topbar">
         <Link href="/" className="brand">
           <strong>VERIFLOW</strong>
-          <span>验流 · 夜场</span>
+          <span>验流 · 训练站</span>
         </Link>
         <nav className="nav">
           {GROUPS.map((group, index) => (
@@ -84,6 +90,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <span>{user}</span>
           <button
             type="button"
+            className="theme-btn"
+            onClick={() => setTheme(toggleTheme())}
+          >
+            {theme === "dark" ? "白天" : "夜间"}
+          </button>
+          <button
+            type="button"
             onClick={async () => {
               try {
                 await api.logout();
@@ -99,6 +112,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       {children}
+      <footer className="footer">
+        <span>验流 Veriflow · 模型当编译器与攻击者，环境当裁判</span>
+        <span>题库 30 题 · C++17 / Python3</span>
+      </footer>
     </div>
   );
 }

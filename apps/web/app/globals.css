@@ -1,4 +1,32 @@
-:root {
+:root,
+html[data-theme="light"] {
+  --ink: #1c1915;
+  --paper: #fffaf1;
+  --paper-edge: #e6dcc4;
+  --margin: #c45a4a;
+  --desk: #f4f0e6;
+  --desk-2: #ffffff;
+  --brass: #8a6230;
+  --brass-dim: #b08a4a;
+  --mist: #2c2924;
+  --mute: #6f6a60;
+  --line: #e4ddd0;
+  --ac: #1a7f46;
+  --wa: #c45a1a;
+  --tle: #9a7400;
+  --ce: #b03060;
+  --run: #0e7c86;
+  --re: #c0392b;
+  --bar: #fffdf8;
+  --panel: #ffffff;
+  --editor: #fbf8f1;
+  --hover: #f3ece0;
+  --sample: #f7f1e4;
+  --btn: #ffffff;
+  --ok-border: #7dba90;
+}
+
+html[data-theme="dark"] {
   --ink: #16130f;
   --paper: #f4ead3;
   --paper-edge: #e2d2b0;
@@ -16,6 +44,13 @@
   --ce: #ef5d98;
   --run: #6de4ea;
   --re: #ff6b6b;
+  --bar: #10110c;
+  --panel: #16170f;
+  --editor: #0e0f0c;
+  --hover: #181910;
+  --sample: #171812;
+  --btn: #1a1b14;
+  --ok-border: #31543a;
 }
 
 * {
@@ -59,6 +94,10 @@ input {
   font-family: inherit;
 }
 
+html[data-theme="light"] .grain {
+  opacity: 0.035;
+}
+
 .grain {
   position: fixed;
   inset: 0;
@@ -71,7 +110,7 @@ input {
 .shell {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
 }
 
 .topbar {
@@ -81,7 +120,7 @@ input {
   padding: 0 20px;
   height: 56px;
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #1a1b12, #10110c);
+  background: var(--bar);
 }
 
 .brand {
@@ -123,7 +162,7 @@ input {
 }
 
 .nav a:hover {
-  color: var(--paper);
+  color: var(--mist);
 }
 
 .nav a.active {
@@ -197,7 +236,7 @@ h1 {
   margin: 0 0 18px;
   font-weight: 500;
   font-size: 28px;
-  color: var(--paper);
+  color: var(--mist);
 }
 
 .desk-grid {
@@ -277,19 +316,19 @@ h1 {
 
 .table td {
   padding: 9px 10px;
-  border-bottom: 1px solid #1d1e18;
+  border-bottom: 1px solid var(--line);
 }
 
-.diff-easy { color: #9dffb0; }
-.diff-mid { color: #e8b84a; }
-.diff-hard { color: #ff7a3d; }
+.diff-easy { color: var(--ac); }
+.diff-mid { color: var(--tle); }
+.diff-hard { color: var(--wa); }
 
 .table tr:hover td {
-  background: #181910;
+  background: var(--hover);
 }
 
 .table a {
-  color: var(--paper);
+  color: var(--mist);
 }
 
 .tag {
@@ -450,7 +489,7 @@ h1 {
   gap: 12px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
-  background: #10110c;
+  background: var(--bar);
   flex-wrap: wrap;
 }
 
@@ -464,8 +503,8 @@ h1 {
 
 .arena-tools a,
 .arena-tools .dead {
-  background: #1a1b14;
-  color: var(--paper);
+  background: var(--btn);
+  color: var(--mist);
   border: 1px solid var(--line);
   padding: 6px 10px;
   font-size: 13px;
@@ -486,8 +525,8 @@ h1 {
 .arena-top select,
 .arena-top button,
 .arena-top input {
-  background: #1a1b14;
-  color: var(--paper);
+  background: var(--btn);
+  color: var(--mist);
   border: 1px solid var(--line);
   padding: 6px 10px;
   cursor: pointer;
@@ -496,7 +535,7 @@ h1 {
 .arena-top button.primary {
   background: var(--ink);
   color: var(--ac);
-  border-color: #31543a;
+  border-color: var(--ok-border);
   font-family: var(--font-mono), monospace;
   letter-spacing: 0.14em;
 }
@@ -564,7 +603,7 @@ h1 {
 
 .statement pre {
   font-family: var(--font-mono), monospace;
-  background: #efe4c8;
+  background: var(--sample);
   padding: 10px 12px;
   overflow: auto;
   font-size: 13px;
@@ -574,15 +613,15 @@ h1 {
   min-width: 0;
   min-height: 0;
   height: 100%;
-  border-left: 1px solid #000;
+  border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
-  background: #0e0f0c;
+  background: var(--editor);
 }
 
 .side {
   overflow: auto;
   padding: 12px;
-  background: #10110d;
+  background: var(--desk-2);
 }
 
 .side h2 {
@@ -596,7 +635,7 @@ h1 {
 .sample {
   font-family: var(--font-mono), monospace;
   font-size: 12px;
-  background: #171812;
+  background: var(--sample);
   border: 1px solid var(--line);
   padding: 8px;
   margin-bottom: 8px;
@@ -612,7 +651,7 @@ h1 {
 }
 
 .diff div {
-  background: #171812;
+  background: var(--sample);
   border: 1px solid var(--line);
   padding: 8px;
   white-space: pre-wrap;
@@ -628,8 +667,8 @@ h1 {
   align-items: center;
   gap: 18px;
   padding: 10px 18px;
-  border-top: 1px solid #222318;
-  background: linear-gradient(180deg, #12130e, #080906);
+  border-top: 1px solid var(--line);
+  background: var(--bar);
   font-family: var(--font-mono), monospace;
   font-size: 13px;
   box-shadow: inset 0 1px 0 rgba(196, 165, 116, 0.08);
@@ -673,7 +712,7 @@ h1 {
   height: 100%;
   display: grid;
   place-items: center;
-  background: #0e0f0c;
+  background: var(--editor);
   color: var(--mute);
   font-family: var(--font-mono), monospace;
   letter-spacing: 0.18em;
@@ -709,7 +748,7 @@ h1 {
   text-transform: uppercase;
   color: var(--brass);
   border-bottom: 1px solid var(--line);
-  background: #10110c;
+  background: var(--bar);
 }
 
 .stress-floor {
@@ -724,7 +763,7 @@ h1 {
   padding: 10px 14px;
   font-family: var(--font-mono), monospace;
   font-size: 12px;
-  background: #0a0b08;
+  background: var(--bar);
 }
 
 .stress-log .ok { color: var(--ac); }
@@ -733,8 +772,8 @@ h1 {
 
 .compose-nl {
   width: 100%;
-  background: #14150f;
-  color: var(--paper);
+  background: var(--desk-2);
+  color: var(--mist);
   border: 1px solid var(--line);
   padding: 12px;
   font-family: var(--font-serif), Georgia, serif;
@@ -758,8 +797,8 @@ h1 {
 
 .compose-actions button,
 .compose-actions .primary {
-  background: #1a1b14;
-  color: var(--paper);
+  background: var(--btn);
+  color: var(--mist);
   border: 1px solid var(--line);
   padding: 8px 12px;
   cursor: pointer;
@@ -767,7 +806,7 @@ h1 {
 
 .compose-actions .primary {
   color: var(--ac);
-  border-color: #31543a;
+  border-color: var(--ok-border);
 }
 
 .compose-desk {
@@ -807,7 +846,7 @@ h1 {
 
 .compose-canvas {
   min-height: 0;
-  background: #0e0f0c;
+  background: var(--editor);
 }
 
 .rf-node {
@@ -815,8 +854,8 @@ h1 {
   max-width: 210px;
   padding: 8px 10px 10px;
   border: 1px solid var(--brass-dim);
-  background: #16170f;
-  color: var(--paper);
+  background: var(--panel);
+  color: var(--mist);
   font-size: 12px;
 }
 
@@ -854,6 +893,10 @@ h1 {
 .rf-node.err {
   border-color: var(--ce);
   box-shadow: 0 0 0 1px var(--ce);
+}
+
+.react-flow {
+  background: var(--editor);
 }
 
 .react-flow__edge-path {
@@ -895,7 +938,7 @@ h1 {
   display: block;
   font-family: var(--font-mono), monospace;
   font-size: 22px;
-  color: var(--paper);
+  color: var(--mist);
   font-weight: 500;
 }
 
@@ -904,6 +947,36 @@ h1 {
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 16px 20px 22px;
+  color: var(--mute);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search {
+  width: min(280px, 100%);
+  background: var(--btn);
+  color: var(--mist);
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  margin: 0 0 14px;
+}
+
+.theme-btn {
+  background: var(--btn);
+  border: 1px solid var(--line);
+  color: var(--mist);
+  padding: 5px 10px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
 }
 
 .compose-hero {

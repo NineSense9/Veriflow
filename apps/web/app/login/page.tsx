@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setSession } from "@/lib/api";
+import { readTheme, toggleTheme, type Theme } from "@/lib/theme";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +11,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("demo");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    setTheme(readTheme());
+  }, []);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -28,6 +34,14 @@ export default function LoginPage() {
 
   return (
     <div className="login-wrap">
+      <button
+        type="button"
+        className="theme-btn"
+        style={{ position: "fixed", top: 18, right: 18, zIndex: 2 }}
+        onClick={() => setTheme(toggleTheme())}
+      >
+        {theme === "dark" ? "白天" : "夜间"}
+      </button>
       <div className="slip">
         <div className="stamp">NIGHT / DESK</div>
         <div className="kicker" style={{ color: "#9a3b32" }}>
