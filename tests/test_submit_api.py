@@ -101,6 +101,21 @@ def test_stress_requires_login(api_client):
     assert response.status_code == 401
 
 
+def test_solve_draft_submits(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    response = api_client.post(
+        "/api/problems/VF1001/solve",
+        json={"lang": "python3"},
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["solver"] in {"fallback", "deepseek"}
+    assert body["source"]
+    assert body["verdict"] in {"CE", "WA", "TLE", "RE", "AC", "MLE"}
+
+
 def test_mutate_vf1001(api_client):
     token = _login(api_client)
     headers = {"Authorization": f"Bearer {token}"}

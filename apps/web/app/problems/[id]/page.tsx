@@ -116,6 +116,26 @@ export default function ProblemPage() {
               对拍
             </span>
           )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              setCoach("");
+              try {
+                const next = await api.solve(id, lang);
+                if (next.source) setSource(next.source);
+                setResult(next);
+              } catch (err) {
+                setError((err as Error).message || "起草失败");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            起草
+          </button>
           <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
             {coachBusy ? "追问中" : "教练"}
           </button>

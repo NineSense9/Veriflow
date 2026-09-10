@@ -191,6 +191,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ lang, source }),
     }),
+  solve: (id: string, lang: "python3" | "cpp17") =>
+    request<SubmitResult & { source: string; solver: string }>(`/api/problems/${id}/solve`, {
+      method: "POST",
+      body: JSON.stringify({ lang }),
+    }),
   submissions: () => request<{ submissions: SubmissionRow[] }>("/api/submissions"),
   tutor: (problemId: string, submissionId: number) =>
     request<{ question: string; backend: string; spoiler_rejects: number }>(

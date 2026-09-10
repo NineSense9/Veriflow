@@ -16,6 +16,7 @@ from veriflow_api.db import connect, init_db
 from veriflow_api.seed import pack_file, seed
 from veriflow_api.mutate_service import ensure_kill_rate
 from veriflow_api.report import export_markdown, sets_payload, summary
+from veriflow_api.solver import solve as draft_solution
 from veriflow_api.tutor import ask_tutor
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_sandbox.factory import get_sandbox, sandbox_mode
@@ -47,6 +48,11 @@ class SubmitBody(BaseModel):
     source: str = Field(min_length=1, max_length=200_000)
 
 
+class SolveBody(BaseModel):
+    lang: Literal["python3", "cpp17"]
+    source: str = Field(default="", max_length=200_000)
+
+
 class ComposeNL(BaseModel):
     nl: str = Field(min_length=1, max_length=20_000)
 
@@ -75,6 +81,94 @@ class StressBody(BaseModel):
     brute_lang: Literal["python3", "cpp17"] = "python3"
     brute_source: str | None = Field(default=None, max_length=200_000)
     rounds: int = Field(default=50, ge=1, le=200)
+
+
+def grade_submission(user_id: int, problem_id: str, lang: str, source: str) -> dict:
+    with connect() as connection:
+        problem = connection.execute(
+            "SELECT id, spec_json FROM problems WHERE id = ? AND published = 1",
+            (problem_id,),
+        ).fetchone()
+        tests = connection.execute(
+            "SELECT name, stdin, stdout, visibility FROM tests WHERE problem_id = ?",
+            (problem_id,),
+        ).fetchall()
+    if problem is None:
+        raise HTTPException(
+            status_code=404, detail={"code": "not_found", "message": "problem not found"}
+        )
+    spec = json.loads(problem["spec_json"])
+    job_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    with connect() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO submissions(user_id, problem_id, lang, source, verdict, job_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (user_id, problem_id, lang, source, "queued", job_id, now),
+        )
+        submission_id = cursor.lastrowid
+        connection.execute(
+            """
+            INSERT INTO jobs(id, type, status, payload, submission_id, created_at)
+            VALUES (?, 'submit', 'queued', ?, ?, ?)
+            """,
+            (job_id, json.dumps({"problem_id": problem_id}), submission_id, now),
+        )
+        connection.commit()
+    cases = [
+        Case(
+            stdin=row["stdin"],
+            stdout=row["stdout"],
+            visibility=row["visibility"],
+            name=row["name"],
+        )
+        for row in tests
+    ]
+    result = judge_submission(
+        get_sandbox(),
+        lang,
+        source,
+        cases,
+        spec.get("time_limit_ms", 1000),
+        spec.get("memory_limit_mb", 256),
+    )
+    counterexample = json.dumps(result.counterexample, ensure_ascii=False) if result.counterexample else None
+    trace = json.dumps(result.trace, ensure_ascii=False)
+    with connect() as connection:
+        connection.execute(
+            """
+            UPDATE submissions
+            SET verdict = ?, time_ms = ?, memory_kb = ?, counterexample_json = ?, trace_json = ?
+            WHERE id = ?
+            """,
+            (
+                result.verdict,
+                result.time_ms,
+                result.memory_kb,
+                counterexample,
+                trace,
+                submission_id,
+            ),
+        )
+        connection.execute(
+            "UPDATE jobs SET status = ?, error = ? WHERE id = ?",
+            ("completed", result.detail, job_id),
+        )
+        connection.commit()
+    kill = ensure_kill_rate(problem_id) if result.verdict == "AC" else None
+    return {
+        "job_id": job_id,
+        "submission_id": submission_id,
+        "verdict": result.verdict,
+        "stage": result.stage,
+        "time_ms": result.time_ms,
+        "counterexample": result.counterexample,
+        "sandbox": result.sandbox,
+        "kill_rate": kill,
+        "source": source,
+    }
 
 
 def _bearer_token(authorization: str | None, vf_session: str | None) -> str | None:
@@ -266,92 +360,24 @@ def _register_routes(application: FastAPI) -> None:
 
     @application.post("/api/problems/{problem_id}/submit")
     def submit_problem(problem_id: str, body: SubmitBody, user=Depends(current_user)):
+        return grade_submission(user["id"], problem_id, body.lang, body.source)
+
+    @application.post("/api/problems/{problem_id}/solve")
+    def solve_problem(problem_id: str, body: SolveBody, user=Depends(current_user)):
         with connect() as connection:
             problem = connection.execute(
-                "SELECT id, spec_json FROM problems WHERE id = ? AND published = 1",
+                "SELECT statement FROM problems WHERE id = ? AND published = 1",
                 (problem_id,),
             ).fetchone()
-            tests = connection.execute(
-                "SELECT name, stdin, stdout, visibility FROM tests WHERE problem_id = ?",
-                (problem_id,),
-            ).fetchall()
         if problem is None:
             raise HTTPException(
                 status_code=404, detail={"code": "not_found", "message": "problem not found"}
             )
-        spec = json.loads(problem["spec_json"])
-        job_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
-        with connect() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO submissions(user_id, problem_id, lang, source, verdict, job_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (user["id"], problem_id, body.lang, body.source, "queued", job_id, now),
-            )
-            submission_id = cursor.lastrowid
-            connection.execute(
-                """
-                INSERT INTO jobs(id, type, status, payload, submission_id, created_at)
-                VALUES (?, 'submit', 'queued', ?, ?, ?)
-                """,
-                (job_id, json.dumps({"problem_id": problem_id}), submission_id, now),
-            )
-            connection.commit()
-        cases = [
-            Case(
-                stdin=row["stdin"],
-                stdout=row["stdout"],
-                visibility=row["visibility"],
-                name=row["name"],
-            )
-            for row in tests
-        ]
-        result = judge_submission(
-            get_sandbox(),
-            body.lang,
-            body.source,
-            cases,
-            spec.get("time_limit_ms", 1000),
-            spec.get("memory_limit_mb", 256),
-        )
-        counterexample = json.dumps(result.counterexample, ensure_ascii=False) if result.counterexample else None
-        trace = json.dumps(result.trace, ensure_ascii=False)
-        with connect() as connection:
-            connection.execute(
-                """
-                UPDATE submissions
-                SET verdict = ?, time_ms = ?, memory_kb = ?, counterexample_json = ?, trace_json = ?
-                WHERE id = ?
-                """,
-                (
-                    result.verdict,
-                    result.time_ms,
-                    result.memory_kb,
-                    counterexample,
-                    trace,
-                    submission_id,
-                ),
-            )
-            connection.execute(
-                "UPDATE jobs SET status = ?, error = ? WHERE id = ?",
-                ("completed", result.detail, job_id),
-            )
-            connection.commit()
-        kill = None
-        if result.verdict == "AC":
-            kill = ensure_kill_rate(problem_id)
-        return {
-            "job_id": job_id,
-            "submission_id": submission_id,
-            "verdict": result.verdict,
-            "stage": result.stage,
-            "time_ms": result.time_ms,
-            "counterexample": result.counterexample,
-            "sandbox": result.sandbox,
-            "kill_rate": kill,
-        }
+        source, backend = draft_solution(problem["statement"], body.lang)
+        payload = grade_submission(user["id"], problem_id, body.lang, source)
+        payload["solver"] = backend
+        payload["source"] = source
+        return payload
 
     @application.post("/api/problems/{problem_id}/tutor")
     def tutor_problem(problem_id: str, body: TutorBody, user=Depends(current_user)):
