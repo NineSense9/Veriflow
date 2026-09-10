@@ -43,6 +43,8 @@ def _actions(ir: WorkflowIR, spec: WorkflowSpec) -> list[Issue]:
                 actual=str(count),
                 repair_hint=f"补上 {selector} 节点并接到主路径。",
                 evidence=["workflowspec.required_actions"],
+                verification_method="STATIC_GRAPH",
+                verdict="FAIL",
             )
         )
     return issues
@@ -86,6 +88,11 @@ def _order(ir: WorkflowIR, spec: WorkflowSpec) -> list[Issue]:
                     actual=" → ".join(bad_path),
                     repair_hint=f"把 {constraint.after} 接到 {constraint.before} 之后。",
                     evidence=["workflowspec.ordering_constraints"],
+                    verification_method="STATIC_GRAPH",
+                    verdict="FAIL",
+                    affected_edges=[
+                        f"{bad_path[i]}->{bad_path[i + 1]}" for i in range(len(bad_path) - 1)
+                    ],
                 )
             )
     return issues
@@ -120,6 +127,8 @@ def _data_deps(ir: WorkflowIR, spec: WorkflowSpec) -> list[Issue]:
                 actual="no path",
                 repair_hint=f"连接 {dep.producer} 到 {dep.consumer}。",
                 evidence=["workflowspec.data_dependencies"],
+                verification_method="DATAFLOW",
+                verdict="FAIL",
             )
         )
     return issues

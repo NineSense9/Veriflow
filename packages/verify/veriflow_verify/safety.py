@@ -47,6 +47,8 @@ def _hardcoded_secrets(ir: WorkflowIR) -> list[Issue]:
                     repair_hint="删掉明文密钥，改为环境变量引用。",
                     evidence=["taint: credential source in node.config"],
                     confidence=0.86,
+                    verification_method="POLICY",
+                    verdict="FAIL",
                 )
             )
     return issues
@@ -75,6 +77,8 @@ def _webhooks(ir: WorkflowIR) -> list[Issue]:
                 repair_hint="确认外发是有意的，或改为内网地址。",
                 evidence=["potential unsafe flow: node.config.url"],
                 confidence=0.7,
+                verification_method="POLICY",
+                verdict="FAIL",
             )
         )
     return issues
@@ -100,6 +104,8 @@ def _bounds(ir: WorkflowIR) -> list[Issue]:
                 actual="no guard",
                 repair_hint="在生成器之后插入 spec.n_max <= 100000 守卫。",
                 evidence=["attack_compose.weak_bounds"],
+                verification_method="POLICY",
+                verdict="FAIL",
             )
         ]
     issues: list[Issue] = []
@@ -121,6 +127,8 @@ def _bounds(ir: WorkflowIR) -> list[Issue]:
                 actual=expr,
                 repair_hint="在表达式中加入 spec.n_max <= 100000。",
                 evidence=["attack_compose.weak_bounds"],
+                verification_method="POLICY",
+                verdict="FAIL",
             )
         )
     return issues

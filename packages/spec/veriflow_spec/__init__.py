@@ -1,4 +1,5 @@
 from veriflow_spec.compiler import compile_spec
+from veriflow_spec.consistency import SpecIssue, check_spec
 from veriflow_spec.models import (
     Cardinality,
     DataDependency,
@@ -14,6 +15,8 @@ __all__ = [
     "OrderingConstraint",
     "RequiredAction",
     "SafetyPolicy",
+    "SpecIssue",
     "WorkflowSpec",
+    "check_spec",
     "compile_spec",
 ]

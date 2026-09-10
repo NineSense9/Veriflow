@@ -131,9 +131,37 @@ export default function ComposeProjectPage() {
             <h2>规格覆盖</h2>
             <p className="caption">
               {verification
-                ? `${verification.requirements_passed} / ${verification.requirements_total} 约束通过 · 置信 ${verification.confidence.toFixed(2)}`
+                ? `${verification.constraints_passed ?? verification.requirements_passed} PASS · ${verification.constraints_failed ?? 0} FAIL · ${verification.constraints_unknown ?? 0} UNKNOWN`
                 : "尚未验证"}
             </p>
+            {(verification?.constraints ?? []).map((item) => (
+              <button
+                type="button"
+                key={item.constraint_id}
+                className={`sample ${item.status === "FAIL" ? "fail" : ""}`}
+                onClick={() =>
+                  setSelected({
+                    id: item.constraint_id,
+                    category: item.constraint_type,
+                    severity: item.status === "FAIL" ? "HIGH" : "LOW",
+                    code: item.constraint_id,
+                    title: item.constraint_type,
+                    description: item.description || item.constraint_id,
+                    affected_nodes: item.affected_nodes ?? [],
+                    witness_path: item.witness_path ?? [],
+                    expected: item.expected,
+                    actual: item.actual,
+                  })
+                }
+              >
+                <span className={`verdict ${item.status === "PASS" ? "AC" : item.status === "UNKNOWN" ? "TLE" : "WA"}`}>
+                  {item.status}
+                </span>
+                <div>
+                  {item.constraint_type} · {item.verification_method}
+                </div>
+              </button>
+            ))}
             {verification?.dimensions.map((item) => (
               <div key={item.name} className="latest-line">
                 <span className={`verdict ${item.status === "PASS" ? "AC" : "WA"}`}>{item.status}</span>
@@ -173,9 +201,26 @@ export default function ComposeProjectPage() {
             ) : null}
             {project.repair ? (
               <>
+                <h2>Timeline</h2>
+                <ol className="caption">
+                  <li>Spec compiled</li>
+                  <li>
+                    {project.repair.initial.constraints_passed ?? project.repair.initial.requirements_passed}/
+                    {project.repair.initial.constraints?.length ?? project.repair.initial.requirements_total} constraints
+                  </li>
+                  {project.repair.steps.map((step) => (
+                    <li key={step.iteration}>
+                      iter {step.iteration}: {step.reason}
+                      {step.candidates_evaluated ? ` · ${step.candidates_evaluated} candidates` : ""}
+                    </li>
+                  ))}
+                  <li>
+                    Re-verify {project.repair.final.status}
+                  </li>
+                </ol>
                 <h2>Repair</h2>
                 <p className="caption">
-                  {project.repair.initial.status} → {project.repair.final.status} · {project.repair.iterations} 轮
+                  {project.repair.initial.status} → {project.repair.final.status} · ops {project.repair.patch_operations ?? "—"} · nodes {project.repair.changed_nodes ?? "—"}
                 </p>
                 {project.repair.steps.flatMap((step) =>
                   step.patches.map((patch, index) => (

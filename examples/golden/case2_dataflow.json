@@ -1,0 +1,37 @@
+{
+  "title": "CASE 2 dataflow",
+  "nl": "完整出题：生成器、范围守卫、审题门、入库。",
+  "expect_fail": ["TYPE_MISMATCH"],
+  "ir": {
+    "ir_version": "1.0",
+    "domain": "compose",
+    "name": "case2_dataflow",
+    "nodes": [
+      {
+        "id": "gen",
+        "kind": "tool",
+        "tool": "test_generator",
+        "out_type": { "type": "object" }
+      },
+      {
+        "id": "g_bounds",
+        "kind": "guard",
+        "expr": "spec.n_min >= 1 && spec.n_max <= 100000",
+        "on_fail": "reject",
+        "in_type": { "type": "string" }
+      },
+      {
+        "id": "review",
+        "kind": "human_gate",
+        "assignee_role": "problemsetter",
+        "on_fail": "reject"
+      },
+      { "id": "pub", "kind": "tool", "tool": "publish_problem" }
+    ],
+    "edges": [
+      { "from": "gen", "to": "g_bounds" },
+      { "from": "g_bounds", "to": "review" },
+      { "from": "review", "to": "pub" }
+    ]
+  }
+}

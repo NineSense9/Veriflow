@@ -8,7 +8,9 @@ from veriflow_staticcheck.check import CheckError
 
 Category = Literal["structural", "semantic", "dataflow", "executable", "safety"]
 Severity = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
-Status = Literal["PASS", "WARNING", "FAIL"]
+Status = Literal["PASS", "WARNING", "FAIL", "UNKNOWN"]
+Verdict = Literal["PASS", "FAIL", "UNKNOWN"]
+Method = Literal["STATIC_GRAPH", "DATAFLOW", "POLICY", "HEURISTIC", "RUNTIME", "LLM_ASSISTED"]
 Risk = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 
 
@@ -31,6 +33,9 @@ class Issue(BaseModel):
     confidence: float = 1.0
     repair_hint: str | None = None
     evidence: list[str] = Field(default_factory=list)
+    verification_method: Method = "STATIC_GRAPH"
+    verdict: Verdict = "FAIL"
+    root_cause_id: str | None = None
 
     def to_check_error(self) -> CheckError:
         node_id = self.affected_nodes[0] if self.affected_nodes else None
@@ -48,6 +53,9 @@ def issue_from_check_error(error: CheckError, index: int) -> Issue:
         "MISSING_HUMAN_GATE": ("safety", "CRITICAL", "缺少审题门"),
     }
     category, severity, title = mapping.get(error.code, ("structural", "MEDIUM", error.code))
+    method: Method = "POLICY" if error.code == "MISSING_HUMAN_GATE" else (
+        "DATAFLOW" if error.code == "TYPE_MISMATCH" else "STATIC_GRAPH"
+    )
     nodes = [error.node_id] if error.node_id else []
     return Issue(
         id=f"{error.code.lower()}_{index}",
@@ -61,6 +69,8 @@ def issue_from_check_error(error: CheckError, index: int) -> Issue:
         actual=error.message,
         repair_hint=_hint(error.code),
         evidence=["staticcheck"],
+        verification_method=method,
+        verdict="FAIL",
     )
 
 

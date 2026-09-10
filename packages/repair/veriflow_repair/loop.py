@@ -3,12 +3,11 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from veriflow_ir.workflow import WorkflowIR
-from veriflow_repair.executor import apply_patches
-from veriflow_repair.guard import validate_patches
+from veriflow_repair.diff import graph_diff
 from veriflow_repair.patch import Patch
-from veriflow_repair.planner import plan_patches
+from veriflow_repair.select import pick_plan
 from veriflow_spec.models import WorkflowSpec
-from veriflow_verify.result import VerificationResult, quality, verify_workflow
+from veriflow_verify.result import VerificationResult, verify_workflow
 
 
 class RepairStep(BaseModel):
@@ -19,11 +18,15 @@ class RepairStep(BaseModel):
     reason: str
     previous_status: str
     new_status: str
-    previous_quality: int
-    new_quality: int
+    previous_quality: int = 0
+    new_quality: int = 0
     patches: list[Patch] = Field(default_factory=list)
     issues_fixed: int = 0
     issues_remaining: int = 0
+    candidates_evaluated: int = 0
+    changed_nodes: int = 0
+    changed_edges: int = 0
+    changed_parameters: int = 0
 
 
 class RepairReport(BaseModel):
@@ -35,6 +38,11 @@ class RepairReport(BaseModel):
     steps: list[RepairStep] = Field(default_factory=list)
     iterations: int = 0
     improved: bool = False
+    changed_nodes: int = 0
+    changed_edges: int = 0
+    changed_parameters: int = 0
+    patch_operations: int = 0
+    regression_rate: float = 0.0
 
 
 def verify_repair_loop(
@@ -46,13 +54,14 @@ def verify_repair_loop(
     current = ir
     current_result = initial
     steps: list[RepairStep] = []
+    rejected = 0
     if initial.status == "PASS":
-        return RepairReport(
-            ir=current, initial=initial, final=initial, iterations=0, improved=False
-        )
+        return RepairReport(ir=current, initial=initial, final=initial, iterations=0, improved=False)
     seen: set[str] = set()
     for iteration in range(1, max_iterations + 1):
-        fingerprint = "|".join(sorted(f"{item.code}:{','.join(item.affected_nodes)}" for item in current_result.issues))
+        fingerprint = "|".join(
+            sorted(f"{item.code}:{','.join(item.affected_nodes)}" for item in current_result.issues)
+        )
         if fingerprint in seen:
             steps.append(
                 RepairStep(
@@ -61,62 +70,62 @@ def verify_repair_loop(
                     reason="duplicate failure",
                     previous_status=current_result.status,
                     new_status=current_result.status,
-                    previous_quality=quality(current_result),
-                    new_quality=quality(current_result),
                     issues_remaining=len(current_result.issues),
                 )
             )
             break
         seen.add(fingerprint)
-        patches = plan_patches(current, current_result.issues)
-        ok, reason = validate_patches(current, patches)
-        if not ok:
+        plan, after, nxt, decision, n_cand = pick_plan(current, spec, current_result, k=3)
+        accepted = decision == "REPAIR_ACCEPTED" and nxt is not None and after is not None
+        if not accepted:
+            rejected += 1
             steps.append(
                 RepairStep(
                     iteration=iteration,
                     accepted=False,
-                    reason=reason,
+                    reason=decision,
                     previous_status=current_result.status,
                     new_status=current_result.status,
-                    previous_quality=quality(current_result),
-                    new_quality=quality(current_result),
-                    patches=patches,
+                    patches=plan or [],
                     issues_remaining=len(current_result.issues),
+                    candidates_evaluated=n_cand,
                 )
             )
             break
-        nxt = apply_patches(current, patches)
-        after = verify_workflow(nxt, spec)
-        prev_q = quality(current_result)
-        new_q = quality(after)
-        accepted = new_q > prev_q or (
-            after.status == "PASS" and current_result.status != "PASS"
-        ) or len(after.issues) < len(current_result.issues)
+        assert after is not None and nxt is not None and plan is not None
+        diff = graph_diff(current, nxt)
         steps.append(
             RepairStep(
                 iteration=iteration,
-                accepted=accepted,
-                reason="improved" if accepted else "rollback, quality did not improve",
+                accepted=True,
+                reason=decision,
                 previous_status=current_result.status,
                 new_status=after.status,
-                previous_quality=prev_q,
-                new_quality=new_q,
-                patches=patches,
+                patches=plan,
                 issues_fixed=max(len(current_result.issues) - len(after.issues), 0),
                 issues_remaining=len(after.issues),
+                candidates_evaluated=n_cand,
+                changed_nodes=diff["changed_nodes"],
+                changed_edges=diff["changed_edges"],
+                changed_parameters=diff["changed_parameters"],
             )
         )
-        if not accepted:
-            break
         current = nxt
         current_result = after
         if after.status == "PASS":
             break
+    total_diff = graph_diff(ir, current)
+    attempts = max(len(steps), 1)
     return RepairReport(
         ir=current,
         initial=initial,
         final=current_result,
         steps=steps,
         iterations=len(steps),
-        improved=quality(current_result) > quality(initial) or current_result.status == "PASS",
+        improved=current_result.status == "PASS" or len(current_result.issues) < len(initial.issues),
+        changed_nodes=total_diff["changed_nodes"],
+        changed_edges=total_diff["changed_edges"],
+        changed_parameters=total_diff["changed_parameters"],
+        patch_operations=sum(len(step.patches) for step in steps if step.accepted),
+        regression_rate=rejected / attempts,
     )

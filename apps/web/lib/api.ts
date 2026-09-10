@@ -75,6 +75,18 @@ export type VerifyIssue = {
   repair_hint?: string | null;
 };
 
+export type ConstraintVerdict = {
+  constraint_id: string;
+  constraint_type: string;
+  status: string;
+  verification_method: string;
+  description?: string;
+  expected?: string | null;
+  actual?: string | null;
+  affected_nodes?: string[];
+  witness_path?: string[];
+};
+
 export type Verification = {
   status: string;
   risk_level: string;
@@ -83,6 +95,11 @@ export type Verification = {
   requirements_passed: number;
   requirements_total: number;
   dimensions: { name: string; status: string; issue_count: number }[];
+  constraints?: ConstraintVerdict[];
+  constraints_passed?: number;
+  constraints_failed?: number;
+  constraints_unknown?: number;
+  root_causes?: { id: string; summary: string; derived_codes: string[] }[];
 };
 
 export type RepairPatch = {
@@ -109,7 +126,16 @@ export type ComposeProject = {
   repair?: {
     improved: boolean;
     iterations: number;
-    steps: { iteration: number; accepted: boolean; reason: string; patches: RepairPatch[] }[];
+    patch_operations?: number;
+    changed_nodes?: number;
+    regression_rate?: number;
+    steps: {
+      iteration: number;
+      accepted: boolean;
+      reason: string;
+      patches: RepairPatch[];
+      candidates_evaluated?: number;
+    }[];
     initial: Verification;
     final: Verification;
   };

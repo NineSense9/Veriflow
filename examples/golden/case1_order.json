@@ -1,0 +1,15 @@
+{
+  "title": "CASE 1 ordering",
+  "nl": "完整出题：生成器、范围守卫、审题门、入库。",
+  "expect_fail": ["MISSING_HUMAN_GATE"],
+  "ir": {
+    "ir_version": "1.0",
+    "domain": "compose",
+    "name": "case1_order",
+    "nodes": [
+      { "id": "gen", "kind": "tool", "tool": "test_generator" },
+      { "id": "pub", "kind": "tool", "tool": "publish_problem" }
+    ],
+    "edges": [{ "from": "gen", "to": "pub" }]
+  }
+}

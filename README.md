@@ -81,12 +81,24 @@ npm run dev
 
 http://127.0.0.1:3000  账号 `demo` / `demo`。出题页打开残缺示例后点 **受约束修复**。
 
+验证结果区分 **PASS / FAIL / WARNING / UNKNOWN**（UNKNOWN = 尚未能判定，不是默认为通过）。受约束修复按字典序选择候选 Patch（先正确、再最小改动），回归则 rollback。证据包不是形式化证明。
+
+比赛冒烟：
+
+```text
+python scripts/competition_smoke.py
+```
+
+黄金演示：`examples/golden/case1_order.json`（顺序）、`case2_dataflow.json`（类型/数据流）、`case3_safety.json`（硬编码密钥）。
+
 ## Limitations
 
-- 不是 n8n 运行时验证器
-- Safety 是风险检测，不是形式化安全证明
+- 不是 n8n 运行时验证器；adapter 未实现
+- Safety 是风险检测，不是形式化安全证明，也不是 formal verification
 - Spec compiler 默认启发式；DeepSeek 用于 IR 生成，需 Key
 - Bench 数字来自仓库内 gold IR 的合成变异，不是外部竞赛榜
+- Ablation 与 LLM-judge baseline 未跑：指标为 N/A，禁止填假数
+- 分支约束在 compose IR 上多为 UNKNOWN
 
 ## 目录
 
