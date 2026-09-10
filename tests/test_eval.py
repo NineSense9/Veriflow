@@ -16,5 +16,6 @@ def test_eval_script_writes_json():
     )
     assert "full_verdict" in completed.stdout
     data = json.loads((ROOT / "artifacts" / "eval.json").read_text(encoding="utf-8"))
-    assert data["sample_only_verdict"] in {"AC", "WA"}
+    assert data["sample_only_verdict"] == "AC"
     assert data["full_verdict"] == "WA"
+    assert data["full_counterexample_source"] == "hidden"

@@ -4,7 +4,7 @@
 
 仓库：<https://github.com/NineSense9/Veriflow>
 
-面向第八届 AIC 算法创新赛 · 赛题 2「AI+软件创新」。产品对外是 ACM 训练测评站，内核是「自然语言 / 题意 → IR → 静态检查 → 沙箱执行 → 对抗测资」。设计文档见 [`docs/superpowers/specs/2026-09-10-veriflow-design.md`](docs/superpowers/specs/2026-09-10-veriflow-design.md)。
+面向第八届 AIC 算法创新赛 · 赛题 2「AI+软件创新」。产品对外是 ACM 训练测评站，内核是「自然语言 / 题意 → IR → 静态检查 → 沙箱执行 → 对抗测资」。设计文档见 [`docs/superpowers/specs/2026-09-10-veriflow-design.md`](docs/superpowers/specs/2026-09-10-veriflow-design.md)。参赛材料见 [`docs/contest/`](docs/contest/)。在线演示：http://116.62.5.67/ 。
 
 ## 当前进度
 

@@ -35,7 +35,8 @@ def main() -> None:
     sandbox = ProcessSandbox()
     tests = vf1001_tests()
     public = [case for case in tests if case.visibility == "public"]
-    wrong = "n=int(input())\nprint(n)\n"
+    # 过公开样例、挂 n=1 隐藏测资：对照「只跑样例」vs「完整隐藏」
+    wrong = "n=int(input())\na=list(map(int,input().split()))\nprint(1 if n==1 else sum(a))\n"
     sample = judge_submission(sandbox, "python3", wrong, public, 1000, 256)
     full = judge_submission(sandbox, "python3", wrong, tests, 1000, 256)
     ref = (ROOT / "examples/problems/VF1001/ref.py").read_text(encoding="utf-8")
