@@ -1,0 +1,16 @@
+[Unit]
+Description=Veriflow Web
+After=network.target veriflow-api.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/veriflow/apps/web
+EnvironmentFile=/opt/veriflow/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
