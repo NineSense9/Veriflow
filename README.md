@@ -8,12 +8,11 @@
 
 ## 当前进度
 
-第一期只交付内核，**不调 DeepSeek、不起 Docker**：
-
-- Workflow IR / Spec IR（Pydantic）
-- 七条编译期静态检查
-- `GET /api/health`
-- `POST /api/compose/check`（缺审题门的出题图会被拦住）
+- Workflow IR / Spec IR 与七条静态检查
+- 进程沙箱评测（本机 Docker 未启动时自动回退）；镜像定义在 `deploy/sandbox/Dockerfile`
+- 登录、题库、提交：CE / WA / TLE / RE / AC；WA 带最小反例
+- 题包 VF1001「签到时长」（公开样例 + 隐藏 `n=1` 与 32 位溢出）
+- 尚未接入 DeepSeek、对拍、教练、训练站 UI
 
 ## 开发
 
@@ -30,10 +29,17 @@ python -m pytest
 python -c "import uvicorn; uvicorn.run('veriflow_api.main:app', host='127.0.0.1', port=8000, reload=True)"
 ```
 
-试跑缺审题门示例：
+本地默认账号：`demo` / `demo`（出题账号 `setter` / `setter`）。正式给评委时用环境变量 `DEMO_PASSWORD`、`SETTER_PASSWORD` 覆盖，不要把正式密码提交进仓库。
 
 ```text
-curl -X POST http://127.0.0.1:8000/api/compose/check -H "Content-Type: application/json" --data-binary @examples/compose/missing_gate.json
+curl -X POST http://127.0.0.1:8000/api/auth/login -H "Content-Type: application/json" -d "{\"username\":\"demo\",\"password\":\"demo\"}"
+```
+
+Ubuntu 上构建评测镜像：
+
+```text
+docker build -t veriflow-sandbox:latest deploy/sandbox
+set VERIFLOW_SANDBOX=docker
 ```
 
 ## 目录
@@ -41,9 +47,13 @@ curl -X POST http://127.0.0.1:8000/api/compose/check -H "Content-Type: applicati
 ```text
 packages/ir            Schema
 packages/staticcheck   编译期规则
+packages/compare       输出比较
+packages/sandbox       沙箱与判定
 services/api           FastAPI
+examples/problems      题包
 examples/compose       出题 IR 样例
+deploy/sandbox         评测镜像
 apps/web               训练站（尚未接入）
 ```
 
-API Key 只放服务器 `.env`，不要提交。`.env` 已在 gitignore。
+API Key 只放服务器 `.env`，不要提交。
