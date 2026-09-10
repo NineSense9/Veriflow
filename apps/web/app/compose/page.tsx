@@ -56,11 +56,18 @@ export default function ComposeIndexPage() {
   return (
     <Shell>
       <main className="page wide">
-        <div className="kicker">Problemsetter</div>
-        <h1>出题编译</h1>
+        <header className="page-head">
+          <p className="kicker">出题</p>
+          <h1>出题编译</h1>
+          <p className="lead">自然语言进图，静态检查拦住缺门、缺守卫和白名单外的工具。</p>
+        </header>
         <div className="compose-hero">
           <div>
+            <label className="sr-only" htmlFor="compose-nl">
+              题意
+            </label>
             <textarea
+              id="compose-nl"
               className="compose-nl"
               rows={6}
               value={nl}
@@ -76,45 +83,53 @@ export default function ComposeIndexPage() {
                 </button>
               ))}
             </div>
-            {error ? <p className="ghost">{error}</p> : null}
+            {error ? <p className="err" role="alert">{error}</p> : null}
           </div>
-          <section className="paper-card">
-            <h2 style={{ marginTop: 0 }}>编译期拦住什么</h2>
-            <p>缺审题门、类型对不上、守卫写成自然语言、工具不在白名单，都会在图上标红，不能入库。</p>
-            <p>弱测资攻击专门砸「生成器从不打上界」。过不了攻击的题，审题通过也发不出去。</p>
+          <section className="panel">
+            <h2>编译期拦住什么</h2>
+            <p className="ghost">缺审题门、类型对不上、守卫写成自然语言、工具不在白名单，都会在图上标红，不能入库。</p>
+            <p className="ghost">弱测资攻击专门砸「生成器从不打上界」。过不了攻击的题，审题通过也发不出去。</p>
           </section>
         </div>
-        <div className="kicker">草稿</div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>题意</th>
-              <th>状态</th>
-              <th>审题</th>
-              <th>入库</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <Link href={`/compose/${row.id}`}>{row.id}</Link>
-                </td>
-                <td>
-                  <Link href={`/compose/${row.id}`}>{row.source_nl.slice(0, 36)}</Link>
-                </td>
-                <td>
-                  <span className={`verdict ${row.status === "blocked" ? "WA" : row.status === "published" ? "AC" : ""}`}>
-                    {row.status}
-                  </span>
-                </td>
-                <td>{row.gate_status}</td>
-                <td>{row.published_problem_id ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <h2 className="section-title">草稿</h2>
+        {!rows.length ? (
+          <div className="empty">
+            <p>还没有草稿。先编译一题。</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="num">#</th>
+                  <th>题意</th>
+                  <th>状态</th>
+                  <th>审题</th>
+                  <th>入库</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td className="num">
+                      <Link href={`/compose/${row.id}`}>{row.id}</Link>
+                    </td>
+                    <td>
+                      <Link href={`/compose/${row.id}`}>{row.source_nl.slice(0, 36)}</Link>
+                    </td>
+                    <td>
+                      <span className={`verdict ${row.status === "blocked" ? "WA" : row.status === "published" ? "AC" : ""}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td>{row.gate_status}</td>
+                    <td>{row.published_problem_id ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
     </Shell>
   );

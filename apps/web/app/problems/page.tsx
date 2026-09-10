@@ -49,61 +49,81 @@ export default function ProblemsPage() {
   return (
     <Shell>
       <main className="page wide">
-        <div className="kicker">Problemset</div>
-        <h1>题库</h1>
+        <header className="page-head">
+          <p className="kicker">题库</p>
+          <h1>题目</h1>
+          <p className="lead">按标签和关键词筛选。通过率和变异杀死率来自服务端统计。</p>
+        </header>
         {error ? <p className="ghost">{error}</p> : null}
-        <input
-          className="search"
-          placeholder="搜索题号、标题或标签"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <div className="filters">
+        <div className="toolbar">
+          <label className="sr-only" htmlFor="problem-search">
+            搜索题目
+          </label>
+          <input
+            id="problem-search"
+            className="search"
+            placeholder="搜索题号、标题或标签"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <span className="ghost">{visible.length} / {rows.length}</span>
+        </div>
+        <div className="filters" role="tablist" aria-label="题目标签">
           {tags.map((item) => (
             <button
               key={item}
               type="button"
               className={item === tag ? "on" : ""}
+              aria-pressed={item === tag}
               onClick={() => setTag(item)}
             >
               {item}
             </button>
           ))}
         </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>编号</th>
-              <th>标题</th>
-              <th>难度</th>
-              <th>标签</th>
-              <th>通过率</th>
-              <th>变异杀死率</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <Link href={`/problems/${row.id}`}>{row.id}</Link>
-                </td>
-                <td>
-                  <Link href={`/problems/${row.id}`}>{row.title}</Link>
-                </td>
-                <td className={diffClass(row.difficulty)}>{row.difficulty}</td>
-                <td>
-                  {row.tags.map((item) => (
-                    <span className="tag" key={item}>
-                      {item}
-                    </span>
-                  ))}
-                </td>
-                <td>{rate(row.ac_rate)}</td>
-                <td>{rate(row.kill_rate)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {!visible.length ? (
+          <div className="empty">
+            <p>没有匹配的题目</p>
+            <p className="ghost">换个标签，或清空搜索。</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>编号</th>
+                  <th>标题</th>
+                  <th className="num">难度</th>
+                  <th>标签</th>
+                  <th className="num">通过率</th>
+                  <th className="num">变异杀死率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <Link href={`/problems/${row.id}`}>{row.id}</Link>
+                    </td>
+                    <td>
+                      <Link href={`/problems/${row.id}`}>{row.title}</Link>
+                    </td>
+                    <td className={`num ${diffClass(row.difficulty)}`}>{row.difficulty}</td>
+                    <td>
+                      {row.tags.map((item) => (
+                        <span className="tag" key={item}>
+                          {item}
+                        </span>
+                      ))}
+                    </td>
+                    <td className="num">{rate(row.ac_rate)}</td>
+                    <td className="num">{rate(row.kill_rate)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
     </Shell>
   );

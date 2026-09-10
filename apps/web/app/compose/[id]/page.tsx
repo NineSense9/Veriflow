@@ -50,7 +50,9 @@ export default function ComposeProjectPage() {
     <Shell>
       <div className="compose-desk">
         <div className="arena-top">
-          <Link href="/compose">出题</Link>
+          <Link href="/compose" className="btn btn-ghost btn-sm">
+            出题
+          </Link>
           <span className="pid">#{project.id}</span>
           <h1>{project.status}</h1>
           <span className="ghost">{project.compiler}</span>
@@ -70,6 +72,7 @@ export default function ComposeProjectPage() {
           </button>
           <button
             type="button"
+            className="btn-danger"
             disabled={Boolean(busy)}
             onClick={() => run("gate", () => api.composeGate(id, "rejected"))}
           >
@@ -84,13 +87,24 @@ export default function ComposeProjectPage() {
             入库
           </button>
         </div>
-        <textarea className="compose-nl tight" rows={3} value={nl} onChange={(e) => setNl(e.target.value)} />
+        <label className="sr-only" htmlFor="compose-nl-edit">
+          题意
+        </label>
+        <textarea
+          id="compose-nl-edit"
+          className="compose-nl tight"
+          rows={3}
+          value={nl}
+          onChange={(e) => setNl(e.target.value)}
+        />
         <div className="compose-split">
           <section className="compose-canvas">
             {project.ir ? (
               <ComposeCanvas ir={project.ir} errors={project.errors} />
             ) : (
-              <p className="ghost">还没有 IR</p>
+              <p className="ghost" style={{ padding: 16 }}>
+                还没有 IR
+              </p>
             )}
           </section>
           <aside className="side">
@@ -124,7 +138,7 @@ export default function ComposeProjectPage() {
               {project.gate_status}
               {project.published_problem_id ? ` · 已入库 ${project.published_problem_id}` : ""}
             </p>
-            {message ? <p className="ghost">{message}</p> : null}
+            {message ? <p className="err" role="alert">{message}</p> : null}
             {busy ? <p className="ghost">{busy}…</p> : null}
           </aside>
         </div>

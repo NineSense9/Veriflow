@@ -29,50 +29,64 @@ export default function StatusPage() {
   return (
     <Shell>
       <main className="page wide">
-        <div className="kicker">Status</div>
-        <h1>提交</h1>
+        <header className="page-head">
+          <p className="kicker">状态</p>
+          <h1>提交记录</h1>
+          <p className="lead">按判定筛选。耗时来自沙箱实测。</p>
+        </header>
         {error ? <p className="ghost">{error}</p> : null}
-        <div className="filters">
+        <div className="filters" aria-label="判定筛选">
           {FILTERS.map((item) => (
             <button
               key={item}
               type="button"
               className={item === filter ? "on" : ""}
+              aria-pressed={item === filter}
               onClick={() => setFilter(item)}
             >
               {item}
             </button>
           ))}
         </div>
-        {!visible.length ? <p className="ghost">这一栏是空的。</p> : null}
-        <table className="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>题号</th>
-              <th>语言</th>
-              <th>判定</th>
-              <th>耗时</th>
-              <th>时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((row) => (
-              <tr key={row.id}>
-                <td>{row.id}</td>
-                <td>
-                  <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
-                </td>
-                <td>{row.lang}</td>
-                <td>
-                  <span className={`verdict ${row.verdict ?? ""}`}>{row.verdict}</span>
-                </td>
-                <td>{row.time_ms ?? "—"} ms</td>
-                <td>{row.created_at.replace("T", " ").slice(0, 19)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {!visible.length ? (
+          <div className="empty">
+            <p>这一栏是空的。</p>
+            <Link className="btn" href="/problems">
+              去题库
+            </Link>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="num">#</th>
+                  <th>题号</th>
+                  <th>语言</th>
+                  <th>判定</th>
+                  <th className="num">耗时</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((row) => (
+                  <tr key={row.id}>
+                    <td className="num">{row.id}</td>
+                    <td>
+                      <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
+                    </td>
+                    <td>{row.lang}</td>
+                    <td>
+                      <span className={`verdict ${row.verdict ?? ""}`}>{row.verdict}</span>
+                    </td>
+                    <td className="num">{row.time_ms ?? "—"} ms</td>
+                    <td>{row.created_at.replace("T", " ").slice(0, 19)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
     </Shell>
   );

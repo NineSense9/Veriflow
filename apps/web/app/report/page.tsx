@@ -37,13 +37,15 @@ export default function ReportPage() {
   return (
     <Shell>
       <main className="page">
-        <div className="kicker">Contrast</div>
-        <h1>对照报告</h1>
-        <p className="ghost">
-          基线是只跑公开样例。完整路径包含隐藏测资、对拍和变异。复现命令：
-          <code> python scripts/eval.py</code>
-        </p>
-        {error ? <p className="ghost">{error}</p> : null}
+        <header className="page-head">
+          <p className="kicker">对照</p>
+          <h1>对照报告</h1>
+          <p className="lead">
+            基线是只跑公开样例。完整路径包含隐藏测资、对拍和变异。复现命令：
+            <code>python scripts/eval.py</code>
+          </p>
+        </header>
+        {error ? <p className="err" role="alert">{error}</p> : null}
         {data ? (
           <div className="stat-grid">
             {Object.entries(LABELS).map(([key, label]) => (
@@ -53,8 +55,10 @@ export default function ReportPage() {
               </div>
             ))}
           </div>
-        ) : null}
-        <a className="cta" href="/api/report/export">
+        ) : error ? null : (
+          <p className="ghost">正在汇总…</p>
+        )}
+        <a className="btn" href="/api/report/export">
           下载 Markdown
         </a>
       </main>

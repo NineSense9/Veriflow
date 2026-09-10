@@ -68,7 +68,7 @@ export default function ProblemPage() {
       setResult(next);
     } catch (err) {
       const status = (err as { status?: number }).status;
-      setError(status === 401 ? "登录已过期，请重新入场。" : "提交失败。");
+      setError(status === 401 ? "登录已过期，请重新登录。" : "提交失败。");
     } finally {
       setBusy(false);
     }
@@ -95,11 +95,17 @@ export default function ProblemPage() {
     <Shell>
       <div className="arena">
         <div className="arena-top">
-          <Link href="/problems">题库</Link>
+          <Link href="/problems" className="btn btn-ghost btn-sm">
+            题库
+          </Link>
           <span className="pid">{problem?.id ?? id}</span>
           <h1>{problem?.title ?? "…"}</h1>
           <div className="arena-tools">
+            <label className="sr-only" htmlFor="lang">
+              语言
+            </label>
             <select
+              id="lang"
               value={lang}
               onChange={(event) => {
                 const next = event.target.value as Lang;
@@ -147,9 +153,9 @@ export default function ProblemPage() {
         </div>
         <div className="arena-body">
           <section className="statement">
-            {problem ? <Statement source={problem.statement} /> : <p>试卷展开中…</p>}
+            {problem ? <Statement source={problem.statement} /> : <p className="ghost">题目加载中…</p>}
             {problem ? (
-              <p>
+              <p className="limits">
                 {problem.spec.time_limit_ms} ms / {problem.spec.memory_limit_mb} MB
               </p>
             ) : null}
@@ -191,7 +197,7 @@ export default function ProblemPage() {
             )}
             <h2>教练</h2>
             {coach ? (
-              <div className="paper-card" style={{ padding: "14px 14px 14px 28px" }}>
+              <div className="panel" style={{ padding: 14 }}>
                 <p style={{ margin: 0 }}>{coach}</p>
               </div>
             ) : (
@@ -199,10 +205,10 @@ export default function ProblemPage() {
                 {canTutor ? "只问不讲。点顶栏「教练」。" : "先交一发失败的。"}
               </p>
             )}
-            {error ? <p className="ghost">{error}</p> : null}
+            {error ? <p className="err" role="alert">{error}</p> : null}
           </aside>
         </div>
-        <div className="verdict-bar">
+        <div className="verdict-bar" aria-live="polite">
           <span className={`verdict ${result?.verdict ?? (busy ? "running" : "")}`}>
             {busy ? "RUN" : result?.verdict ?? "IDLE"}
           </span>

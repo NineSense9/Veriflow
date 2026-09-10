@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans_Condensed, JetBrains_Mono, Literata } from "next/font/google";
+import { IBM_Plex_Sans, JetBrains_Mono, Literata } from "next/font/google";
 import "./globals.css";
 
 const serif = Literata({
@@ -7,7 +7,7 @@ const serif = Literata({
   variable: "--font-serif",
 });
 
-const ui = IBM_Plex_Sans_Condensed({
+const ui = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-ui",
@@ -34,7 +34,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${serif.variable} ${ui.variable} ${mono.variable}`}>
-        <div className="grain" />
         {children}
       </body>
     </html>

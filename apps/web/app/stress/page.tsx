@@ -75,7 +75,10 @@ function StressInner() {
       <div className="stress">
         <div className="arena-top">
           <span className="pid">STRESS</span>
-          <select value={problemId} onChange={(e) => setProblemId(e.target.value)}>
+          <label className="sr-only" htmlFor="stress-problem">
+            题目
+          </label>
+          <select id="stress-problem" value={problemId} onChange={(e) => setProblemId(e.target.value)}>
             {(problems.length ? problems : [{ id: problemId, title: problemId }]).map((row) => (
               <option key={row.id} value={row.id}>
                 {row.id} {row.title ?? ""}
@@ -91,7 +94,8 @@ function StressInner() {
               max={200}
               value={rounds}
               onChange={(e) => setRounds(Number(e.target.value))}
-              style={{ width: 64, marginLeft: 8 }}
+              aria-label="对拍轮次"
+              style={{ width: 72, marginLeft: 8 }}
             />
           </label>
           <button className="primary" type="button" disabled={busy || disabled} onClick={run}>
@@ -119,8 +123,8 @@ function StressInner() {
         </div>
         <div className="stress-floor">
           <div className="stress-log">
-            <div className="kicker">log</div>
-            {error ? <div className="err">{error}</div> : null}
+            <div className="kicker">日志</div>
+            {error ? <div className="err" role="alert">{error}</div> : null}
             {busy ? <div>循环中…</div> : null}
             {result ? (
               <div>

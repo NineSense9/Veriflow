@@ -2,9 +2,10 @@
 
 import { Background, Handle, Position, ReactFlow, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ComposeError, WorkflowIR } from "@/lib/api";
 import { irToFlow } from "@/lib/ir-flow";
+import { readTheme } from "@/lib/theme";
 
 function KindNode({ data }: NodeProps) {
   const payload = data as { label: string; kind: string; error: boolean };
@@ -28,6 +29,15 @@ export default function ComposeCanvas({
   errors: ComposeError[];
 }) {
   const { nodes, edges } = useMemo(() => irToFlow(ir, errors), [ir, errors]);
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setDark(readTheme() === "dark");
+    sync();
+    window.addEventListener("vf-theme", sync);
+    return () => window.removeEventListener("vf-theme", sync);
+  }, []);
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -36,7 +46,7 @@ export default function ComposeCanvas({
       fitView
       proOptions={{ hideAttribution: true }}
     >
-      <Background color="#2a2b24" gap={18} />
+      <Background color={dark ? "#2a2e37" : "#e5e7eb"} gap={20} size={1} />
     </ReactFlow>
   );
 }

@@ -35,7 +35,7 @@ export default function CodeEditor({
       height={height}
       language={language === "python" ? "python" : "cpp"}
       theme={readTheme() === "dark" ? "veriflow-night" : "veriflow-day"}
-      loading={<div className="editor-loading">装卷</div>}
+      loading={<div className="editor-loading">加载编辑器…</div>}
       value={value}
       onChange={(next) => onChange(next ?? "")}
       options={{
@@ -54,12 +54,12 @@ export default function CodeEditor({
           inherit: true,
           rules: [],
           colors: {
-            "editor.background": "#0e0f0c",
-            "editor.foreground": "#d7d3c4",
-            "editorLineNumber.foreground": "#6d675c",
-            "editor.selectionBackground": "#3a3428",
-            "editorCursor.foreground": "#c4a574",
-            "editor.lineHighlightBackground": "#16170f",
+            "editor.background": "#12141a",
+            "editor.foreground": "#eceef1",
+            "editorLineNumber.foreground": "#6b7280",
+            "editor.selectionBackground": "#134e4a",
+            "editorCursor.foreground": "#2dd4bf",
+            "editor.lineHighlightBackground": "#1c1f26",
           },
         });
         monaco.editor.defineTheme("veriflow-day", {
@@ -67,12 +67,12 @@ export default function CodeEditor({
           inherit: true,
           rules: [],
           colors: {
-            "editor.background": "#fbf8f1",
-            "editor.foreground": "#1c1915",
-            "editorLineNumber.foreground": "#8a8478",
-            "editor.selectionBackground": "#e6dcc4",
-            "editorCursor.foreground": "#8a6230",
-            "editor.lineHighlightBackground": "#f3ece0",
+            "editor.background": "#fafafa",
+            "editor.foreground": "#111827",
+            "editorLineNumber.foreground": "#8b929c",
+            "editor.selectionBackground": "#ccfbf1",
+            "editorCursor.foreground": "#0f766e",
+            "editor.lineHighlightBackground": "#f3f4f6",
           },
         });
       }}

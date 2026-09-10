@@ -23,30 +23,52 @@ export default function HomePage() {
 
   const latest = subs[0];
   const wa = subs.find((row) => row.verdict === "WA");
+  const acCount = subs.filter((row) => row.verdict === "AC").length;
 
   return (
     <Shell>
       <main className="page">
-        <div className="kicker">Training hub</div>
-        <h1>把样例骗术拆掉</h1>
+        <header className="page-head">
+          <p className="kicker">工作台</p>
+          <h1>把样例骗术拆掉</h1>
+          <p className="lead">公开样例很小。隐藏测资、对拍和变异才是裁判。</p>
+        </header>
+
+        <div className="stat-grid">
+          <div className="stat">
+            <b>{problems.length || "—"}</b>
+            <span>题库</span>
+          </div>
+          <div className="stat">
+            <b>{subs.length}</b>
+            <span>提交</span>
+          </div>
+          <div className="stat">
+            <b>{acCount}</b>
+            <span>AC</span>
+          </div>
+          <div className="stat">
+            <b>{latest?.verdict ?? "—"}</b>
+            <span>最近判定</span>
+          </div>
+        </div>
+
         <div className="desk-grid">
-          <section className="paper-card">
-            <h2 style={{ marginTop: 0, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: 12 }}>
-              下一题
-            </h2>
-            <p>
+          <section className="panel">
+            <h2>下一题</h2>
+            <p className="ghost">
               从 VF1001《签到时长》开始。公开样例很小，隐藏数据里有 n=1 和 32
-              位整数溢出。过样例不要得意。裁判是沙箱，不是模型。
+              位整数溢出。过样例不要得意。
             </p>
-            <Link className="cta" href="/problems/VF1001" style={{ color: "#7a3b2e", borderColor: "#7a3b2e" }}>
-              打开试卷 VF1001
+            <Link className="btn btn-primary" href="/problems/VF1001">
+              开始 VF1001
             </Link>
           </section>
-          <section className="card">
-            <h2>上一发</h2>
+          <section className="panel">
+            <h2>最近一次提交</h2>
             {error ? <p className="ghost">{error}</p> : null}
             {!latest ? (
-              <p className="ghost">还没有提交。空桌也行，先写一发。</p>
+              <p className="ghost">还没有提交。从题库写一发即可。</p>
             ) : (
               <p>
                 <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict}</span>
@@ -57,50 +79,57 @@ export default function HomePage() {
               </p>
             )}
             {wa ? (
-              <p className="ghost">最近有 WA。去原题看反例三列，或点教练，不要先翻题解。</p>
+              <p className="ghost">最近有 WA。回原题看反例三列，或点教练，不要先翻题解。</p>
             ) : null}
-            <p style={{ marginTop: 18 }}>
-              <Link className="cta" href="/stress?id=VF1001">
+            <div className="compose-actions">
+              <Link className="btn" href="/stress?id=VF1001">
                 对拍台
               </Link>
-              {"  "}
-              <Link className="cta" href="/compose">
+              <Link className="btn" href="/compose">
                 出题画布
               </Link>
-            </p>
+            </div>
           </section>
         </div>
-        <div className="kicker" style={{ marginTop: 36 }}>
-          Recent
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>题号</th>
-              <th>判定</th>
-              <th>耗时</th>
-            </tr>
-          </thead>
-          <tbody>
-            {subs.slice(0, 6).map((row) => (
-              <tr key={row.id}>
-                <td>{row.id}</td>
-                <td>
-                  <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
-                </td>
-                <td>
-                  <span className={`verdict ${row.verdict ?? ""}`}>{row.verdict}</span>
-                </td>
-                <td>{row.time_ms ?? "—"} ms</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!subs.length ? <p className="ghost">提交之后这里会变成成绩条。</p> : null}
-        <p className="ghost" style={{ marginTop: 22 }}>
-          题库 {problems.length} 题 · 模型当编译器和攻击者，Docker 当裁判。
-        </p>
+
+        <section className="section">
+          <h2 className="section-title">最近提交</h2>
+          {!subs.length ? (
+            <div className="empty">
+              <p>提交之后这里会变成成绩条。</p>
+              <Link className="btn btn-primary" href="/problems">
+                去题库
+              </Link>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th className="num">#</th>
+                    <th>题号</th>
+                    <th>判定</th>
+                    <th className="num">耗时</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subs.slice(0, 6).map((row) => (
+                    <tr key={row.id}>
+                      <td className="num">{row.id}</td>
+                      <td>
+                        <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
+                      </td>
+                      <td>
+                        <span className={`verdict ${row.verdict ?? ""}`}>{row.verdict}</span>
+                      </td>
+                      <td className="num">{row.time_ms ?? "—"} ms</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </main>
     </Shell>
   );
