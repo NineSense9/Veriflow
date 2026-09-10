@@ -67,6 +67,15 @@ CREATE TABLE IF NOT EXISTS stress_runs (
   counterexample_json TEXT,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS tutor_logs (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  submission_id INTEGER,
+  question TEXT NOT NULL,
+  backend TEXT,
+  spoiler_rejects INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS compose_projects (
   id INTEGER PRIMARY KEY,
   user_id INTEGER NOT NULL,

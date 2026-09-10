@@ -192,6 +192,14 @@ export const api = {
       body: JSON.stringify({ lang, source }),
     }),
   submissions: () => request<{ submissions: SubmissionRow[] }>("/api/submissions"),
+  tutor: (problemId: string, submissionId: number) =>
+    request<{ question: string; backend: string; spoiler_rejects: number }>(
+      `/api/problems/${problemId}/tutor`,
+      {
+        method: "POST",
+        body: JSON.stringify({ submission_id: submissionId }),
+      },
+    ),
   kit: (id: string) => request<StressKit>(`/api/problems/${id}/kit`),
   composeCreate: (nl: string) =>
     request<ComposeProject>("/api/compose", {

@@ -14,6 +14,7 @@ from veriflow_api.auth import create_session, revoke_session, user_for_token, ve
 from veriflow_api import compose_service
 from veriflow_api.db import connect, init_db
 from veriflow_api.seed import pack_file, seed
+from veriflow_api.tutor import ask_tutor
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_sandbox.factory import get_sandbox, sandbox_mode
 from veriflow_sandbox.judge import Case, judge_submission
@@ -58,6 +59,10 @@ class ComposeIRBody(BaseModel):
 
 class ComposeGate(BaseModel):
     decision: Literal["approved", "rejected"]
+
+
+class TutorBody(BaseModel):
+    submission_id: int
 
 
 class StressBody(BaseModel):
@@ -316,6 +321,74 @@ def _register_routes(application: FastAPI) -> None:
             "time_ms": result.time_ms,
             "counterexample": result.counterexample,
             "sandbox": result.sandbox,
+        }
+
+    @application.post("/api/problems/{problem_id}/tutor")
+    def tutor_problem(problem_id: str, body: TutorBody, user=Depends(current_user)):
+        hour_prefix = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H")
+        with connect() as connection:
+            used = connection.execute(
+                """
+                SELECT COUNT(*) AS n FROM tutor_logs
+                WHERE user_id = ? AND created_at LIKE ?
+                """,
+                (user["id"], hour_prefix + "%"),
+            ).fetchone()["n"]
+            if used >= 30:
+                raise HTTPException(
+                    status_code=429,
+                    detail={"code": "rate_limited", "message": "教练本小时次数用尽"},
+                )
+            submission = connection.execute(
+                """
+                SELECT id, problem_id, user_id, verdict, counterexample_json
+                FROM submissions WHERE id = ?
+                """,
+                (body.submission_id,),
+            ).fetchone()
+            problem = connection.execute(
+                "SELECT statement, spec_json FROM problems WHERE id = ?",
+                (problem_id,),
+            ).fetchone()
+        if submission is None or submission["user_id"] != user["id"]:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "submission not found"}
+            )
+        if submission["problem_id"] != problem_id:
+            raise HTTPException(
+                status_code=400, detail={"code": "mismatch", "message": "submission 不属于这题"}
+            )
+        if submission["verdict"] not in {"WA", "RE"} or not submission["counterexample_json"]:
+            raise HTTPException(
+                status_code=400,
+                detail={"code": "not_failed", "message": "只在有反例的 WA/RE 上启用教练"},
+            )
+        if problem is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "problem not found"}
+            )
+        spec = json.loads(problem["spec_json"])
+        counterexample = json.loads(submission["counterexample_json"])
+        question, backend, rejects = ask_tutor(
+            counterexample,
+            problem["statement"],
+            spec.get("invariants") or [],
+        )
+        now = datetime.now(timezone.utc).isoformat()
+        with connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO tutor_logs(
+                    user_id, submission_id, question, backend, spoiler_rejects, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (user["id"], body.submission_id, question, backend, rejects, now),
+            )
+            connection.commit()
+        return {
+            "question": question,
+            "backend": backend,
+            "spoiler_rejects": rejects,
         }
 
     @application.post("/api/problems/{problem_id}/stress")

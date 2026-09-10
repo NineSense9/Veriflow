@@ -101,6 +101,44 @@ def test_stress_requires_login(api_client):
     assert response.status_code == 401
 
 
+def test_tutor_on_wa(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    submitted = api_client.post(
+        "/api/problems/VF1001/submit",
+        json={"lang": "python3", "source": WA_SOURCE},
+        headers=headers,
+    )
+    assert submitted.json()["verdict"] == "WA"
+    response = api_client.post(
+        "/api/problems/VF1001/tutor",
+        json={"submission_id": submitted.json()["submission_id"]},
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["question"]
+    assert "```" not in body["question"]
+    assert "标准答案" not in body["question"]
+
+
+def test_tutor_rejects_ac(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    submitted = api_client.post(
+        "/api/problems/VF1001/submit",
+        json={"lang": "python3", "source": AC_SOURCE},
+        headers=headers,
+    )
+    assert submitted.json()["verdict"] == "AC"
+    response = api_client.post(
+        "/api/problems/VF1001/tutor",
+        json={"submission_id": submitted.json()["submission_id"]},
+        headers=headers,
+    )
+    assert response.status_code == 400
+
+
 def test_submit_wa_counterexample(api_client):
     token = _login(api_client)
     headers = {"Authorization": f"Bearer {token}"}

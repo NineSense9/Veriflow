@@ -27,6 +27,8 @@ export default function ProblemPage() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [error, setError] = useState("");
+  const [coach, setCoach] = useState("");
+  const [coachBusy, setCoachBusy] = useState(false);
 
   useEffect(() => {
     api
@@ -60,6 +62,7 @@ export default function ProblemPage() {
   async function submit() {
     setBusy(true);
     setError("");
+    setCoach("");
     try {
       const next = await api.submit(id, lang, source);
       setResult(next);
@@ -68,6 +71,23 @@ export default function ProblemPage() {
       setError(status === 401 ? "登录已过期，请重新入场。" : "提交失败。");
     } finally {
       setBusy(false);
+    }
+  }
+
+  const canTutor =
+    Boolean(result?.counterexample) && (result?.verdict === "WA" || result?.verdict === "RE");
+
+  async function askCoach() {
+    if (!result?.submission_id) return;
+    setCoachBusy(true);
+    setError("");
+    try {
+      const next = await api.tutor(id, result.submission_id);
+      setCoach(next.question);
+    } catch (err) {
+      setError((err as Error).message || "教练暂时不在。");
+    } finally {
+      setCoachBusy(false);
     }
   }
 
@@ -96,6 +116,9 @@ export default function ProblemPage() {
               对拍
             </span>
           )}
+          <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
+            {coachBusy ? "追问中" : "教练"}
+          </button>
           <button className="primary" type="button" disabled={busy} onClick={submit}>
             {busy ? "判定中" : "提交"}
           </button>
@@ -142,7 +165,17 @@ export default function ProblemPage() {
                 </div>
               </div>
             ) : (
-              <p className="ghost">提交后若 WA，三列会停在这里。教练和对拍下一期再挂。</p>
+              <p className="ghost">提交后若 WA，三列会停在这里。有反例才能请教。</p>
+            )}
+            <h2>教练</h2>
+            {coach ? (
+              <div className="paper-card" style={{ padding: "14px 14px 14px 28px" }}>
+                <p style={{ margin: 0 }}>{coach}</p>
+              </div>
+            ) : (
+              <p className="ghost">
+                {canTutor ? "只问不讲。点顶栏「教练」。" : "先交一发失败的。"}
+              </p>
             )}
             {error ? <p className="ghost">{error}</p> : null}
           </aside>
