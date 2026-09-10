@@ -17,5 +17,6 @@ artifacts/
 node_modules/
 .next/
 apps/web/out/
+output/
 .DS_Store
 Thumbs.db

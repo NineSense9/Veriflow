@@ -23,11 +23,21 @@ python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-启动 API：
+启动 API 与训练站：
 
 ```text
 python -c "import uvicorn; uvicorn.run('veriflow_api.main:app', host='127.0.0.1', port=8000, reload=True)"
 ```
+
+另开终端：
+
+```text
+cd apps/web
+npm install
+npm run dev
+```
+
+浏览器打开 http://127.0.0.1:3000 ，席位 `demo` / `demo`。
 
 本地默认账号：`demo` / `demo`（出题账号 `setter` / `setter`）。正式给评委时用环境变量 `DEMO_PASSWORD`、`SETTER_PASSWORD` 覆盖，不要把正式密码提交进仓库。
 

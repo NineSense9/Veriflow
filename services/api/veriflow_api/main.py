@@ -10,7 +10,7 @@ from fastapi import Cookie, Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from veriflow_api.auth import create_session, user_for_token, verify_password
+from veriflow_api.auth import create_session, revoke_session, user_for_token, verify_password
 from veriflow_api.db import connect, init_db
 from veriflow_api.seed import seed
 from veriflow_ir.workflow import WorkflowIR
@@ -92,7 +92,22 @@ def _register_routes(application: FastAPI) -> None:
             httponly=True,
             samesite="lax",
             max_age=12 * 3600,
+            path="/",
         )
+        return response
+
+    @application.get("/api/auth/me")
+    def me(user=Depends(current_user)):
+        return {"username": user["name"], "role": user["role"]}
+
+    @application.post("/api/auth/logout")
+    def logout(
+        authorization: Annotated[str | None, Header()] = None,
+        vf_session: Annotated[str | None, Cookie()] = None,
+    ):
+        revoke_session(_bearer_token(authorization, vf_session))
+        response = JSONResponse({"ok": True})
+        response.delete_cookie("vf_session", path="/")
         return response
 
     @application.get("/api/problems")

@@ -41,6 +41,14 @@ def create_session(user_id: int) -> str:
     return token
 
 
+def revoke_session(token: str | None) -> None:
+    if not token:
+        return
+    with connect() as connection:
+        connection.execute("DELETE FROM sessions WHERE token = ?", (token,))
+        connection.commit()
+
+
 def user_for_token(token: str | None) -> sqlite3.Row | None:
     if not token:
         return None

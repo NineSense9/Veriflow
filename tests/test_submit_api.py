@@ -24,6 +24,14 @@ def test_login_rejected(api_client):
     assert response.status_code == 401
 
 
+def test_me_requires_login(api_client):
+    assert api_client.get("/api/auth/me").status_code == 401
+    token = _login(api_client)
+    response = api_client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert response.json()["username"] == "demo"
+
+
 def test_submit_requires_login(api_client):
     response = api_client.post(
         "/api/problems/VF1001/submit",
