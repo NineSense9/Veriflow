@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import { api, SubmissionRow } from "@/lib/api";
 
+const FILTERS = ["全部", "AC", "WA", "TLE", "CE", "RE"];
+
 export default function StatusPage() {
   const [rows, setRows] = useState<SubmissionRow[]>([]);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState("全部");
 
   useEffect(() => {
     api
@@ -18,13 +21,30 @@ export default function StatusPage() {
       });
   }, []);
 
+  const visible = useMemo(
+    () => (filter === "全部" ? rows : rows.filter((row) => row.verdict === filter)),
+    [rows, filter],
+  );
+
   return (
     <Shell>
-      <main className="page">
+      <main className="page wide">
         <div className="kicker">Status</div>
         <h1>提交</h1>
         {error ? <p className="ghost">{error}</p> : null}
-        {!rows.length ? <p className="ghost">还没有记录。</p> : null}
+        <div className="filters">
+          {FILTERS.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={item === filter ? "on" : ""}
+              onClick={() => setFilter(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        {!visible.length ? <p className="ghost">这一栏是空的。</p> : null}
         <table className="table">
           <thead>
             <tr>
@@ -37,7 +57,7 @@ export default function StatusPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {visible.map((row) => (
               <tr key={row.id}>
                 <td>{row.id}</td>
                 <td>

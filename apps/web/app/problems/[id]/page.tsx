@@ -98,50 +98,52 @@ export default function ProblemPage() {
           <Link href="/problems">题库</Link>
           <span className="pid">{problem?.id ?? id}</span>
           <h1>{problem?.title ?? "…"}</h1>
-          <select
-            value={lang}
-            onChange={(event) => {
-              const next = event.target.value as Lang;
-              setLang(next);
-              setSource(next === "python3" ? PYTHON_STUB : CPP_STUB);
-            }}
-          >
-            <option value="python3">Python3</option>
-            <option value="cpp17">C++17</option>
-          </select>
-          {problem?.has_brute ? (
-            <Link href={`/stress?id=${id}`}>对拍</Link>
-          ) : (
-            <span className="dead" title="本题不提供暴力解">
-              对拍
-            </span>
-          )}
-          <button
-            type="button"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              setCoach("");
-              try {
-                const next = await api.solve(id, lang);
-                if (next.source) setSource(next.source);
-                setResult(next);
-              } catch (err) {
-                setError((err as Error).message || "起草失败");
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            起草
-          </button>
-          <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
-            {coachBusy ? "追问中" : "教练"}
-          </button>
-          <button className="primary" type="button" disabled={busy} onClick={submit}>
-            {busy ? "判定中" : "提交"}
-          </button>
+          <div className="arena-tools">
+            <select
+              value={lang}
+              onChange={(event) => {
+                const next = event.target.value as Lang;
+                setLang(next);
+                setSource(next === "python3" ? PYTHON_STUB : CPP_STUB);
+              }}
+            >
+              <option value="python3">Python3</option>
+              <option value="cpp17">C++17</option>
+            </select>
+            {problem?.has_brute ? (
+              <Link href={`/stress?id=${id}`}>对拍</Link>
+            ) : (
+              <span className="dead" title="本题不提供暴力解">
+                对拍
+              </span>
+            )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setError("");
+                setCoach("");
+                try {
+                  const next = await api.solve(id, lang);
+                  if (next.source) setSource(next.source);
+                  setResult(next);
+                } catch (err) {
+                  setError((err as Error).message || "起草失败");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              起草
+            </button>
+            <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
+              {coachBusy ? "追问中" : "教练"}
+            </button>
+            <button className="primary" type="button" disabled={busy} onClick={submit}>
+              {busy ? "判定中" : "提交"}
+            </button>
+          </div>
         </div>
         <div className="arena-body">
           <section className="statement">

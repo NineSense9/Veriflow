@@ -451,6 +451,24 @@ h1 {
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
   background: #10110c;
+  flex-wrap: wrap;
+}
+
+.arena-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.arena-tools a,
+.arena-tools .dead {
+  background: #1a1b14;
+  color: var(--paper);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  font-size: 13px;
 }
 
 .arena-top .pid {
@@ -840,4 +858,63 @@ h1 {
 
 .react-flow__edge-path {
   stroke: var(--brass-dim) !important;
+}
+
+.set-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.set-card ol {
+  margin: 0;
+  padding-left: 1.2em;
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.set-card a {
+  color: var(--ink);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 18px 0 24px;
+}
+
+.stat {
+  border: 1px solid var(--line);
+  background: var(--desk-2);
+  padding: 14px 16px;
+}
+
+.stat b {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 22px;
+  color: var(--paper);
+  font-weight: 500;
+}
+
+.stat span {
+  color: var(--mute);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.compose-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 960px) {
+  .compose-hero {
+    grid-template-columns: 1fr;
+  }
 }

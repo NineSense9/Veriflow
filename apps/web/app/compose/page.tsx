@@ -55,30 +55,36 @@ export default function ComposeIndexPage() {
 
   return (
     <Shell>
-      <main className="page">
+      <main className="page wide">
         <div className="kicker">Problemsetter</div>
         <h1>出题编译</h1>
-        <p className="ghost">自然语言先变成带类型的图。缺审题门或弱测资过不了入库。</p>
-        <textarea
-          className="compose-nl"
-          rows={5}
-          value={nl}
-          onChange={(event) => setNl(event.target.value)}
-        />
-        <div className="compose-actions">
-          <button className="primary" type="button" disabled={busy} onClick={compile}>
-            {busy ? "编译中" : "编译"}
-          </button>
-          {EXAMPLES.map((item) => (
-            <button key={item.name} type="button" disabled={busy} onClick={() => loadExample(item.name)}>
-              {item.label}
-            </button>
-          ))}
+        <div className="compose-hero">
+          <div>
+            <textarea
+              className="compose-nl"
+              rows={6}
+              value={nl}
+              onChange={(event) => setNl(event.target.value)}
+            />
+            <div className="compose-actions">
+              <button className="primary" type="button" disabled={busy} onClick={compile}>
+                {busy ? "编译中" : "编译"}
+              </button>
+              {EXAMPLES.map((item) => (
+                <button key={item.name} type="button" disabled={busy} onClick={() => loadExample(item.name)}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            {error ? <p className="ghost">{error}</p> : null}
+          </div>
+          <section className="paper-card">
+            <h2 style={{ marginTop: 0 }}>编译期拦住什么</h2>
+            <p>缺审题门、类型对不上、守卫写成自然语言、工具不在白名单，都会在图上标红，不能入库。</p>
+            <p>弱测资攻击专门砸「生成器从不打上界」。过不了攻击的题，审题通过也发不出去。</p>
+          </section>
         </div>
-        {error ? <p className="ghost">{error}</p> : null}
-        <h2 className="kicker" style={{ marginTop: 28 }}>
-          草稿
-        </h2>
+        <div className="kicker">草稿</div>
         <table className="table">
           <thead>
             <tr>
@@ -98,7 +104,11 @@ export default function ComposeIndexPage() {
                 <td>
                   <Link href={`/compose/${row.id}`}>{row.source_nl.slice(0, 36)}</Link>
                 </td>
-                <td>{row.status}</td>
+                <td>
+                  <span className={`verdict ${row.status === "blocked" ? "WA" : row.status === "published" ? "AC" : ""}`}>
+                    {row.status}
+                  </span>
+                </td>
                 <td>{row.gate_status}</td>
                 <td>{row.published_problem_id ?? "—"}</td>
               </tr>
