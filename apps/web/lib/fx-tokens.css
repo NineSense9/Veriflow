@@ -16,6 +16,16 @@ html[data-theme="light"] {
   --fx-error: var(--error);
   --fx-warning: var(--warning);
   --fx-neutral: var(--text-2);
+  --fx-topography-line: color-mix(in srgb, var(--accent) 45%, var(--muted));
+  --fx-topography-line-soft: color-mix(in srgb, var(--accent) 22%, var(--muted));
+  --fx-topography-opacity: 0.16;
+  --fx-topography-emphasis: 0.22;
+  --pill-bg: transparent;
+  --pill-bg-active: var(--elevated);
+  --pill-text: var(--text-2);
+  --pill-text-active: var(--text);
+  --pill-hover: var(--surface-2);
+  --pill-border: var(--border);
 }
 
 html[data-theme="dark"] {
@@ -36,4 +46,14 @@ html[data-theme="dark"] {
   --fx-error: var(--error);
   --fx-warning: var(--warning);
   --fx-neutral: var(--text-2);
+  --fx-topography-line: color-mix(in srgb, var(--accent) 72%, #e5e7eb);
+  --fx-topography-line-soft: color-mix(in srgb, var(--accent) 40%, #9ca3af);
+  --fx-topography-opacity: 0.32;
+  --fx-topography-emphasis: 0.42;
+  --pill-bg: transparent;
+  --pill-bg-active: color-mix(in srgb, var(--accent) 18%, var(--elevated));
+  --pill-text: var(--text-2);
+  --pill-text-active: var(--text);
+  --pill-hover: var(--surface-2);
+  --pill-border: var(--border);
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { Renderer, Program, Mesh, Color, Triangle } from "ogl";
-import React, { useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
+import { getPointer } from "@/lib/pointer-fx";
 import "./FaultyTerminal.css";
 
 type Vec2 = [number, number];
@@ -266,7 +267,7 @@ export default function FaultyTerminal({
   chromaticAberration = 0,
   dither = 0,
   curvature = 0.2,
-  tint = '#ffffff',
+  tint = "#ffffff", // shader multiplier, not a theme fill
   mouseReact = true,
   mouseStrength = 0.2,
   dpr,
@@ -291,14 +292,7 @@ export default function FaultyTerminal({
 
   const ditherValue = useMemo(() => (typeof dither === 'boolean' ? (dither ? 1 : 0) : dither), [dither]);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    const ctn = containerRef.current;
-    if (!ctn) return;
-    const rect = ctn.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = 1 - (e.clientY - rect.top) / rect.height;
-    mouseRef.current = { x, y };
-  }, []);
+
 
   useEffect(() => {
     const ctn = containerRef.current;
@@ -391,6 +385,8 @@ export default function FaultyTerminal({
       }
 
       if (mouseReact) {
+        const p = getPointer();
+        mouseRef.current = { x: p.nx, y: 1 - p.ny };
         const dampingFactor = 0.08;
         const smoothMouse = smoothMouseRef.current;
         const mouse = mouseRef.current;
@@ -407,13 +403,10 @@ export default function FaultyTerminal({
     rafRef.current = requestAnimationFrame(update);
     ctn.appendChild(gl.canvas);
 
-    if (mouseReact) ctn.addEventListener('mousemove', handleMouseMove);
-
     return () => {
       cancelAnimationFrame(rafRef.current);
       document.removeEventListener("visibilitychange", onVis);
       resizeObserver.disconnect();
-      if (mouseReact) ctn.removeEventListener("mousemove", handleMouseMove);
       if (gl.canvas.parentElement === ctn) ctn.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
       loadAnimationStartRef.current = 0;
@@ -439,7 +432,6 @@ export default function FaultyTerminal({
     pageLoadAnimation,
     brightness,
     lightMode,
-    handleMouseMove
   ]);
 
   return <div ref={containerRef} className={`faulty-terminal-container ${className}`} style={style} {...rest} />;

@@ -6,7 +6,7 @@ import Shell from "@/components/Shell";
 import StatusChip from "@/components/StatusChip";
 import { api, VerifySession } from "@/lib/api";
 import { dimLabel } from "@/lib/status";
-import Topography from "@/components/reactbits/Topography";
+
 
 type Clause = {
   id: string;
@@ -42,7 +42,6 @@ export default function EvidencePage() {
     <Shell>
       <main className="page vf-page">
         <header className="page-head tight evidence-cert">
-          <Topography className="evidence-topo" opacity={0.16} />
           <p className="kicker">Evidence Certificate</p>
           <h1>证据证书</h1>
           <p className="lead">Proposal source and decision authority are recorded separately. 模型没有最终判定权。</p>

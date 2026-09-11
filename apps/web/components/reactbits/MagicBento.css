@@ -1,12 +1,12 @@
 .card-grid {
   --hue: 27;
   --sat: 69%;
-  --white: var(--text, #16181d);
-  --purple-primary: rgba(15, 118, 110, 1);
-  --purple-glow: rgba(15, 118, 110, 0.2);
-  --purple-border: rgba(15, 118, 110, 0.8);
-  --border-color: var(--border, #dfe3e8);
-  --background-dark: var(--surface, #fff);
+  --bento-text: var(--fx-fg);
+  --bento-primary: var(--fx-accent);
+  --bento-glow: var(--fx-glow);
+  --bento-border: var(--fx-line);
+  --border-color: var(--fx-line);
+  --background-dark: var(--fx-surface);
 }
 
 .card-grid {
@@ -49,7 +49,7 @@
 .magic-bento-card__content {
   display: flex;
   position: relative;
-  color: var(--white);
+  color: var(--bento-text);
 }
 
 .magic-bento-card__header {
@@ -122,21 +122,21 @@
 }
 
 @media (min-width: 1024px) {
-  .card-grid {
+  .card-grid:not(.vf-workbench) {
     grid-template-columns: repeat(4, 1fr);
   }
 
-  .magic-bento-card:nth-child(3) {
+  .card-grid:not(.vf-workbench) .magic-bento-card:nth-child(3) {
     grid-column: span 2;
     grid-row: span 2;
   }
 
-  .magic-bento-card:nth-child(4) {
+  .card-grid:not(.vf-workbench) .magic-bento-card:nth-child(4) {
     grid-column: 1 / span 2;
     grid-row: 2 / span 2;
   }
 
-  .magic-bento-card:nth-child(6) {
+  .card-grid:not(.vf-workbench) .magic-bento-card:nth-child(6) {
     grid-column: 4;
     grid-row: 3;
   }
@@ -156,12 +156,12 @@
   );
   border-radius: inherit;
   -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+    linear-gradient(#fff 0 0) content-box, /* mask compositing only */
+    linear-gradient(#fff 0 0); /* mask compositing only */
   -webkit-mask-composite: xor;
   mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+    linear-gradient(#fff 0 0) content-box, /* mask compositing only */
+    linear-gradient(#fff 0 0); /* mask compositing only */
   mask-composite: exclude;
   pointer-events: none;
   opacity: 1;
@@ -175,8 +175,8 @@
 
 .magic-bento-card--border-glow:hover {
   box-shadow:
-    0 4px 20px rgba(46, 24, 78, 0.4),
-    0 0 30px var(--purple-glow);
+    0 4px 20px var(--fx-glow),
+    0 0 30px var(--bento-glow);
 }
 
 .particle-container {
@@ -198,8 +198,8 @@
 
 .particle-container:hover {
   box-shadow:
-    0 4px 20px rgba(46, 24, 78, 0.2),
-    0 0 30px var(--purple-glow);
+    0 4px 20px var(--fx-glow),
+    0 0 30px var(--bento-glow);
 }
 
 /* Global spotlight styles */

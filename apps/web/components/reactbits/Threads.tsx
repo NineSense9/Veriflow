@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { getPointer } from "@/lib/pointer-fx";
 import "./Threads.css";
 
 interface ThreadsProps {
@@ -72,6 +73,10 @@ const Threads: React.FC<ThreadsProps> = ({
     const draw = (now: number) => {
       const { width, height } = wrap.getBoundingClientRect();
       ctx.clearRect(0, 0, width, height);
+      if (enableMouseInteraction) {
+        const p = getPointer();
+        mouse.current = { x: p.nx, y: p.ny };
+      }
       if (!hidden.current) {
         const time = (now - t0) / 1000;
         const lines = 36;
@@ -102,18 +107,10 @@ const Threads: React.FC<ThreadsProps> = ({
     };
     raf = requestAnimationFrame(draw);
 
-    const onMove = (e: PointerEvent) => {
-      if (!enableMouseInteraction) return;
-      const r = wrap.getBoundingClientRect();
-      mouse.current = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
-    };
-    wrap.addEventListener("pointermove", onMove);
-
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVis);
-      wrap.removeEventListener("pointermove", onMove);
     };
   }, [amplitude, color, distance, enableMouseInteraction]);
 

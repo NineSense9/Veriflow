@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   api,
   AlgorithmRecord,
@@ -21,8 +21,8 @@ import CardSwap, { Card } from "@/components/reactbits/CardSwap";
 import WitnessMotion from "@/components/WitnessMotion";
 import RuntimeReplay from "@/components/RuntimeReplay";
 import { effectsAllowScan, useEffects } from "@/lib/effects";
-
-const ComposeCanvas = dynamic(() => import("@/components/ComposeCanvas"), { ssr: false });
+import { setAmbientActivity } from "@/lib/ambient-activity";
+import ComposeCanvas, { type GraphHandle } from "@/components/ComposeCanvas";
 const EvidenceGraphView = dynamic(() => import("@/components/EvidenceGraphView"), { ssr: false });
 
 function chip(status: string) {
@@ -74,6 +74,8 @@ export default function VerificationConsole({
   const [origin, setOrigin] = useState<VerifySession | null>(null);
   const [nodeNote, setNodeNote] = useState("");
   const { prefs, effects } = useEffects();
+  const graphRef = useRef<GraphHandle>(null);
+  const [focused, setFocused] = useState("");
   const [scan, setScan] = useState(false);
   const [fresh, setFresh] = useState(!initialSession);
   const [repair, setRepair] = useState<{
@@ -99,6 +101,20 @@ export default function VerificationConsole({
     steps: { reason: string; patches: { operation: string; source?: string | null; target?: string | null; node_id?: string | null; reason?: string }[] }[];
   } | null>(null);
 
+  function focusIssue(issue: VerifyIssue | null, nodeId?: string) {
+    setSelected(issue);
+    const ids = issue
+      ? [...(issue.witness_path || []), ...(issue.minimized_nodes || []), ...(issue.affected_nodes || [])]
+      : nodeId
+        ? [nodeId]
+        : [];
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length) {
+      graphRef.current?.focusPath(unique);
+      setFocused(nodeId || unique[0]);
+    }
+  }
+
   function apply(next: VerifySession, opts?: { keepOrigin?: boolean }) {
     setSession(next);
     setSelected(next.static.issues[0] ?? next.runtime_findings?.[0] ?? null);
@@ -117,6 +133,7 @@ export default function VerificationConsole({
     setError("");
     setScan(true);
     setFresh(true);
+    setAmbientActivity("executing");
     try {
       apply(await api.reportSession({ demo: id }));
       const hist = await api.reportHistory(20);
@@ -126,6 +143,7 @@ export default function VerificationConsole({
     } finally {
       setBusy("");
       setScan(false);
+      setAmbientActivity("idle");
     }
   }
 
@@ -215,6 +233,7 @@ export default function VerificationConsole({
             type="button"
             className={demoId === demo.id ? "btn btn-sm btn-primary" : "btn btn-sm"}
             disabled={Boolean(busy)}
+            data-click-fx="strong"
             onClick={() => loadDemo(demo.id)}
           >
             {demo.title}
@@ -252,6 +271,7 @@ export default function VerificationConsole({
               setBusy("repair");
               setScan(true);
               setFresh(true);
+              setAmbientActivity("executing");
               try {
                 const report = await api.verifyRepair(session.ir, nl, prefs.aiRepair);
                 const next = await api.reportSession({
@@ -266,8 +286,10 @@ export default function VerificationConsole({
               } finally {
                 setBusy("");
                 setScan(false);
+                setAmbientActivity("idle");
               }
             }}
+            data-click-fx="strong"
           >
             {busy === "repair" ? "修复中…" : "受约束修复"}
           </button>
@@ -506,11 +528,23 @@ export default function VerificationConsole({
                 >
                   Evidence
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    graphRef.current?.fitAll();
+                    setFocused("");
+                  }}
+                >
+                  Fit All
+                </button>
+                {focused ? <span className="caption">Focused: {focused}</span> : null}
               </div>
               <div className="vf-dag" style={{ position: "relative" }}>
                 {scan && effectsAllowScan(effects) ? <GridScan active /> : null}
                 {graphMode === "workflow" && ir ? (
                   <ComposeCanvas
+                    ref={graphRef}
                     ir={ir}
                     errors={[]}
                     highlight={highlight}
@@ -519,21 +553,32 @@ export default function VerificationConsole({
                       const hit = issues.find(
                         (item) => item.affected_nodes?.includes(id) || item.minimized_nodes?.includes(id),
                       );
-                      setSelected(hit ?? null);
                       setNodeNote(hit ? "" : `节点 ${id} 没有 finding。`);
+                      if (hit) {
+                        focusIssue(hit, id);
+                        return;
+                      }
+                      const hop = ir.edges
+                        .filter((edge) => edge.from === id || edge.to === id)
+                        .flatMap((edge) => [edge.from, edge.to]);
+                      graphRef.current?.focusNodes([...new Set([id, ...hop])]);
+                      setSelected(null);
+                      setFocused(id);
                     }}
                   />
                 ) : session.graph ? (
-                  <EvidenceGraphView
-                    entities={session.graph.entities}
-                    relations={session.graph.relations}
-                    focusId={
-                      session.graph.entities.find(
-                        (item) =>
-                          item.type === "Issue" && (item.label === selected?.code || item.id.endsWith(selected?.id || "")),
-                      )?.id
-                    }
-                  />
+                  <div className="vf-dag-frame" style={{ height: 318, minHeight: 318 }}>
+                    <EvidenceGraphView
+                      entities={session.graph.entities}
+                      relations={session.graph.relations}
+                      focusId={
+                        session.graph.entities.find(
+                          (item) =>
+                            item.type === "Issue" && (item.label === selected?.code || item.id.endsWith(selected?.id || "")),
+                        )?.id
+                      }
+                    />
+                  </div>
                 ) : null}
               </div>
             </section>
@@ -558,22 +603,22 @@ export default function VerificationConsole({
                     {issues.map((issue) => (
                       <tr key={issue.id} className={selected?.id === issue.id ? "is-selected" : undefined}>
                         <td>
-                          <button type="button" className="vf-cell" onClick={() => setSelected(issue)}>
+                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
                             {chip(issue.severity === "HIGH" || issue.severity === "CRITICAL" ? "FAIL" : issue.severity)}
                           </button>
                         </td>
                         <td>
-                          <button type="button" className="vf-cell" onClick={() => setSelected(issue)}>
+                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
                             {issue.category}
                           </button>
                         </td>
                         <td>
-                          <button type="button" className="vf-cell" onClick={() => setSelected(issue)}>
+                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
                             {nodeOf(issue)}
                           </button>
                         </td>
                         <td>
-                          <button type="button" className="vf-cell" onClick={() => setSelected(issue)}>
+                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
                             {issue.code}
                           </button>
                         </td>

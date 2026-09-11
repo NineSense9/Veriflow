@@ -38,10 +38,14 @@ export default function Topography({
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
-      ctx.globalAlpha = opacity;
-      ctx.strokeStyle = "currentColor";
-      ctx.lineWidth = 1;
-      const levels = 8;
+      const css = getComputedStyle(document.documentElement);
+      const line = css.getPropertyValue("--fx-topography-line").trim() || "currentColor";
+      const op = parseFloat(css.getPropertyValue("--fx-topography-opacity")) || opacity;
+      ctx.globalAlpha = op;
+      ctx.strokeStyle = line;
+      const dark = document.documentElement.getAttribute("data-theme") === "dark";
+      ctx.lineWidth = dark ? 1.15 : 0.9;
+      const levels = dark ? 12 : 10;
       for (let i = 1; i <= levels; i++) {
         ctx.beginPath();
         for (let x = 0; x <= width; x += 4) {
@@ -55,13 +59,28 @@ export default function Topography({
         }
         ctx.stroke();
       }
+      const fade = ctx.createLinearGradient(0, 0, 0, height);
+      fade.addColorStop(0, "rgba(0,0,0,0)"); // mask compositing only
+      fade.addColorStop(0.12, "rgba(0,0,0,1)");
+      fade.addColorStop(0.88, "rgba(0,0,0,1)");
+      fade.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.globalCompositeOperation = "destination-in";
+      ctx.fillStyle = fade;
+      ctx.fillRect(0, 0, width, height);
+      ctx.globalCompositeOperation = "source-over";
     };
 
     const tick = (now: number) => {
+      if (document.hidden) return;
       const phase = ((now - start) / period) * Math.PI * 2;
       paint(phase);
-      if (drift && !document.hidden) raf = requestAnimationFrame(tick);
+      if (drift) raf = requestAnimationFrame(tick);
     };
+
+    const onVis = () => {
+      if (!document.hidden && drift) raf = requestAnimationFrame(tick);
+    };
+    document.addEventListener("visibilitychange", onVis);
 
     if (drift) raf = requestAnimationFrame(tick);
     else paint(0);
@@ -72,6 +91,7 @@ export default function Topography({
     ro.observe(wrap);
     return () => {
       cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", onVis);
       ro.disconnect();
     };
   }, [effects, opacity]);

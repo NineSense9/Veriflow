@@ -80,7 +80,7 @@ const MagicBento: React.FC<BentoProps> = ({
   return (
     <div
       ref={gridRef}
-      className={`card-grid ${className}`}
+      className={`vf-bento-root ${className}`}
       style={{ position: "relative" }}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
@@ -89,9 +89,11 @@ const MagicBento: React.FC<BentoProps> = ({
         <div
           ref={spotRef}
           aria-hidden="true"
+          className="vf-bento-spot"
           style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}
         />
       ) : null}
+      <div className={`card-grid ${className}`}>
       {children
         ? children
         : (cards || []).map((card) => {
@@ -107,7 +109,7 @@ const MagicBento: React.FC<BentoProps> = ({
               </>
             );
             const cls = `magic-bento-card ${enableBorderGlow ? "magic-bento-card--border-glow" : ""}`;
-            const style = { background: card.color || "var(--surface, #fff)" };
+            const style = { background: card.color || "var(--fx-surface)" };
             return card.href ? (
               <a key={card.title} href={card.href} className={cls} style={style}>
                 {inner}
@@ -118,6 +120,7 @@ const MagicBento: React.FC<BentoProps> = ({
               </article>
             );
           })}
+      </div>
     </div>
   );
 };

@@ -55,14 +55,14 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #e9e9ef;
+  color: var(--fx-fg);
   font-weight: 500;
   line-height: 1;
   overflow: visible;
 }
 
 .sm-toggle:focus-visible {
-  outline: 2px solid #ffffffaa;
+  outline: 2px solid var(--fx-accent);
   outline-offset: 4px;
   border-radius: 4px;
 }
@@ -132,7 +132,7 @@
   right: 0;
   width: clamp(260px, 38vw, 420px);
   height: 100%;
-  background: white;
+  background: var(--fx-surface-elevated);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;
@@ -236,7 +236,7 @@
 .sm-socials-link {
   font-size: 1.2rem;
   font-weight: 500;
-  color: #111;
+  color: var(--fx-fg);
   text-decoration: none;
   position: relative;
   padding: 2px 0;
@@ -254,7 +254,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--fx-fg);
   text-transform: uppercase;
 }
 
@@ -269,7 +269,7 @@
 
 .sm-panel-item {
   position: relative;
-  color: #000;
+  color: var(--fx-fg);
   font-weight: 600;
   font-size: 4rem;
   cursor: pointer;

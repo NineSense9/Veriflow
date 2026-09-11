@@ -12,7 +12,7 @@
 }
 
 .pill-nav {
-  --nav-h: 42px;
+  --nav-h: 36px;
   --logo: 36px;
   --pill-pad-x: 18px;
   --pill-gap: 3px;
@@ -36,7 +36,7 @@
   display: flex;
   align-items: center;
   height: var(--nav-h);
-  background: var(--base, #000);
+  background: var(--fx-surface);
   border-radius: 9999px;
 }
 
@@ -44,7 +44,7 @@
   width: var(--nav-h);
   height: var(--nav-h);
   border-radius: 50%;
-  background: var(--base, #000);
+  background: var(--fx-surface);
   padding: 8px;
   display: inline-flex;
   align-items: center;
@@ -80,13 +80,13 @@
   justify-content: center;
   height: 100%;
   padding: 0 var(--pill-pad-x);
-  background: var(--pill-bg, #fff);
-  color: var(--pill-text, var(--base, #000));
+  background: var(--pill-bg);
+  color: var(--pill-text);
   text-decoration: none;
   border-radius: 9999px;
   box-sizing: border-box;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 13px;
   line-height: 0;
   text-transform: uppercase;
   letter-spacing: 0.2px;
@@ -101,7 +101,7 @@
   left: 50%;
   bottom: 0;
   border-radius: 50%;
-  background: var(--base, #000);
+  background: var(--fx-surface);
   z-index: 1;
   display: block;
   pointer-events: none;
@@ -127,7 +127,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  color: var(--hover-text, #fff);
+  color: var(--pill-text-active);
   z-index: 3;
   display: inline-block;
   will-change: transform, opacity;
@@ -141,7 +141,7 @@
   transform: translateX(-50%);
   width: 12px;
   height: 12px;
-  background: var(--base, #000);
+  background: var(--fx-surface);
   border-radius: 50px;
   z-index: 4;
 }
@@ -168,7 +168,7 @@
   width: var(--nav-h);
   height: var(--nav-h);
   border-radius: 50%;
-  background: var(--base, #000);
+  background: var(--fx-surface);
   border: none;
   display: none;
   flex-direction: column;
@@ -189,7 +189,7 @@
 .hamburger-line {
   width: 16px;
   height: 2px;
-  background: var(--pill-bg, #fff);
+  background: var(--pill-text);
   border-radius: 1px;
   transition: all 0.01s ease;
   transform-origin: center;
@@ -200,9 +200,9 @@
   top: 3em;
   left: 1rem;
   right: 1rem;
-  background: var(--base, #f0f0f0);
+  background: var(--fx-surface-elevated);
   border-radius: 27px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--fx-fg) 14%, transparent);
   z-index: 998;
   opacity: 0;
   transform-origin: top center;
@@ -221,10 +221,10 @@
 .mobile-menu-popover .mobile-menu-link {
   display: block;
   padding: 12px 16px;
-  color: var(--pill-text, #fff);
-  background-color: var(--pill-bg, #fff);
+  color: var(--pill-text-active);
+  background-color: var(--pill-bg-active);
   text-decoration: none;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   border-radius: 50px;
   transition: all 0.2s ease;
@@ -232,6 +232,6 @@
 
 .mobile-menu-popover .mobile-menu-link:hover {
   cursor: pointer;
-  background-color: var(--base);
-  color: var(--hover-text, #fff);
+  background-color: var(--pill-hover);
+  color: var(--pill-text-active);
 }

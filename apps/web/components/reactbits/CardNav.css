@@ -13,10 +13,10 @@
   display: block;
   height: 60px;
   padding: 0;
-  background-color: white;
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--fx-surface-elevated);
+  border: 0.5px solid var(--fx-line);
   border-radius: 0.75rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px color-mix(in srgb, var(--fx-fg) 12%, transparent);
   position: relative;
   overflow: hidden;
   will-change: height;
@@ -83,7 +83,7 @@
 
 .card-nav-cta-button {
   background-color: var(--fx-surface-elevated);
-  color: white;
+  color: var(--fx-fg);
   border: none;
   border-radius: calc(0.75rem - 0.35rem);
   padding: 0 1rem;
@@ -95,7 +95,7 @@
 }
 
 .card-nav-cta-button:hover {
-  background-color: #333;
+  background-color: var(--fx-line);
 }
 
 .card-nav-content {

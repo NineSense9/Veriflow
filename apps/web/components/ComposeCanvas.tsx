@@ -11,9 +11,16 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useEffect, useMemo, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import type { ComposeError, WorkflowIR } from "@/lib/api";
-import { irToFlow } from "@/lib/ir-flow";
+import { dagFrameHeight, graphMetrics, irToFlow } from "@/lib/ir-flow";
+
+export type GraphHandle = {
+  fitAll: () => void;
+  focusNodes: (ids: string[]) => void;
+  focusPath: (ids: string[]) => void;
+  mode: () => "all" | "focus";
+};
 
 function KindNode({ data }: NodeProps) {
   const payload = data as {
@@ -41,18 +48,60 @@ function KindNode({ data }: NodeProps) {
 
 const nodeTypes = { kind: KindNode };
 
-function FitToGraph({ token }: { token: string }) {
-  const { fitView } = useReactFlow();
+const Inner = forwardRef<
+  GraphHandle,
+  {
+    nodes: Node[];
+    edges: ReturnType<typeof irToFlow>["edges"];
+    token: string;
+    onSelectNode?: (id: string) => void;
+  }
+>(function Inner({ nodes, edges, token, onSelectNode }, ref) {
+  const { fitView, getNodes } = useReactFlow();
   const ready = useNodesInitialized();
+  const mode = useRef<"all" | "focus">("all");
+  const focusIds = useRef<string[]>([]);
   const host = useRef<HTMLDivElement>(null);
+
+  const apply = (duration = 0) => {
+    if (mode.current === "focus" && focusIds.current.length) {
+      const wanted = new Set(focusIds.current);
+      fitView({
+        nodes: getNodes().filter((n) => wanted.has(n.id)),
+        padding: 0.32,
+        maxZoom: 1.22,
+        minZoom: 0.55,
+        duration,
+      });
+      return;
+    }
+    fitView({ padding: 0.22, maxZoom: 1.15, minZoom: 0.55, duration });
+  };
+
+  useImperativeHandle(ref, () => ({
+    fitAll() {
+      mode.current = "all";
+      focusIds.current = [];
+      apply(240);
+    },
+    focusNodes(ids: string[]) {
+      mode.current = "focus";
+      focusIds.current = ids;
+      apply(240);
+    },
+    focusPath(ids: string[]) {
+      mode.current = "focus";
+      focusIds.current = ids;
+      apply(240);
+    },
+    mode: () => mode.current,
+  }));
 
   useEffect(() => {
     if (!ready) return;
-    const frame = requestAnimationFrame(() => {
-      fitView({ padding: 0.18, minZoom: 0.55, maxZoom: 1.35, duration: 0 });
-    });
+    const frame = requestAnimationFrame(() => apply(0));
     return () => cancelAnimationFrame(frame);
-  }, [ready, token, fitView]);
+  }, [ready, token]);
 
   useEffect(() => {
     const node = host.current?.parentElement;
@@ -63,66 +112,21 @@ function FitToGraph({ token }: { token: string }) {
       const key = Math.round(node.clientWidth) * 10000 + Math.round(node.clientHeight);
       if (key === last) return;
       last = key;
-      fitView({ padding: 0.18, minZoom: 0.55, maxZoom: 1.35, duration: 0 });
+      apply(0);
     });
     ro.observe(node);
     return () => ro.disconnect();
-  }, [fitView, token]);
+  }, [token]);
 
-  return <div ref={host} className="rf-fit-probe" aria-hidden="true" />;
-}
-
-export default function ComposeCanvas({
-  ir,
-  errors,
-  highlight,
-  failing,
-  onSelectNode,
-}: {
-  ir: WorkflowIR;
-  errors: ComposeError[];
-  highlight?: { nodes: string[]; path: string[] };
-  failing?: string[];
-  onSelectNode?: (id: string) => void;
-}) {
-  const { nodes, edges } = useMemo(
-    () => irToFlow(ir, errors, highlight, failing),
-    [ir, errors, highlight, failing],
-  );
-  const token = `${ir.nodes.map((item) => item.id).join(",")}:${highlight?.nodes.join(",") ?? ""}:${ir.edges.length}`;
-
-  return (
-    <ReactFlowProvider>
-      <CanvasFrame
-        nodes={nodes}
-        edges={edges}
-        token={token}
-        onSelectNode={onSelectNode}
-      />
-    </ReactFlowProvider>
-  );
-}
-
-function CanvasFrame({
-  nodes,
-  edges,
-  token,
-  onSelectNode,
-}: {
-  nodes: Node[];
-  edges: ReturnType<typeof irToFlow>["edges"];
-  token: string;
-  onSelectNode?: (id: string) => void;
-}) {
   return (
     <ReactFlow
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
       fitView
-      fitViewOptions={{ padding: 0.18, minZoom: 0.55, maxZoom: 1.35 }}
+      fitViewOptions={{ padding: 0.22, minZoom: 0.55, maxZoom: 1.15 }}
       minZoom={0.55}
-      maxZoom={1.35}
+      maxZoom={1.3}
       panOnDrag={false}
       zoomOnScroll={false}
       zoomOnPinch={false}
@@ -134,7 +138,36 @@ function CanvasFrame({
       nodesConnectable={false}
       elementsSelectable
     >
-      <FitToGraph token={token} />
+      <div ref={host} className="rf-fit-probe" aria-hidden="true" />
     </ReactFlow>
   );
-}
+});
+
+const ComposeCanvas = forwardRef<
+  GraphHandle,
+  {
+    ir: WorkflowIR;
+    errors: ComposeError[];
+    highlight?: { nodes: string[]; path: string[] };
+    failing?: string[];
+    onSelectNode?: (id: string) => void;
+    height?: number;
+  }
+>(function ComposeCanvas({ ir, errors, highlight, failing, onSelectNode, height }, ref) {
+  const { nodes, edges } = useMemo(
+    () => irToFlow(ir, errors, highlight, failing),
+    [ir, errors, highlight, failing],
+  );
+  const token = `${ir.nodes.map((item) => item.id).join(",")}:${highlight?.nodes.join(",") ?? ""}:${ir.edges.length}`;
+  const frame = height ?? dagFrameHeight(graphMetrics(ir));
+  return (
+    <div className="vf-dag-frame" style={{ height: frame, minHeight: frame }}>
+      <ReactFlowProvider>
+        <Inner ref={ref} nodes={nodes} edges={edges} token={token} onSelectNode={onSelectNode} />
+      </ReactFlowProvider>
+    </div>
+  );
+});
+
+export default ComposeCanvas;
+export { dagFrameHeight, graphMetrics };

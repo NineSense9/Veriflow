@@ -60,6 +60,8 @@ function StressInner() {
   async function run() {
     setBusy(true);
     setError("");
+    const { setAmbientActivity } = await import("@/lib/ambient-activity");
+    setAmbientActivity("running");
     try {
       const next = await api.stress(problemId, {
         sol_lang: solLang,
@@ -75,6 +77,8 @@ function StressInner() {
       setError((err as Error).message || "对拍失败");
     } finally {
       setBusy(false);
+      const { setAmbientActivity } = await import("@/lib/ambient-activity");
+      setAmbientActivity("idle");
     }
   }
 
@@ -109,7 +113,7 @@ function StressInner() {
               style={{ width: 72, marginLeft: 8 }}
             />
           </label>
-          <button className="primary" type="button" disabled={busy || disabled} onClick={run}>
+          <button className="primary" type="button" disabled={busy || disabled} data-click-fx="strong" onClick={run}>
             {busy ? "对拍中" : "开拍"}
           </button>
         </div>

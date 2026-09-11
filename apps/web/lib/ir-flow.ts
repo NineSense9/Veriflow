@@ -50,7 +50,7 @@ export function irToFlow(
     return {
       id: node.id,
       type: "kind",
-      position: { x: 40 + col * 230, y: 40 + row * 110 },
+      position: { x: 32 + col * 168, y: 28 + row * 96 },
       data: {
         label,
         kind: node.kind,
@@ -74,4 +74,25 @@ export function irToFlow(
           : undefined,
   }));
   return { nodes, edges };
+}
+
+export function graphMetrics(ir: WorkflowIR) {
+  const { nodes } = irToFlow(ir, []);
+  let maxDepth = 0;
+  let maxRows = 0;
+  const colCount = new Map<number, number>();
+  for (const node of nodes) {
+    const col = Math.round((node.position.x - 32) / 168);
+    maxDepth = Math.max(maxDepth, col);
+    colCount.set(col, (colCount.get(col) || 0) + 1);
+  }
+  for (const n of colCount.values()) maxRows = Math.max(maxRows, n);
+  return { nodeCount: ir.nodes.length, maxDepth: maxDepth + 1, maxRows: maxRows || 1 };
+}
+
+export function dagFrameHeight(metrics: { maxRows: number; nodeCount: number }) {
+  if (metrics.maxRows <= 1 && metrics.nodeCount <= 8) return 268;
+  if (metrics.maxRows <= 2) return 318;
+  if (metrics.maxRows <= 3) return 362;
+  return 420;
 }

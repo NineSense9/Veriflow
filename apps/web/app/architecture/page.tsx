@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Shell from "@/components/Shell";
-import Threads from "@/components/reactbits/Threads";
 import { api } from "@/lib/api";
-import { effectsAllowBackground, useEffects } from "@/lib/effects";
 import map from "@/data/architecture.json";
 
 type ArchNode = (typeof map.nodes)[number];
@@ -14,12 +12,10 @@ const LENSES = map.lenses as { id: string; label: string; nodeIds: string[] }[];
 const STORY = map.story as { id: string; label: string; nodeIds: string[] }[];
 
 export default function ArchitecturePage() {
-  const { effects } = useEffects();
   const [lens, setLens] = useState("overview");
   const [storyStep, setStoryStep] = useState<number | null>(null);
   const [selected, setSelected] = useState<ArchNode | null>(null);
   const [commit, setCommit] = useState<string | null>(null);
-  const showBg = effectsAllowBackground(effects);
 
   useEffect(() => {
     api
@@ -71,17 +67,12 @@ export default function ArchitecturePage() {
               {item.label}
             </button>
           ))}
-          <button type="button" className={storyStep != null ? "on" : ""} onClick={() => setStoryStep(0)}>
+          <button type="button" className={storyStep != null ? "on" : ""} data-click-fx="strong" onClick={() => setStoryStep(0)}>
             Story: AI → Proof → Repair
           </button>
         </div>
         {storyStep != null ? <p className="caption">Story beat: {STORY[storyStep]?.label}</p> : null}
         <div className="arch-stage">
-          {showBg ? (
-            <div className="arch-threads">
-              <Threads color={[15 / 255, 118 / 255, 110 / 255]} amplitude={0.7} enableMouseInteraction={effects === "full"} />
-            </div>
-          ) : null}
           <svg viewBox={map.viewBox} className="arch-svg" role="img" aria-label="Authored system map">
             {map.edges.map((edge: ArchEdge) => {
               const a = map.nodes.find((n) => n.id === edge.from);
@@ -109,6 +100,7 @@ export default function ArchitecturePage() {
                   opacity={dim ? 0.22 : 1}
                   className={`arch-node ${node.kind} ${on ? "on" : ""}`}
                   onClick={() => setSelected(node)}
+                  data-click-fx="strong"
                   role="button"
                   tabIndex={0}
                 >

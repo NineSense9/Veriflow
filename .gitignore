@@ -12,11 +12,13 @@ dist/
 build/
 *.egg-info/
 artifacts/
+apps/web/tmp-ambient/
 *.db
 *.sqlite
 node_modules/
 .next/
 apps/web/out/
+apps/web/tsconfig.tsbuildinfo
 output/
 deploy/remote_*.py
 .DS_Store

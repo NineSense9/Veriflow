@@ -18,7 +18,7 @@ export default function CardNav({
 }) {
   if (!open) return null;
   return (
-    <div className="vf-card-nav-panel card-nav-content" role="menu">
+    <div className="vf-card-nav-panel" role="menu">
       {items.map((group) => (
         <article key={group.label} className="nav-card" style={{ background: "var(--fx-surface-elevated)", color: "var(--fx-fg)" }}>
           <p className="nav-card-label">{group.label}</p>

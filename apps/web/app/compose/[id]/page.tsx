@@ -98,6 +98,7 @@ export default function ComposeProjectPage() {
             type="button"
             className="primary"
             disabled={Boolean(busy)}
+            data-click-fx="strong"
             onClick={() => run("verify-repair", () => api.composeVerifyRepair(id, prefs.aiRepair))}
           >
             {busy === "verify-repair" ? "修复中" : "受约束修复"}
