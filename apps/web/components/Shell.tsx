@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, clearSession, currentUsername } from "@/lib/api";
 import { readTheme, type Theme } from "@/lib/theme";
+import { applyPrefs, readPrefs } from "@/lib/prefs";
 import ThemeToggle from "@/components/ThemeToggle";
 import Brand from "@/components/Brand";
 
@@ -86,6 +87,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [navOpen, setNavOpen] = useState(false);
   const [drop, setDrop] = useState<string | null>(null);
   const bar = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const [indicator, setIndicator] = useState({ x: 0, w: 0, on: 0 });
 
   useEffect(() => {
     const name = currentUsername();
@@ -106,12 +109,26 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       .then((h) => setSandbox(h.sandbox))
       .catch(() => setSandbox("down"));
     setTheme(readTheme());
+    applyPrefs(readPrefs());
   }, []);
 
   useEffect(() => {
     setNavOpen(false);
     setDrop(null);
   }, [pathname]);
+
+  useEffect(() => {
+    const root = navRef.current;
+    if (!root) return;
+    const active = root.querySelector("a.active, button.on") as HTMLElement | null;
+    if (!active) {
+      setIndicator((prev) => ({ ...prev, on: 0 }));
+      return;
+    }
+    const box = root.getBoundingClientRect();
+    const hit = active.getBoundingClientRect();
+    setIndicator({ x: hit.left - box.left, w: hit.width, on: 1 });
+  }, [pathname, drop, user]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -195,7 +212,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             {navOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
           </svg>
         </button>
-        <nav className="top-nav" aria-label="主导航">
+        <nav className="top-nav" aria-label="主导航" ref={navRef}>
+          <span
+            className="nav-indicator"
+            style={{ transform: `translateX(${indicator.x}px)`, width: indicator.w, opacity: indicator.on }}
+          />
           {CORE.map((link) => (
             <Link
               key={link.href}

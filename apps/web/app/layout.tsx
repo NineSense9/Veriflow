@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('vf_theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('vf_theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);var p=JSON.parse(localStorage.getItem('vf_prefs')||'{}');if(p.density)document.documentElement.dataset.density=p.density;if(p.reducedMotion)document.documentElement.dataset.motion='reduce';}catch(e){}`,
           }}
         />
       </head>

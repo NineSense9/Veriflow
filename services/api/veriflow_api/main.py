@@ -265,7 +265,15 @@ def _register_routes(application: FastAPI) -> None:
     @application.get("/api/health")
     def health() -> dict[str, object]:
         mode = sandbox_mode()
-        return {"ok": mode != "sandbox_down", "sandbox": mode}
+        return {
+            "ok": mode != "sandbox_down",
+            "sandbox": mode,
+            "ai": {
+                "provider": "deepseek",
+                "model": os.environ.get("DEEPSEEK_MODEL", "deepseek-chat"),
+                "configured": bool(os.environ.get("DEEPSEEK_API_KEY", "").strip()),
+            },
+        }
 
     @application.get("/api/sets")
     def list_sets():

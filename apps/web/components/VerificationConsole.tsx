@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { DIM_META, dimLabel, gateWhy } from "@/lib/status";
 import StatusChip from "@/components/StatusChip";
+import { ActivityList } from "@/components/AiRail";
 
 const ComposeCanvas = dynamic(() => import("@/components/ComposeCanvas"), { ssr: false });
 const EvidenceGraphView = dynamic(() => import("@/components/EvidenceGraphView"), { ssr: false });
@@ -300,6 +301,43 @@ export default function VerificationConsole({
             </dl>
           </section>
 
+          <nav className="vf-stepper" aria-label="Verification pipeline">
+            {session.pipeline.map((step) => {
+              const who = step.kind === "ai" || step.algorithm_id?.includes("repair") && step.status === "NOT_RUN" ? "AI / Deterministic" : "Deterministic";
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  className={`${pipe === step.id ? "on" : ""} ${step.status !== "PASS" && step.status !== "NOT_RUN" ? "running" : ""}`}
+                  onClick={() => setPipe(step.id)}
+                >
+                  <span className="who">{who}</span>
+                  <strong>{step.name}</strong>
+                  {chip(step.status)}
+                </button>
+              );
+            })}
+          </nav>
+          <ActivityList
+            items={[
+              ...(String((session.spec as { compiler?: string }).compiler) === "deepseek"
+                ? [{ t: "1", actor: "DeepSeek", action: "interpreted requirement → IR proposal", result: specBasis || "deepseek" }]
+                : [{ t: "1", actor: "Heuristic", action: "compiled spec without model", result: "fallback" }]),
+              { t: "2", actor: "Verifier", action: `static ${session.static.status}`, result: `${issues.length} findings` },
+              { t: "3", actor: "Verifier", action: `runtime ${session.runtime?.status ?? "NOT_RUN"}`, result: session.gate.ready },
+              ...(repair
+                ? [
+                    {
+                      t: "4",
+                      actor: "DeepSeek / rules",
+                      action: "proposed repair patches",
+                      result: repair.improved ? "improved after guard" : "not improved",
+                    },
+                    { t: "5", actor: "Guard", action: "schema / graph / policy / regression", result: repair.final.status },
+                  ]
+                : []),
+            ]}
+          />
           <dl className="vf-strip">
             <div>
               <dt>Status</dt>

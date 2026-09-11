@@ -406,7 +406,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  health: () => request<{ ok: boolean; sandbox: string }>("/api/health"),
+  health: () =>
+    request<{
+      ok: boolean;
+      sandbox: string;
+      ai?: { provider: string; model: string; configured: boolean };
+    }>("/api/health"),
   login: (username: string, password: string) =>
     request<{ token: string; username: string; role: string }>("/api/auth/login", {
       method: "POST",

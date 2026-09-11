@@ -5,6 +5,7 @@ import Link from "next/link";
 import Shell from "@/components/Shell";
 import { api, ComposeSummary, ProblemListItem, SubmissionRow, unwrapBench } from "@/lib/api";
 import StatusChip from "@/components/StatusChip";
+import { DualPlane } from "@/components/AiRail";
 
 type HistRow = {
   id: number;
@@ -35,6 +36,7 @@ export default function HomePage() {
   const [projects, setProjects] = useState<ComposeSummary[]>([]);
   const [bench, setBench] = useState<Record<string, unknown> | null>(null);
   const [sandbox, setSandbox] = useState("…");
+  const [ai, setAi] = useState<{ configured?: boolean; model?: string }>({});
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
 
@@ -50,7 +52,10 @@ export default function HomePage() {
     ]).then((results) => {
       if (cancelled) return;
       const [health, history, latest, compose, submissions, problemList] = results;
-      if (health.status === "fulfilled") setSandbox(health.value.sandbox);
+      if (health.status === "fulfilled") {
+        setSandbox(health.value.sandbox);
+        setAi(health.value.ai || {});
+      }
       else setSandbox("down");
       if (history.status === "fulfilled") setRuns(history.value.runs);
       if (latest.status === "fulfilled") setBench(unwrapBench(latest.value));
@@ -109,6 +114,11 @@ export default function HomePage() {
             </div>
           </header>
         </section>
+
+        <DualPlane
+          ai={{ model: ai.model, configured: ai.configured }}
+          proof={{ sandbox, gate: latestRun?.gate_ready, status: latestRun?.status }}
+        />
 
         <dl className="metric-strip">
           <div>

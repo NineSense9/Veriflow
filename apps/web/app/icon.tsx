@@ -15,12 +15,13 @@ export default function Icon() {
           justifyContent: "center",
           background: "#0f766e",
           color: "#ffffff",
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 700,
           fontFamily: "ui-monospace, monospace",
+          letterSpacing: -1,
         }}
       >
-        V
+        V·
       </div>
     ),
     size,

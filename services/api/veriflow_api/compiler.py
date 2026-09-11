@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from pathlib import Path
 
@@ -41,18 +40,8 @@ def fallback_compile(nl: str, errors: list[CheckError] | None = None) -> Workflo
 
 
 def compile_nl(nl: str, errors: list[CheckError] | None = None) -> tuple[WorkflowIR, str]:
-    """Return IR and backend name: deepseek | fallback."""
-    key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
-    if key:
-        try:
-            return _deepseek_compile(nl, errors, key), "deepseek"
-        except Exception:
-            pass
-    return fallback_compile(nl, errors), "fallback"
-
-
-def _deepseek_compile(nl: str, errors: list[CheckError] | None, key: str) -> WorkflowIR:
-    import httpx
+    """Return IR and backend name: deepseek | fallback. AI never decides PASS/FAIL."""
+    from veriflow_api.llm import complete
 
     system = PROMPT.read_text(encoding="utf-8")
     user = nl
@@ -61,33 +50,20 @@ def _deepseek_compile(nl: str, errors: list[CheckError] | None, key: str) -> Wor
         user += "\n\n上次静态检查失败，请修复后只输出完整 IR JSON：\n" + json.dumps(
             payload, ensure_ascii=False
         )
-    base = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
-    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-flash")
-    last_error: Exception | None = None
-    for _ in range(3):
-        response = httpx.post(
-            f"{base}/chat/completions",
-            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.2,
-            },
-            timeout=45.0,
-        )
-        response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"]
-        try:
-            ir = _parse_ir(content)
-            return ir
-        except Exception as exc:  # noqa: BLE001
-            last_error = exc
-            user = f"{nl}\n\n上次 JSON 不合格：{exc}\n请只输出符合 Schema 的 IR。"
-    raise last_error or ValueError("compile failed")
+    result = complete(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        json_object=True,
+        temperature=0.2,
+    )
+    if result.error or not result.text:
+        return fallback_compile(nl, errors), "fallback"
+    try:
+        return _parse_ir(result.text), "deepseek"
+    except Exception:
+        return fallback_compile(nl, errors), "fallback"
 
 
 def _parse_ir(text: str) -> WorkflowIR:
