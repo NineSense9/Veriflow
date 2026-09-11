@@ -41,24 +41,20 @@ export default function EvidencePage() {
   return (
     <Shell>
       <main className="page vf-page">
-        <header className="page-head tight">
+        <header className="page-head tight evidence-cert">
+          <Topography className="evidence-topo" opacity={0.16} />
           <p className="kicker">Evidence Certificate</p>
           <h1>证据证书</h1>
-          <p className="lead">
-            AI proposes. VeriFlow proves. 本页只展示 verifier / runtime / gate 的记录。模型没有最终判定权。
-          </p>
+          <p className="lead">Proposal source and decision authority are recorded separately. 模型没有最终判定权。</p>
         </header>
         {error ? <p className="err">{error}</p> : null}
         {!session ? (
           <p className="ghost">读取最近 run…</p>
         ) : (
           <>
-            <div className="evidence-topo" aria-hidden="true">
-              <Topography opacity={0.12} />
-            </div>
             <section>
               <h2>Proposal vs Decision</h2>
-              <p className="caption">Kill “Deterministic: yes”. 左边是提案来源，右边是 verifier 裁决。</p>
+              <p className="caption">左边是提案来源，右边是 verifier 裁决。</p>
               <div className="table-wrap">
                 <table className="table tight">
                   <thead>

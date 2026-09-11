@@ -8,6 +8,9 @@ import { readTheme, type Theme } from "@/lib/theme";
 import { applyPrefs, readPrefs } from "@/lib/prefs";
 import ThemeToggle from "@/components/ThemeToggle";
 import Brand from "@/components/Brand";
+import PillNav from "@/components/reactbits/PillNav";
+import CardNav from "@/components/reactbits/CardNav";
+import StaggeredMenu from "@/components/reactbits/StaggeredMenu";
 
 const CORE = [
   { href: "/", label: "工作台" },
@@ -16,19 +19,22 @@ const CORE = [
   { href: "/evidence", label: "证据" },
 ];
 
-const EVAL_ITEMS = [
-  { href: "/history", label: "历史" },
-  { href: "/benchmark", label: "基准" },
-  { href: "/algorithms", label: "算法中心" },
-  { href: "/architecture", label: "系统地图" },
+const EVAL_LINKS = [
+  { href: "/history", label: "历史", description: "Run records" },
+  { href: "/benchmark", label: "基准", description: "Evaluation lab" },
+  { href: "/algorithms", label: "算法中心", description: "Verifier registry" },
+  { href: "/architecture", label: "系统地图", description: "Repository-backed map" },
 ];
 
-const LAB_ITEMS = [
-  { href: "/problems", label: "题库" },
-  { href: "/sets", label: "题单" },
-  { href: "/status", label: "提交记录" },
-  { href: "/stress", label: "对拍" },
+const LAB_LINKS = [
+  { href: "/problems", label: "题库", description: "Training problems" },
+  { href: "/sets", label: "题单", description: "Problem sets" },
+  { href: "/status", label: "提交记录", description: "Judge history" },
+  { href: "/stress", label: "对拍", description: "Stress compare" },
 ];
+
+const EVAL_ITEMS = EVAL_LINKS;
+const LAB_ITEMS = LAB_LINKS;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -39,40 +45,28 @@ function anyActive(pathname: string, items: { href: string }[]) {
   return items.some((item) => isActive(pathname, item.href));
 }
 
-function Drop({
+function CardDrop({
   label,
   items,
   pathname,
   open,
   onToggle,
+  onClose,
 }: {
   label: string;
-  items: { href: string; label: string }[];
+  items: { href: string; label: string; description: string }[];
   pathname: string;
   open: boolean;
   onToggle: () => void;
+  onClose: () => void;
 }) {
   const active = anyActive(pathname, items);
   return (
-    <div className="nav-drop">
-      <button
-        type="button"
-        className={active || open ? "on" : undefined}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={onToggle}
-      >
+    <div className="nav-drop vf-card-drop">
+      <button type="button" className={active || open ? "on" : undefined} aria-expanded={open} aria-haspopup="menu" onClick={onToggle}>
         {label}
       </button>
-      {open ? (
-        <div className="nav-drop-panel" role="menu">
-          {items.map((item) => (
-            <Link key={item.href} href={item.href} role="menuitem" className={isActive(pathname, item.href) ? "active" : undefined} aria-current={isActive(pathname, item.href) ? "page" : undefined}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      ) : null}
+      <CardNav open={open} onClose={onClose} items={[{ label, links: items }]} />
     </div>
   );
 }
@@ -197,8 +191,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <a className="skip-link" href="#main">
         跳到内容
       </a>
-      {navOpen ? <button type="button" className="nav-scrim" aria-label="关闭导航" onClick={() => setNavOpen(false)} /> : null}
-      <aside className={navOpen ? "drawer open" : "drawer"}>{drawer}</aside>
+      <StaggeredMenu
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        items={[
+          ...CORE.map((item) => ({ label: item.label, link: item.href })),
+          { label: "评估", link: "/history" },
+          { label: "实验室", link: "/problems" },
+          { label: "设置", link: "/settings" },
+        ]}
+      />
+      <aside className="drawer">{drawer}</aside>
       <header className="topbar" ref={bar}>
         <Brand />
         <button
@@ -214,22 +217,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </svg>
         </button>
         <nav className="top-nav" aria-label="主导航" ref={navRef}>
-          <span
-            className="nav-indicator"
-            style={{ transform: `translateX(${indicator.x}px)`, width: indicator.w, opacity: indicator.on }}
-          />
-          {CORE.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={isActive(pathname, link.href) ? "active" : undefined}
-              aria-current={isActive(pathname, link.href) ? "page" : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <Drop label="评估" items={EVAL_ITEMS} pathname={pathname} open={drop === "eval"} onToggle={() => setDrop(drop === "eval" ? null : "eval")} />
-          <Drop label="实验室" items={LAB_ITEMS} pathname={pathname} open={drop === "lab"} onToggle={() => setDrop(drop === "lab" ? null : "lab")} />
+          <PillNav items={CORE} activeHref={pathname} className="desktop-pill" />
+          <CardDrop label="评估" items={EVAL_LINKS} pathname={pathname} open={drop === "eval"} onToggle={() => setDrop(drop === "eval" ? null : "eval")} onClose={() => setDrop(null)} />
+          <CardDrop label="实验室" items={LAB_LINKS} pathname={pathname} open={drop === "lab"} onToggle={() => setDrop(drop === "lab" ? null : "lab")} onClose={() => setDrop(null)} />
         </nav>
         <div className="top-meta">
           <span className="sandbox" title={`评测沙箱：${sandbox}`}>

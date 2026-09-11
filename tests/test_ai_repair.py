@@ -18,7 +18,7 @@ def _missing_gate():
 
 def test_ai_malformed_json_rejected():
     ir, spec, issues = _missing_gate()
-    plans, reason = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: "not-json")
+    plans, reason, _meta = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: "not-json")
     assert plans == []
     assert reason == "malformed_json"
 
@@ -26,7 +26,7 @@ def test_ai_malformed_json_rejected():
 def test_ai_invalid_operation_rejected():
     ir, spec, issues = _missing_gate()
     payload = {"candidates": [{"patches": [{"operation": "explode", "node_id": "x"}]}]}
-    plans, reason = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: json.dumps(payload))
+    plans, reason, _meta = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: json.dumps(payload))
     assert plans == []
     assert reason in {"invalid_patch_schema", "invalid_operation"}
 
@@ -48,7 +48,7 @@ def test_ai_forbidden_tool_rejected():
             }
         ]
     }
-    plans, reason = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: json.dumps(payload))
+    plans, reason, _meta = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: json.dumps(payload))
     assert plans == []
     assert reason == "forbidden_tool"
 
@@ -68,7 +68,7 @@ def test_ai_nested_forbidden_tool_rejected():
             }
         ]
     }
-    plans, reason = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: json.dumps(payload))
+    plans, reason, _meta = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: json.dumps(payload))
     assert plans == []
     assert reason == "forbidden_tool"
 
@@ -92,6 +92,6 @@ def test_guard_rejects_nested_forbidden_tool():
 
 def test_ai_empty_falls_back_reason():
     ir, spec, issues = _missing_gate()
-    plans, reason = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: "")
+    plans, reason, _meta = propose_ai_patches(ir, spec, issues, complete_fn=lambda _m: "")
     assert plans == []
     assert reason == "empty"

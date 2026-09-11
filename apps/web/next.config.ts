@@ -5,7 +5,7 @@ const apiOrigin = process.env.VERIFLOW_API_ORIGIN ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
-  transpilePackages: ["monaco-editor", "@monaco-editor/react", "@xyflow/react"],
+  transpilePackages: ["monaco-editor", "@monaco-editor/react", "@xyflow/react", "ogl"],
   webpack(config, { isServer }) {
     if (!isServer) {
       config.resolve.fallback = {

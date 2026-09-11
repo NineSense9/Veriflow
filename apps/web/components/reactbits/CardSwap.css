@@ -14,8 +14,8 @@
   top: 50%;
   left: 50%;
   border-radius: 12px;
-  border: 1px solid #fff;
-  background: #000;
+  border: 1px solid var(--fx-line);
+  background: var(--fx-surface);
 
   transform-style: preserve-3d;
   will-change: transform;

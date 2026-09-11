@@ -580,13 +580,7 @@ a.brand:hover .brand-text strong {
 }
 
 .reliability-overview::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.45;
-  background-image: radial-gradient(var(--border) 0.7px, transparent 0.7px);
-  background-size: 16px 16px;
+  display: none;
 }
 
 .reliability-overview > * {
@@ -2823,25 +2817,30 @@ html[data-effects="off"] .drawer {
   z-index: 1;
 }
 
-.arch-threads {
-  height: 280px;
-  margin: 0 0 12px;
-  border-radius: 12px;
-  overflow: hidden;
-  pointer-events: auto;
-}
-
 .arch-stage {
-  overflow: auto;
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface) 88%, transparent);
+  aspect-ratio: 1400 / 880;
+}
+
+.arch-threads {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  margin: 0;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .arch-svg {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  min-width: 1100px;
-  height: auto;
+  min-width: 0;
+  height: 100%;
 }
 
 .arch-edge {
@@ -2887,26 +2886,44 @@ html[data-effects="off"] .drawer {
   background: var(--surface);
 }
 
-.vf-bento.card-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+.vf-workbench.card-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 0.95fr;
+  grid-template-rows: auto auto auto;
+  gap: 12px;
   max-width: none;
   padding: 0;
   margin: 16px 0 24px;
 }
 
-.vf-bento .magic-bento-card {
+.vf-workbench .magic-bento-card,
+.vf-workbench .card-spotlight {
   min-height: 140px;
   aspect-ratio: auto;
-  background: var(--surface) !important;
-  color: var(--text);
+  background: var(--fx-surface);
+  color: var(--fx-fg);
   text-decoration: none;
+  padding: 16px;
+  border: 1px solid var(--fx-line);
+  border-radius: 16px;
 }
 
-.vf-bento .magic-bento-card:nth-child(3),
-.vf-bento .magic-bento-card:nth-child(4),
-.vf-bento .magic-bento-card:nth-child(6) {
-  grid-column: auto;
-  grid-row: auto;
+.vf-workbench.card-grid > .cell-latest { grid-column: 1 / 3; grid-row: 1 / 3; }
+.vf-workbench.card-grid > .cell-ai { grid-column: 3; grid-row: 1 / 3; min-height: 280px; }
+.vf-workbench.card-grid > .cell-proof { grid-column: 1; grid-row: auto; }
+.vf-workbench.card-grid > .cell-attention { grid-column: 2; grid-row: auto; }
+.vf-workbench.card-grid > .cell-runs { grid-column: 1 / 3; grid-row: auto; }
+.vf-workbench.card-grid > .cell-actions { grid-column: 3; grid-row: auto; }
+
+@media (min-width: 1024px) {
+  .vf-workbench.card-grid .magic-bento-card:nth-child(3),
+  .vf-workbench.card-grid .magic-bento-card:nth-child(4),
+  .vf-workbench.card-grid .magic-bento-card:nth-child(6) {
+    grid-column: unset;
+    grid-row: unset;
+  }
+  .vf-workbench.card-grid > .cell-latest { grid-column: 1 / 3; grid-row: 1 / 3; }
+  .vf-workbench.card-grid > .cell-ai { grid-column: 3; grid-row: 1 / 3; }
 }
 
 .vf-bento .magic-bento-card__title,
@@ -3012,9 +3029,17 @@ html[data-effects="off"] .drawer {
   padding: 16px;
 }
 
+.evidence-cert {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 22px;
+  border: 1px solid var(--fx-line);
+  border-radius: 12px;
+  background: var(--fx-surface);
+}
+
 .evidence-topo {
-  min-height: 80px;
-  color: var(--muted);
+  color: var(--fx-muted);
 }
 
 .slider-container {
@@ -3049,8 +3074,154 @@ html[data-effects="off"] .drawer {
 .magic-bento-card--border-glow::after {
   background: radial-gradient(
     var(--glow-radius) circle at var(--glow-x) var(--glow-y),
-    rgba(15, 118, 110, calc(var(--glow-intensity) * 0.8)) 0%,
-    rgba(15, 118, 110, calc(var(--glow-intensity) * 0.4)) 30%,
+    var(--fx-glow) 0%,
     transparent 60%
   );
+}
+
+.ambient-host {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ambient-fill,
+.ambient-host .faulty-terminal-container,
+.ambient-host canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.ambient-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 42%, var(--fx-mask) 100%);
+}
+
+.ambient-wash {
+  background: var(--fx-bg);
+}
+
+.shell,
+.login-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.page-home {
+  max-width: 1200px;
+}
+
+.page-arch,
+.page.vf-page {
+  max-width: 1280px;
+}
+
+.vf-pill-nav {
+  position: relative;
+}
+
+.vf-pill-nav .pill-nav-items {
+  background: var(--fx-surface);
+  border: 1px solid var(--fx-line);
+}
+
+.vf-pill-indicator {
+  position: absolute;
+  top: 3px;
+  height: calc(100% - 6px);
+  border-radius: 999px;
+  background: var(--fx-surface-elevated);
+  box-shadow: var(--shadow);
+  transition: transform 160ms var(--ease), width 160ms var(--ease), opacity 160ms;
+  z-index: 0;
+}
+
+.vf-pill-nav .pill {
+  position: relative;
+  z-index: 1;
+  color: var(--fx-fg);
+  padding: 0 14px;
+}
+
+.vf-card-drop {
+  position: relative;
+}
+
+.vf-card-nav-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 360px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--fx-line);
+  border-radius: 12px;
+  background: var(--fx-surface-elevated);
+  box-shadow: var(--shadow-lg);
+  z-index: 40;
+}
+
+.vf-card-nav-panel .nav-card-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.vf-card-nav-panel a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--fx-line);
+  color: var(--fx-fg);
+  text-decoration: none;
+  animation: vf-card-in 180ms var(--ease) both;
+}
+
+.vf-card-nav-panel a:hover {
+  background: var(--fx-accent-soft);
+}
+
+@keyframes vf-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.vf-staggered .sm-panel {
+  position: fixed;
+  top: var(--topbar-h);
+  right: 0;
+  bottom: 0;
+  width: min(320px, 88vw);
+  background: var(--fx-surface-elevated);
+  color: var(--fx-fg);
+  z-index: 50;
+  padding: 24px 16px;
+  pointer-events: auto;
+}
+
+.vf-staggered .sm-panel-item {
+  display: block;
+  padding: 12px 8px;
+  color: var(--fx-fg);
+  animation: vf-card-in 200ms var(--ease) both;
+}
+
+@media (max-width: 960px) {
+  .vf-workbench.card-grid {
+    grid-template-columns: 1fr;
+  }
+  .vf-workbench.card-grid > .cell-latest,
+  .vf-workbench.card-grid > .cell-ai,
+  .vf-workbench.card-grid > .cell-runs {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .desktop-pill {
+    display: none;
+  }
 }

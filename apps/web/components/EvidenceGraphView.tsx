@@ -1,6 +1,6 @@
 "use client";
 
-import { Background, Handle, Position, ReactFlow, type NodeProps } from "@xyflow/react";
+import { Handle, Position, ReactFlow, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useMemo } from "react";
 
@@ -79,8 +79,18 @@ export default function EvidenceGraphView({
   }
 
   return (
-    <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView proOptions={{ hideAttribution: true }}>
-      <Background color="var(--graph-grid)" gap={20} size={1} />
-    </ReactFlow>
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      fitView
+      panOnDrag={false}
+      zoomOnScroll={false}
+      zoomOnPinch={false}
+      zoomOnDoubleClick={false}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      proOptions={{ hideAttribution: true }}
+    />
   );
 }

@@ -21,30 +21,49 @@ ALLOWED_OPS = {
 }
 
 
+def _wrap_complete(complete_fn):
+    raw = complete_fn
+
+    def complete(messages, **kwargs):  # type: ignore[misc]
+        payload = raw(messages)
+        if hasattr(payload, "text"):
+            return payload
+
+        class R:
+            text = payload if isinstance(payload, str) else ""
+            error = None
+            model = None
+            latency_ms = None
+            prompt_tokens = None
+            completion_tokens = None
+            retries = 0
+            request_id = None
+            fallback_reason = None
+
+        return R()
+
+    return complete
+
+
 def propose_ai_patches(
     ir: WorkflowIR,
     spec: WorkflowSpec,
     issues: list[Issue],
     *,
     complete_fn=None,
-) -> tuple[list[list[Patch]], str | None]:
-    """Return (plans, reject_reason). complete_fn is injectable; never decides PASS/FAIL."""
+) -> tuple[list[dict], str | None, object | None]:
+    """Return (candidates, reject_reason, llm_result). Never decides PASS/FAIL."""
     if not issues:
-        return [], None
+        return [], None, None
+    llm_result = None
     if complete_fn is None:
         try:
             from veriflow_api.llm import complete, parse_json_object
         except Exception:  # noqa: BLE001
-            return [], "llm_unavailable"
+            return [], "llm_unavailable", None
     else:
         parse_json_object = __import__("json").loads
-
-        def complete(messages, **kwargs):  # type: ignore[misc]
-            class R:
-                text = complete_fn(messages)
-                error = None
-
-            return R()
+        complete = _wrap_complete(complete_fn)
 
     issue = issues[0]
     prompt = {
@@ -71,36 +90,43 @@ def propose_ai_patches(
         ],
         json_object=True,
     )
+    llm_result = result
     if getattr(result, "error", None) or not getattr(result, "text", ""):
-        return [], getattr(result, "fallback_reason", None) or getattr(result, "error", None) or "empty"
+        return [], getattr(result, "fallback_reason", None) or getattr(result, "error", None) or "empty", result
     try:
         payload = parse_json_object(result.text)
     except Exception:  # noqa: BLE001
-        return [], "malformed_json"
+        return [], "malformed_json", result
     raw_list = payload.get("candidates") if isinstance(payload, dict) else payload
     if isinstance(payload, dict) and "patches" in payload and not raw_list:
         raw_list = [payload]
     if not isinstance(raw_list, list):
-        return [], "malformed_json"
-    plans: list[list[Patch]] = []
+        return [], "malformed_json", result
+    plans: list[dict] = []
     for item in raw_list[:MAX_AI_CANDIDATES]:
         if not isinstance(item, dict):
-            return [], "invalid_candidate"
+            return [], "invalid_candidate", result
         try:
             patches = [Patch.model_validate(p) for p in item.get("patches") or []]
         except Exception:  # noqa: BLE001
-            return [], "invalid_patch_schema"
+            return [], "invalid_patch_schema", result
         if not patches:
             continue
         for patch in patches:
             if patch.operation not in ALLOWED_OPS:
-                return [], "invalid_operation"
+                return [], "invalid_operation", result
             kind = patch.kind or (patch.node or {}).get("kind")
             tool = patch.tool or (patch.node or {}).get("tool")
             if (kind == "tool" or tool) and tool and tool not in DOMAIN_TOOLS.get(ir.domain, ()):
-                return [], "forbidden_tool"
-        plans.append(patches)
-    return plans, None
+                return [], "forbidden_tool", result
+        plans.append(
+            {
+                "patches": patches,
+                "rationale": str(item.get("rationale") or ""),
+                "target_issue_id": item.get("target_issue_id") or (issues[0].id if issues else None),
+            }
+        )
+    return plans, None, llm_result
 
 
 def propose_ai_candidates(
@@ -110,33 +136,40 @@ def propose_ai_candidates(
     *,
     complete_fn=None,
 ) -> tuple[list[RepairCandidate], AIInvocationTrace]:
-    plans, reason = propose_ai_patches(ir, spec, issues, complete_fn=complete_fn)
+    plans, reason, llm = propose_ai_patches(ir, spec, issues, complete_fn=complete_fn)
     requested = True
     used = bool(plans)
-    status = "SUCCESS" if plans else ("FALLBACK" if reason else "NOT_USED")
+    model = getattr(llm, "model", None) or None
     trace = AIInvocationTrace(
         stage="repair",
         requested=requested,
         used=used,
         provider="deepseek" if used or reason not in {None, "llm_unavailable"} else None,
-        model="deepseek-chat" if used else None,
+        model=model,
         status="SUCCESS" if used else ("ERROR" if reason == "malformed_json" else "FALLBACK" if reason else "NOT_USED"),
-        fallback_reason=reason,
+        latency_ms=getattr(llm, "latency_ms", None),
+        prompt_tokens=getattr(llm, "prompt_tokens", None),
+        completion_tokens=getattr(llm, "completion_tokens", None),
+        retries=int(getattr(llm, "retries", 0) or 0),
+        request_id=getattr(llm, "request_id", None),
+        fallback_reason=reason or getattr(llm, "fallback_reason", None),
         prompt_version="repair-v1",
     )
-    target = issues[0].id if issues else None
     cands = [
         RepairCandidate(
             id=f"deepseek-{index:02d}",
             source="deepseek",
-            model=trace.model,
+            model=model,
             prompt_version="repair-v1",
-            target_issue_id=target,
-            rationale="ai patch proposal",
-            patches=plan,
+            target_issue_id=item.get("target_issue_id") or (issues[0].id if issues else None),
+            rationale=item.get("rationale") or "",
+            patches=item["patches"],
+            llm_latency_ms=getattr(llm, "latency_ms", None),
+            prompt_tokens=getattr(llm, "prompt_tokens", None),
+            completion_tokens=getattr(llm, "completion_tokens", None),
             fallback_reason=reason,
         )
-        for index, plan in enumerate(plans, start=1)
+        for index, item in enumerate(plans, start=1)
     ]
     return cands, trace
 

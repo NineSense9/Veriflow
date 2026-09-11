@@ -51,18 +51,11 @@ export default function ArchitecturePage() {
 
   return (
     <Shell>
-      <main className="page vf-page arch-page">
-        {showBg ? (
-          <div className="rb-bg arch-threads">
-            <Threads color={[15 / 255, 118 / 255, 110 / 255]} amplitude={0.85} enableMouseInteraction={effects === "full"} />
-          </div>
-        ) : (
-          <p className="caption">Threads background static after Effects Level {effects}.</p>
-        )}
+      <main className="page page-arch vf-page arch-page">
         <header className="page-head tight">
           <p className="kicker">Architecture Explorer</p>
           <h1>{map.title}</h1>
-          <p className="lead">{map.subtitle}</p>
+          <p className="lead">Repository-backed system map. Lens highlights paths; the map does not re-layout.</p>
         </header>
         <div className="seg" role="group" aria-label="Lens">
           {LENSES.map((item) => (
@@ -84,6 +77,11 @@ export default function ArchitecturePage() {
         </div>
         {storyStep != null ? <p className="caption">Story beat: {STORY[storyStep]?.label}</p> : null}
         <div className="arch-stage">
+          {showBg ? (
+            <div className="arch-threads">
+              <Threads color={[15 / 255, 118 / 255, 110 / 255]} amplitude={0.7} enableMouseInteraction={effects === "full"} />
+            </div>
+          ) : null}
           <svg viewBox={map.viewBox} className="arch-svg" role="img" aria-label="Authored system map">
             {map.edges.map((edge: ArchEdge) => {
               const a = map.nodes.find((n) => n.id === edge.from);
@@ -93,9 +91,10 @@ export default function ArchitecturePage() {
               const y1 = a.y + a.height / 2;
               const x2 = b.x + b.width / 2;
               const y2 = b.y + b.height / 2;
-              const dim = focus && !focus.has(edge.from) && !focus.has(edge.to);
+              const dim = Boolean(focus) && !(focus!.has(edge.from) && focus!.has(edge.to));
+              const hot = focus && (focus.has(edge.from) || focus.has(edge.to));
               return (
-                <g key={`${edge.from}-${edge.to}`} opacity={dim ? 0.18 : 1}>
+                <g key={`${edge.from}-${edge.to}`} opacity={dim ? 0.14 : hot ? 1 : 1}>
                   <line x1={x1} y1={y1} x2={x2} y2={y2} className={`arch-edge ${edge.kind}`} />
                 </g>
               );

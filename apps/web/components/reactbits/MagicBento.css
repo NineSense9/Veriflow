@@ -150,8 +150,8 @@
   padding: 6px;
   background: radial-gradient(
     var(--glow-radius) circle at var(--glow-x) var(--glow-y),
-    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.8)) 0%,
-    rgba(132, 0, 255, calc(var(--glow-intensity) * 0.4)) 30%,
+    var(--fx-glow) 0%,
+    transparent 30%,
     transparent 60%
   );
   border-radius: inherit;
@@ -191,7 +191,7 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: rgba(132, 0, 255, 0.2);
+  background: var(--fx-accent-soft);
   border-radius: 50%;
   z-index: -1;
 }

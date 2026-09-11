@@ -358,6 +358,8 @@ export type ComposeSummary = {
   gate_status: string;
   published_problem_id: string | null;
   updated_at: string;
+  compiler?: string | null;
+  ai_trace?: AIInvocationTrace;
 };
 
 export type StressResult = {

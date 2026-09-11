@@ -81,7 +81,7 @@ const MagicBento: React.FC<BentoProps> = ({
     <div
       ref={gridRef}
       className={`card-grid ${className}`}
-      style={{ position: "relative", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
+      style={{ position: "relative" }}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
     >
@@ -89,7 +89,7 @@ const MagicBento: React.FC<BentoProps> = ({
         <div
           ref={spotRef}
           aria-hidden="true"
-          style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2, mixBlendMode: "multiply" }}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}
         />
       ) : null}
       {children

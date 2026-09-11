@@ -17,7 +17,11 @@ Upstream commit vendored from: `3a1c7f2f9f94ed833934ab5c2635760b9e644583` (tag/c
 | Threads | `src/ts-default/Backgrounds/Threads` | `apps/web/components/reactbits/Threads.tsx` | Architecture | ogl/WebGL → Canvas 2D (no new WebGL stack) |
 | ElasticSlider | `src/ts-default/Components/ElasticSlider` | `apps/web/components/reactbits/ElasticSlider.tsx` | Settings code font | Dropped Chakra/react-icons; kept `motion`; added `onChange` |
 | ChromaGrid | `src/ts-default/Components/ChromaGrid` | `apps/web/components/reactbits/ChromaGrid.tsx` | Algorithms | GSAP → rAF damping; keep overlay/mask spotlight; optional badge instead of avatars; token palette |
-| LightRays | `src/ts-default/Backgrounds/LightRays` | `apps/web/components/reactbits/LightRays.tsx` | Login | Canvas 2D adaptation |
+| LightRays | `src/ts-default/Backgrounds/LightRays` | `apps/web/components/reactbits/LightRays.tsx` | Login | Canvas 2D adaptation; hosted from root AmbientBackground |
+| FaultyTerminal | `src/ts-default/Backgrounds/FaultyTerminal` | `apps/web/components/reactbits/FaultyTerminal.tsx` | Home ambient | Kept ogl/WebGL; SSR-safe dpr; pause on `document.hidden`; loseContext on unmount |
+| PillNav | `src/ts-default/Components/PillNav` | `apps/web/components/reactbits/PillNav.tsx` | Top nav | Next.js Link; CSS indicator instead of GSAP; token colors |
+| CardNav | `src/ts-default/Components/CardNav` | `apps/web/components/reactbits/CardNav.tsx` | 评估/实验室 | Panel of described cards; token surfaces |
+| StaggeredMenu | `src/ts-default/Components/StaggeredMenu` | `apps/web/components/reactbits/StaggeredMenu.tsx` | Mobile nav | 30–50ms stagger; token colors |
 | FadeContent | React Bits FadeContent (adapted) | `apps/web/components/reactbits/FadeContent.tsx` | extra | IntersectionObserver fade |
 | GridScan | VeriFlow original (not Pro) | `apps/web/components/reactbits/GridScan.tsx` | Verification new run only | Canvas scan; idle/history off |
 | Scanner | VeriFlow original (not Pro) | `apps/web/components/reactbits/Scanner.tsx` | Stress request only | Idle off; response off; history never |

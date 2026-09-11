@@ -23,8 +23,8 @@
     { "id": "overview", "label": "Overview", "nodeIds": [] },
     { "id": "ai", "label": "AI", "nodeIds": ["nl-ir", "ai-repair"] },
     { "id": "verification", "label": "Verification", "nodeIds": ["structural", "semantic", "safety", "dataflow", "incremental"] },
-    { "id": "repair", "label": "Repair", "nodeIds": ["ai-repair", "repair-guard", "repair-select", "repair-loop"] },
-    { "id": "runtime", "label": "Runtime", "nodeIds": ["runtime-mock", "runtime-monitor", "runtime-align"] },
+    { "id": "repair", "label": "Repair", "nodeIds": ["ai-repair", "repair-guard", "incremental", "repair-select", "repair-loop", "gate"] },
+    { "id": "runtime", "label": "Runtime", "nodeIds": ["runtime-mock", "runtime-monitor", "runtime-align", "gate"] },
     { "id": "evidence", "label": "Evidence", "nodeIds": ["gate", "explain", "sqlite"] }
   ],
   "nodes": [

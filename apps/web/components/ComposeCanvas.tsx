@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Background,
   Handle,
   Position,
   ReactFlow,
@@ -12,10 +11,9 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { ComposeError, WorkflowIR } from "@/lib/api";
 import { irToFlow } from "@/lib/ir-flow";
-import { readTheme } from "@/lib/theme";
 
 function KindNode({ data }: NodeProps) {
   const payload = data as {
@@ -92,13 +90,6 @@ export default function ComposeCanvas({
     [ir, errors, highlight, failing],
   );
   const token = `${ir.nodes.map((item) => item.id).join(",")}:${highlight?.nodes.join(",") ?? ""}:${ir.edges.length}`;
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const sync = () => setDark(readTheme() === "dark");
-    sync();
-    window.addEventListener("vf-theme", sync);
-    return () => window.removeEventListener("vf-theme", sync);
-  }, []);
 
   return (
     <ReactFlowProvider>
@@ -106,7 +97,6 @@ export default function ComposeCanvas({
         nodes={nodes}
         edges={edges}
         token={token}
-        dark={dark || readTheme() === "dark"}
         onSelectNode={onSelectNode}
       />
     </ReactFlowProvider>
@@ -117,13 +107,11 @@ function CanvasFrame({
   nodes,
   edges,
   token,
-  dark,
   onSelectNode,
 }: {
   nodes: Node[];
   edges: ReturnType<typeof irToFlow>["edges"];
   token: string;
-  dark: boolean;
   onSelectNode?: (id: string) => void;
 }) {
   return (
@@ -133,8 +121,13 @@ function CanvasFrame({
       nodeTypes={nodeTypes}
       fitView
       fitViewOptions={{ padding: 0.18, minZoom: 0.55, maxZoom: 1.35 }}
-      minZoom={0.4}
-      maxZoom={1.6}
+      minZoom={0.55}
+      maxZoom={1.35}
+      panOnDrag={false}
+      zoomOnScroll={false}
+      zoomOnPinch={false}
+      zoomOnDoubleClick={false}
+      preventScrolling
       proOptions={{ hideAttribution: true }}
       onNodeClick={(_, node) => onSelectNode?.(node.id)}
       nodesDraggable={false}
@@ -142,7 +135,6 @@ function CanvasFrame({
       elementsSelectable
     >
       <FitToGraph token={token} />
-      <Background color={dark ? "#2a2e37" : "#e5e7eb"} gap={20} size={1} />
     </ReactFlow>
   );
 }

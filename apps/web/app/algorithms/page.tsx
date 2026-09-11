@@ -21,7 +21,7 @@ function chromaItem(algo: AlgorithmRecord): ChromaItem {
   const ai = algo.kind === "ai_assisted" || !algo.deterministic;
   const fail = /safety|secret|fail/i.test(algo.category + algo.algorithm_id);
   const warn = /repair|incremental/i.test(algo.category + algo.algorithm_id);
-  const border = ai ? "#0f766e" : fail ? "#b42318" : warn ? "#b54708" : "#4b5563";
+  const border = ai ? "var(--fx-ai)" : fail ? "var(--fx-error)" : warn ? "var(--fx-warning)" : "var(--fx-neutral)";
   return {
     title: algo.name,
     subtitle: algo.category,
@@ -29,7 +29,7 @@ function chromaItem(algo: AlgorithmRecord): ChromaItem {
     location: algo.complexity || algo.kind,
     badge: algo.kind === "ai_assisted" ? "AI" : "DET",
     borderColor: border,
-    gradient: `linear-gradient(145deg, ${border}, #111)`,
+    gradient: `linear-gradient(145deg, ${border}, var(--fx-surface))`,
   };
 }
 
@@ -57,7 +57,7 @@ export default function AlgorithmsPage() {
           <h1>Algorithm Center</h1>
           <p className="lead">
             AI interprets → verifier checks → counterexample.minimize → repair.selection → repair.guard →
-            incremental.impact → gate。表内算法与这条 pipeline 是同一份注册表。ChromaGrid 是 vendored React Bits，token 色不是彩虹。
+            incremental.impact → gate。注册表与 verifier 共用。
           </p>
         </header>
         <ol className="algo-pipe">

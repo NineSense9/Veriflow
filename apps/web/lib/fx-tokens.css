@@ -1,0 +1,39 @@
+html[data-theme="light"] {
+  --fx-bg: var(--bg);
+  --fx-surface: var(--surface);
+  --fx-surface-elevated: var(--elevated);
+  --fx-fg: var(--text);
+  --fx-muted: var(--muted);
+  --fx-accent: var(--accent);
+  --fx-accent-soft: var(--accent-soft);
+  --fx-glow: color-mix(in srgb, var(--accent) 28%, transparent);
+  --fx-line: var(--border);
+  --fx-mask: color-mix(in srgb, var(--bg) 55%, transparent);
+  --fx-spotlight: color-mix(in srgb, var(--accent) 18%, transparent);
+  --fx-scan: color-mix(in srgb, var(--accent) 22%, transparent);
+  --fx-terminal-tint: 15, 118, 110;
+  --fx-ai: var(--accent);
+  --fx-error: var(--error);
+  --fx-warning: var(--warning);
+  --fx-neutral: var(--text-2);
+}
+
+html[data-theme="dark"] {
+  --fx-bg: var(--bg);
+  --fx-surface: var(--surface);
+  --fx-surface-elevated: var(--elevated);
+  --fx-fg: var(--text);
+  --fx-muted: var(--muted);
+  --fx-accent: var(--accent);
+  --fx-accent-soft: color-mix(in srgb, var(--accent) 18%, transparent);
+  --fx-glow: color-mix(in srgb, var(--accent) 40%, transparent);
+  --fx-line: var(--border);
+  --fx-mask: color-mix(in srgb, var(--bg) 40%, transparent);
+  --fx-spotlight: color-mix(in srgb, var(--accent) 22%, transparent);
+  --fx-scan: color-mix(in srgb, var(--accent) 28%, transparent);
+  --fx-terminal-tint: 45, 212, 191;
+  --fx-ai: var(--accent);
+  --fx-error: var(--error);
+  --fx-warning: var(--warning);
+  --fx-neutral: var(--text-2);
+}

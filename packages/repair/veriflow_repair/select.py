@@ -208,7 +208,7 @@ def evaluate_candidate(
     ms = (time.perf_counter() - t1) * 1000
     if not ok:
         if "whitelist" in reason or "tool" in reason:
-            stages.append(_stage("graph_integrity", "PASS", "pre-policy", 0))
+            stages.append(_stage("graph_integrity", "PASS", "pre-policy"))
             stages.append(_stage("policy_whitelist", "FAIL", reason, ms))
             stages = skip_rest(stages, 3, "not reached")
         else:
@@ -221,8 +221,8 @@ def evaluate_candidate(
         and (p.tool or (p.node or {}).get("tool")) not in allowed
         for p in cand.patches
     )
-    stages.append(_stage("graph_integrity", "PASS", "ok", ms / 2))
-    stages.append(_stage("policy_whitelist", "FAIL" if policy_hit else "PASS", "ok" if not policy_hit else "forbidden tool", ms / 2))
+    stages.append(_stage("graph_integrity", "PASS", "ok"))
+    stages.append(_stage("policy_whitelist", "FAIL" if policy_hit else "PASS", "ok" if not policy_hit else "forbidden tool"))
     if policy_hit:
         stages = skip_rest(stages, 3, "not reached")
         return CandidateEvaluation(candidate_id=cand.id, accepted=False, reject_reason="forbidden tool", stages=stages), None, None

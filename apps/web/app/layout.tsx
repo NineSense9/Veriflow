@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono, Literata } from "next/font/google";
 import Providers from "@/components/Providers";
 import "./globals.css";
+import "@/lib/fx-tokens.css";
 
 const serif = Literata({
   subsets: ["latin"],

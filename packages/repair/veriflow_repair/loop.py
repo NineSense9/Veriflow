@@ -34,6 +34,10 @@ class RepairStep(BaseModel):
     changed_edges: int = 0
     changed_parameters: int = 0
     reevaluated_constraints: int = 0
+    candidates: list[RepairCandidate] = Field(default_factory=list)
+    evaluations: list[CandidateEvaluation] = Field(default_factory=list)
+    selected_candidate_id: str | None = None
+    ai_trace: AIInvocationTrace | None = None
 
 
 class RepairReport(BaseModel):
@@ -118,6 +122,10 @@ def verify_repair_loop(
                     candidates_rejected_guard=stats.rejected_guard,
                     candidates_rejected_incremental=stats.rejected_incremental,
                     candidates_fully_verified=stats.fully_verified,
+                    candidates=list(stats.candidates),
+                    evaluations=list(stats.evaluations),
+                    selected_candidate_id=stats.selected_candidate_id,
+                    ai_trace=stats.ai_trace,
                 )
             )
             break
@@ -142,6 +150,10 @@ def verify_repair_loop(
                 changed_edges=diff["changed_edges"],
                 changed_parameters=diff["changed_parameters"],
                 reevaluated_constraints=impact.reevaluated_constraints,
+                candidates=list(stats.candidates),
+                evaluations=list(stats.evaluations),
+                selected_candidate_id=stats.selected_candidate_id,
+                ai_trace=stats.ai_trace,
             )
         )
         current = nxt

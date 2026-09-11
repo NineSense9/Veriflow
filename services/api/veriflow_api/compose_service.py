@@ -176,12 +176,27 @@ def list_projects(user_id: int) -> list[dict]:
     with connect() as connection:
         rows = connection.execute(
             """
-            SELECT id, source_nl, status, gate_status, published_problem_id, updated_at
+            SELECT id, source_nl, status, gate_status, published_problem_id, updated_at, compiler, ai_trace_json
             FROM compose_projects WHERE user_id = ? ORDER BY id DESC LIMIT 50
             """,
             (user_id,),
         ).fetchall()
-    return [dict(row) for row in rows]
+    out = []
+    for row in rows:
+        item = dict(row)
+        raw = item.pop("ai_trace_json", None)
+        if raw:
+            item["ai_trace"] = json.loads(raw)
+        else:
+            item["ai_trace"] = {
+                "stage": "nl_ir",
+                "requested": False,
+                "used": False,
+                "status": "UNKNOWN",
+                "fallback_reason": "provenance unavailable",
+            }
+        out.append(item)
+    return out
 
 
 def save_ir(user_id: int, project_id: int, ir: WorkflowIR) -> dict:
