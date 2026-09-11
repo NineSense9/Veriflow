@@ -29,12 +29,12 @@ function ReportBody() {
   }, []);
   return (
     <main className="page vf-page">
-      <header className="page-head tight">
-        <p className="kicker">Reliability Console</p>
-        <h1>验证</h1>
-        <p className="lead">
-          Requirement → Spec → IR → 结构 / 语义 / 静态可达 → 运行时模拟 → Issue → Repair → Gate。数据来自本次验证 session。
-        </p>
+      <header className="page-head split tight">
+        <div>
+          <p className="kicker">Verification session</p>
+          <h1>验证</h1>
+          <p className="lead">Gate · Finding · DAG · Evidence · Repair。同一 session，判定不来自模型。</p>
+        </div>
       </header>
       <VerificationConsole initialDemo={demo} />
       {train ? (

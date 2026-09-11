@@ -601,7 +601,7 @@ export default function VerificationConsole({
             </aside>
           </div>
           {repair && origin ? (
-            <section className="vf-repair">
+            <section className="vf-repair committed-verdict">
               <h2>Repair → Guard → Re-Verify</h2>
               <p className="caption">
                 AI Proposed Patch，然后 repair.guard + incremental.impact 裁决。Before 是原始 run

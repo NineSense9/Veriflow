@@ -10,6 +10,7 @@ export default function StatusChip({
   const text = value || "—";
   return (
     <span className={`verdict ${tone(text)}`} title={title || text}>
+      <i className="status-dot" aria-hidden="true" />
       {text}
     </span>
   );

@@ -77,28 +77,38 @@ export default function HomePage() {
   return (
     <Shell>
       <main className="page">
-        <header className="page-head">
-          <p className="kicker">AI proposes. VeriFlow proves.</p>
-          <h1>模型提出候选，验证器给出证据</h1>
-          <p className="lead">
-            Requirement → Spec → Workflow → Finding → Counterexample → Guarded Repair → Re-Verify。判定权不在 LLM。
-          </p>
-        </header>
-
-        <div className="hero-action">
-          <Link className="btn btn-primary" href="/report?demo=case4_runtime">
-            打开 Runtime FAIL
-          </Link>
-          <Link className="btn" href="/report?demo=case1_order">
-            缺审题门
-          </Link>
-          <Link className="btn" href="/compose">
-            需求编译
-          </Link>
-          <Link className="btn btn-ghost" href="/benchmark">
-            看基准
-          </Link>
-        </div>
+        <section className="reliability-overview">
+          <header className="page-head split">
+            <div>
+              <p className="kicker">Reliability overview</p>
+              <h1>模型提出候选，验证器给出证据</h1>
+              <p className="lead">
+                AI proposes. VeriFlow proves. Requirement → Spec → Workflow → Finding → Repair → Gate。判定权不在 LLM。
+              </p>
+              <p className="trace-motif" aria-hidden="true">
+                <span />
+                Propose
+                <span />
+                Verify
+                <span />
+                Evidence
+                <span className="ok" />
+                Repair
+              </p>
+            </div>
+            <div className="page-head-actions">
+              <Link className="btn btn-primary" href="/report?demo=case4_runtime">
+                打开 Runtime FAIL
+              </Link>
+              <Link className="btn" href="/report?demo=case1_order">
+                缺审题门
+              </Link>
+              <Link className="btn btn-ghost" href="/compose">
+                需求编译
+              </Link>
+            </div>
+          </header>
+        </section>
 
         <dl className="metric-strip">
           <div>
