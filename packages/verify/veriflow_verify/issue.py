@@ -36,6 +36,10 @@ class Issue(BaseModel):
     verification_method: Method = "STATIC_GRAPH"
     verdict: Verdict = "FAIL"
     root_cause_id: str | None = None
+    detected_by: str = ""
+    algorithm_version: str = ""
+    evidence_source: str = ""
+    minimized_nodes: list[str] = Field(default_factory=list)
 
     def to_check_error(self) -> CheckError:
         node_id = self.affected_nodes[0] if self.affected_nodes else None
@@ -51,12 +55,14 @@ def issue_from_check_error(error: CheckError, index: int) -> Issue:
         "TYPE_MISMATCH": ("dataflow", "HIGH", "类型不一致"),
         "DEAD_NODE": ("executable", "MEDIUM", "不可达或无出口"),
         "MISSING_HUMAN_GATE": ("safety", "CRITICAL", "缺少审题门"),
+        "CYCLE_DETECTED": ("structural", "HIGH", "图中存在环"),
     }
     category, severity, title = mapping.get(error.code, ("structural", "MEDIUM", error.code))
     method: Method = "POLICY" if error.code == "MISSING_HUMAN_GATE" else (
         "DATAFLOW" if error.code == "TYPE_MISMATCH" else "STATIC_GRAPH"
     )
     nodes = [error.node_id] if error.node_id else []
+    witness = list(getattr(error, "witness", None) or [])
     return Issue(
         id=f"{error.code.lower()}_{index}",
         category=category,
@@ -65,12 +71,16 @@ def issue_from_check_error(error: CheckError, index: int) -> Issue:
         title=title,
         description=error.message,
         affected_nodes=nodes,
+        witness_path=witness,
         expected=None,
         actual=error.message,
         repair_hint=_hint(error.code),
         evidence=["staticcheck"],
         verification_method=method,
         verdict="FAIL",
+        detected_by="graph.integrity" if error.code != "TYPE_MISMATCH" else "dataflow.slice",
+        algorithm_version="1.0",
+        evidence_source="staticcheck",
     )
 
 
@@ -83,5 +93,6 @@ def _hint(code: str) -> str:
         "DEAD_NODE": "删掉孤儿节点，或补上从入口到出口的边。",
         "MISSING_ON_FAIL": "为 guard / human_gate 设置 on_fail=reject。",
         "UNDEF_VAR": "守卫只引用 spec 或已有节点 id。",
+        "CYCLE_DETECTED": "去掉回边，保持 compose 图为 DAG。",
     }
     return hints.get(code, "按 expected 修正 IR。")

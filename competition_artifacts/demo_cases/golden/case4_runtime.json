@@ -1,0 +1,10 @@
+{
+  "title": "CASE 4 static PASS runtime FAIL",
+  "nl": "完整出题：生成器、范围守卫、审题门、入库。当 payment_status == success 时发送通知。",
+  "workflow": "examples/golden/case4_runtime_ir.json",
+  "skip_after": "if_pay",
+  "expect_static": "PASS",
+  "expect_runtime": "FAIL",
+  "expect_pattern": "STATIC PASS + RUNTIME FAIL",
+  "story": "DAG 含通知节点，静态覆盖通过；runtime 在 IF.true 后终止，通知与入库均未执行。"
+}

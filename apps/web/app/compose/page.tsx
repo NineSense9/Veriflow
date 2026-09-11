@@ -62,11 +62,13 @@ export default function ComposeIndexPage() {
     <Shell>
       <main className="page wide">
         <header className="page-head">
-          <h1>出题编译</h1>
-          <p className="lead">自然语言先变成规格，再验证出题图。点草稿进入 Verification Studio，可用受约束修复，而不是让模型整图重写。</p>
+          <h1>需求编译</h1>
+          <p className="lead">
+            Natural Language → Spec。编译器只负责解释与抽取；PASS/FAIL 仍由 verifier 裁决。AI proposes. VeriFlow proves.
+          </p>
         </header>
         <div className="field">
-          <label htmlFor="compose-nl">题意</label>
+          <label htmlFor="compose-nl">Requirement</label>
           <textarea
             id="compose-nl"
             className="compose-nl"

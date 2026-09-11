@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-09-10T15:22:25.325307+00:00",
+  "files": [
+    "README.md",
+    "algorithm_summary.md",
+    "application_value.md",
+    "architecture.md",
+    "benchmark_report.md",
+    "demo_cases/ci/commit_a.json",
+    "demo_cases/ci/commit_b.json",
+    "demo_cases/ci/commit_c.json",
+    "demo_cases/golden/case1_order.json",
+    "demo_cases/golden/case2_dataflow.json",
+    "demo_cases/golden/case3_safety.json",
+    "demo_cases/golden/case4_runtime.json",
+    "demo_cases/golden/case4_runtime_ir.json",
+    "deployment.md",
+    "innovation.md",
+    "known_limitations.md",
+    "metrics/cases.csv",
+    "metrics/metrics.json",
+    "test_report.md"
+  ]
+}

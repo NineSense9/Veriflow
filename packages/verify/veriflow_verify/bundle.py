@@ -8,6 +8,7 @@ from pathlib import Path
 
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_repair.loop import RepairReport
+from veriflow_runtime.hashing import spec_hash, workflow_hash
 from veriflow_spec.models import WorkflowSpec
 from veriflow_verify.result import VERIFIER_VERSION, VerificationResult
 
@@ -36,8 +37,8 @@ def evidence_bundle(
         "verifier_version": VERIFIER_VERSION,
         "git_commit": _git(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "workflow_hash": _hash(ir.model_dump(mode="json", by_alias=True)),
-        "spec_hash": _hash(spec.model_dump(mode="json")),
+        "workflow_hash": workflow_hash(ir),
+        "spec_hash": spec_hash(spec),
         "result": json.loads(result.model_dump_json()),
         "repair_history": json.loads(repair.model_dump_json()) if repair else None,
     }

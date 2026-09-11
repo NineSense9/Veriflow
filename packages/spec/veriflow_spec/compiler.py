@@ -5,8 +5,10 @@ from veriflow_spec.models import (
     OrderingConstraint,
     RequiredAction,
     SafetyPolicy,
+    TemporalConstraint,
     WorkflowSpec,
 )
+from veriflow_spec.spans import span
 
 
 def compile_spec(nl: str, domain: str = "compose") -> WorkflowSpec:
@@ -108,6 +110,18 @@ def _compose_spec(text: str) -> WorkflowSpec:
             requirement="外发 URL 视为潜在不安全流",
         ),
     ]
+    temporal = _compose_temporal(text)
+    traces = [
+        span(text, "act_gen", "生成器", "测资", "test_generator"),
+        span(text, "act_guard", "守卫", "范围", "上界"),
+        span(text, "act_gate", "审题", "人工", "human"),
+        span(text, "act_pub", "入库", "发布", "publish"),
+        span(text, "ord_gen_guard", "生成器", "守卫"),
+        span(text, "ord_guard_gate", "守卫", "审题"),
+        span(text, "ord_gate_pub", "审题", "入库"),
+        span(text, "tmp_if_true_then_notify", "通知", "邮件", "email", "payment"),
+        span(text, "tmp_eventually_notify", "通知", "邮件"),
+    ]
     return WorkflowSpec(
         domain="compose",
         goal=text.splitlines()[0][:80] if text else "compose a problem",
@@ -116,8 +130,10 @@ def _compose_spec(text: str) -> WorkflowSpec:
         ordering_constraints=ordering,
         data_dependencies=deps,
         safety_policies=policies,
+        temporal_constraints=temporal,
+        source_traces=traces,
         compiler="heuristic",
-        confidence=0.9 if text else 0.7,
+        compiler_basis="empty" if not text else ("keyword" if any(span.kind == "nl_span" for span in traces) else "platform_template"),
         evidence=evidence,
     )
 
@@ -154,7 +170,85 @@ def _campus_spec(text: str) -> WorkflowSpec:
             SafetyPolicy(id="pol_secret", kind="no_hardcoded_secret"),
             SafetyPolicy(id="pol_hook", kind="no_unrestricted_webhook"),
         ],
+        temporal_constraints=[
+            TemporalConstraint(
+                id="tmp_before_ocr_gate",
+                kind="BEFORE",
+                a="invoice_ocr",
+                b="human_gate",
+                requirement="识别必须在人工审之前执行",
+            ),
+            TemporalConstraint(
+                id="tmp_eventually_gate",
+                kind="EVENTUALLY",
+                a="human_gate",
+                requirement="人工审最终必须发生",
+            ),
+        ],
+        source_traces=[
+            span(text, "act_ocr", "发票", "识别", "ocr"),
+            span(text, "act_gate", "人工", "审"),
+        ],
         compiler="heuristic",
-        confidence=0.85,
+        compiler_basis="keyword" if text else "empty",
         evidence=["campus policy"],
     )
+
+
+def _compose_temporal(text: str) -> list[TemporalConstraint]:
+    constraints = [
+        TemporalConstraint(
+            id="tmp_before_gen_gate",
+            kind="BEFORE",
+            a="test_generator",
+            b="human_gate",
+            requirement="生成器必须在审题门之前执行",
+        ),
+        TemporalConstraint(
+            id="tmp_eventually_pub",
+            kind="EVENTUALLY",
+            a="publish_problem",
+            requirement="入库动作最终必须发生",
+        ),
+        TemporalConstraint(
+            id="tmp_once_pub",
+            kind="EXACTLY_ONCE",
+            a="publish_problem",
+            requirement="入库恰好一次",
+        ),
+        TemporalConstraint(
+            id="tmp_if_gen_then_gate",
+            kind="IF_EXECUTED_THEN",
+            a="test_generator",
+            b="human_gate",
+            requirement="跑过生成器则必须审题",
+        ),
+        TemporalConstraint(
+            id="tmp_data_gen_guard",
+            kind="DATA_FROM",
+            a="test_generator",
+            b="guard",
+            requirement="守卫消费的数据必须来自生成器",
+        ),
+    ]
+    lowered = text.lower()
+    if any(key in text for key in ("通知", "邮件", "email")) or "payment" in lowered:
+        constraints.append(
+            TemporalConstraint(
+                id="tmp_if_true_then_notify",
+                kind="IF_BRANCH_THEN",
+                a="branch",
+                b="notify",
+                branch="true",
+                requirement="条件为真时必须发送通知",
+            )
+        )
+        constraints.append(
+            TemporalConstraint(
+                id="tmp_eventually_notify",
+                kind="EVENTUALLY",
+                a="notify",
+                requirement="通知最终必须发生",
+            )
+        )
+    return constraints

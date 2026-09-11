@@ -5,8 +5,14 @@ export function irToFlow(
   ir: WorkflowIR,
   errors: ComposeError[],
   highlight?: { nodes: string[]; path: string[] },
+  failing?: string[],
 ): { nodes: Node[]; edges: Edge[] } {
-  const errorIds = new Set(errors.map((item) => item.node_id).filter(Boolean) as string[]);
+  const errorIds = new Set(
+    [
+      ...errors.map((item) => item.node_id).filter(Boolean),
+      ...(failing ?? []),
+    ] as string[],
+  );
   const selected = new Set(highlight?.nodes ?? []);
   const pathSet = new Set(highlight?.path ?? []);
   const indeg = new Map<string, number>();
@@ -49,8 +55,10 @@ export function irToFlow(
         label,
         kind: node.kind,
         error: errorIds.has(node.id),
+        status: errorIds.has(node.id) ? "fail" : selected.has(node.id) ? "sel" : "ok",
         selected: selected.has(node.id) || pathSet.has(node.id),
         onPath: pathSet.has(node.id),
+        dim: Boolean(highlight) && !selected.has(node.id) && !pathSet.has(node.id),
       },
     };
   });
@@ -61,7 +69,9 @@ export function irToFlow(
     style:
       pathSet.has(edge.from) && pathSet.has(edge.to)
         ? { stroke: "var(--wa)", strokeWidth: 2 }
-        : undefined,
+        : highlight
+          ? { stroke: "var(--border-strong)", strokeWidth: 1, opacity: 0.35 }
+          : undefined,
   }));
   return { nodes, edges };
 }

@@ -1,0 +1,16 @@
+# Default VeriFlow reliability-gate policy.
+fail_on:
+  severity:
+    - CRITICAL
+    - HIGH
+unknown_policy:
+  runtime: warning
+  safety: fail
+requirements:
+  minimum_coverage: 0.9
+repair:
+  allow_auto_repair: false
+regression:
+  allow_new_high_severity: false
+benchmark:
+  minimum_detection_f1: null

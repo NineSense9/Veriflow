@@ -24,13 +24,15 @@ def test_adapter_compose_roundtrip():
     assert again.name == ir.name
 
 
-def test_n8n_adapter_is_planned():
-    try:
-        N8nAdapter().to_ir({})
-    except NotImplementedError as exc:
-        assert "planned" in str(exc)
-    else:
-        raise AssertionError("n8n must stay unimplemented")
+def test_n8n_subset_roundtrip():
+    from veriflow_ir.n8n_subset import round_trip_ok
+
+    ir = _load("valid_lis.json")
+    ok, errors = round_trip_ok(ir)
+    assert ok, errors
+    exported = N8nAdapter().from_ir(ir)
+    back = N8nAdapter().to_ir(exported)
+    assert {n.id for n in back.nodes} == {n.id for n in ir.nodes}
 
 
 def test_valid_still_passes_legacy_and_multidim():

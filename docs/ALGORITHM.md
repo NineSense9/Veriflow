@@ -12,7 +12,7 @@ Given a natural-language problem-setting requirement `R` and a candidate `Workfl
 4. Emit issues with expected/actual/witness.
 5. Optionally search a small set of guarded patches and re-verify.
 
-The judged *student programs* still use Docker/process sandbox. Compose-graph “executable” here is reachability, not n8n runtime.
+The judged *student programs* still use Docker/process sandbox. Compose-graph runtime conformance uses a **mock DAG walk** (`veriflow_runtime.mock_exec`), not a live n8n worker.
 
 ## WorkflowSpec
 
@@ -58,10 +58,42 @@ Mutations must change serialized IR or raise `InvalidMutation`. Metrics are comp
 
 LLM-as-judge baseline: **N/A** unless a Key is configured and a runner exists. Do not invent scores.
 
+## Runtime alignment
+
+`runtime.alignment` (`packages/runtime/veriflow_runtime/align.py`): happens-before closure + spec BEFORE, Kahn extension biased by observed order, Needleman–Wunsch DP, then relabel HB reversals as `OUT_OF_ORDER`. Incomparable nodes are not forced into a unique linear order. Cost = sequential edit distance + order violations. Not Petri-net process mining.
+
+## Minimized counterexample
+
+Witness path + affected endpoints. Approximate. `globally_minimal=false`.
+
+## Registries
+
+`NodeSemanticsRegistry` (`veriflow_ir.semantics`) is queried by staticcheck whitelist and side-effect classification. `AlgorithmRegistry` (`veriflow_verify.algorithms`) is the same catalog the Algorithm Center API returns.
+
+## Runtime monitor
+
+Temporal subset (not LTL): BEFORE, AFTER, EVENTUALLY, NEVER, EXACTLY_ONCE, AT_LEAST_ONCE, AT_MOST_ONCE, IF_EXECUTED_THEN, IF_BRANCH_THEN, DATA_FROM.
+
+One pass over `events[]`. Obligations such as IF A THEN B fail if A is seen and B is not before trace end. UNKNOWN if a branch was never observed.
+
+Coverage: executed nodes / IR node count; required actions seen; verifiable constraints / total; branch nodes with a recorded branch.
+
+## Incremental verification
+
+Diff kinds: NODE_ADDED/REMOVED, NODE_TYPE_CHANGED, PARAMETER_CHANGED, EDGE_ADDED/REMOVED, CONDITION_CHANGED, BINDING_CHANGED, TRIGGER_CHANGED.
+
+Impact = changed nodes ∪ downstream. Re-run only affected verifier categories when a previous result exists. Node add/remove → full `verify_workflow`. Equivalence compares status, issue codes, failed constraint ids.
+
+## Reliability gate
+
+`evaluate_gate`: fail on CRITICAL/HIGH (policy), runtime FAIL, coverage below `minimum_coverage`. UNKNOWN + warning policy → REVIEW REQUIRED (exit 0). Exceptions in CLI → exit 2.
+
 ## Limitations
 
-- Compose-json only. n8n/Dify adapters are stubs.
+- Canonical IR is compose-json. n8n is a **nodes/connections subset** stored in parameters; not a live instance.
+- Dify adapter raises NotImplementedError.
 - No SMT.
 - No full inter-node taint.
 - Spec paraphrases for stability are hand-written Chinese variants, not an LLM rewrite engine.
 - Sandbox isolation applies to submitted contestant code, not to IR patch application (pure JSON rewrite).
+- Runtime CASE 4 uses `skip_after` to truncate a mock trace; it is not a recorded production execution.

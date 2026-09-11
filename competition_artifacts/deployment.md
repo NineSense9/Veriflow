@@ -1,0 +1,86 @@
+# 验流 Veriflow 部署说明
+
+## 在线演示
+
+- 网站：http://116.62.5.67/  
+- API：http://116.62.5.67:8010/api/health  
+- 账号：`demo` / `demo`；出题：`setter` / `setter`  
+- 公网安全组放行 **80**、**8010**。本机 **8000** 若已有其他项目，不要占用。
+
+## 运行环境
+
+| 项 | 值 |
+|---|---|
+| 系统 | Ubuntu 24.04 |
+| 后端 | Python 3.12 + FastAPI（systemd `veriflow-api`，0.0.0.0:8010） |
+| 前端 | Node 20 + Next.js（systemd `veriflow-web`，127.0.0.1:3000） |
+| 入口 | nginx :80，`/api` 反代 8010，其余反代 3000 |
+| 评测 | Docker 镜像 `veriflow-sandbox:latest`（g++ / python3，禁网） |
+| 数据 | SQLite `/opt/veriflow/artifacts/veriflow.db` |
+
+## 服务器目录
+
+```text
+/opt/veriflow                 源码
+/opt/veriflow/.venv           Python 环境
+/opt/veriflow/.env            密钥与沙箱开关（不入库）
+/opt/veriflow/deploy          nginx / systemd / Dockerfile
+```
+
+## 一键安装（新机）
+
+```text
+# 将仓库放到 /opt/veriflow 后
+bash /opt/veriflow/deploy/setup.sh
+```
+
+脚本会安装 Docker、Node、Python 依赖、构建前端、写入 systemd 与 nginx。Docker Hub 超时会把 `VERIFLOW_SANDBOX` 设为 `process`。国内机建议：
+
+```text
+bash /opt/veriflow/deploy/build-sandbox.sh
+```
+
+该脚本用已配置镜像源构建 `veriflow-sandbox`，成功后切回 `docker` 并重启 API。
+
+## 环境变量（.env）
+
+```text
+VERIFLOW_SANDBOX=docker
+VERIFLOW_SANDBOX_IMAGE=veriflow-sandbox:latest
+VERIFLOW_DB=/opt/veriflow/artifacts/veriflow.db
+VERIFLOW_API_ORIGIN=http://127.0.0.1:8010
+DEMO_PASSWORD=demo
+SETTER_PASSWORD=setter
+DEEPSEEK_API_KEY=
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-flash
+```
+
+填写 `DEEPSEEK_API_KEY` 后：
+
+```text
+systemctl restart veriflow-api
+```
+
+Compiler / Solver / Tutor 即走云端；不填则本地启发式，核心判定仍是沙箱。
+
+## 常用运维
+
+```text
+systemctl status veriflow-api veriflow-web nginx
+journalctl -u veriflow-api -n 50 --no-pager
+curl http://127.0.0.1:8010/api/health
+```
+
+更新代码后：同步到 `/opt/veriflow`，`pip install -e /opt/veriflow`，`cd apps/web && npm run build`，`systemctl restart veriflow-api veriflow-web`。
+
+## 本机开发
+
+```text
+python -m pip install -e ".[dev]"
+python -m pytest
+python -c "import uvicorn; uvicorn.run('veriflow_api.main:app', host='127.0.0.1', port=8000)"
+cd apps/web && npm install && npm run dev
+```
+
+本机默认进程沙箱。不要把 `.env` 提交进 git。

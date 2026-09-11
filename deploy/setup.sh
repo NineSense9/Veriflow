@@ -50,7 +50,7 @@ DEMO_PASSWORD=demo
 SETTER_PASSWORD=setter
 DEEPSEEK_API_KEY=
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-flash
+DEEPSEEK_MODEL=deepseek-chat
 EOF
 fi
 

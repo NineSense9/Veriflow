@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from veriflow_ir.n8n_subset import ir_to_n8n, n8n_to_ir
 from veriflow_ir.workflow import WorkflowIR
 
 
@@ -14,8 +15,6 @@ class WorkflowAdapter(Protocol):
 
 
 class ComposeJsonAdapter:
-    """Canonical adapter: native WorkflowIR JSON used by compose examples."""
-
     name = "compose-json"
 
     def to_ir(self, payload: dict) -> WorkflowIR:
@@ -26,17 +25,15 @@ class ComposeJsonAdapter:
 
 
 class N8nAdapter:
-    name = "n8n"
+    """Subset mapper: n8n-shaped nodes/connections. Not a live n8n control plane."""
+
+    name = "n8n-subset"
 
     def to_ir(self, payload: dict) -> WorkflowIR:
-        raise NotImplementedError(
-            "n8n adapter is planned; current full support is compose-json WorkflowIR"
-        )
+        return n8n_to_ir(payload)
 
     def from_ir(self, ir: WorkflowIR) -> dict:
-        raise NotImplementedError(
-            "n8n adapter is planned; current full support is compose-json WorkflowIR"
-        )
+        return ir_to_n8n(ir)
 
 
 class DifyAdapter:
@@ -52,6 +49,7 @@ class DifyAdapter:
 ADAPTERS: dict[str, WorkflowAdapter] = {
     "compose-json": ComposeJsonAdapter(),
     "n8n": N8nAdapter(),
+    "n8n-subset": N8nAdapter(),
     "dify": DifyAdapter(),
 }
 

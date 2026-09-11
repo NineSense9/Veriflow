@@ -45,8 +45,7 @@ def _hardcoded_secrets(ir: WorkflowIR) -> list[Issue]:
                     expected="env / secret ref",
                     actual=key,
                     repair_hint="删掉明文密钥，改为环境变量引用。",
-                    evidence=["taint: credential source in node.config"],
-                    confidence=0.86,
+                    evidence=["policy: credential-like key in node.config (keyword, not taint proof)"],
                     verification_method="POLICY",
                     verdict="FAIL",
                 )
@@ -75,8 +74,7 @@ def _webhooks(ir: WorkflowIR) -> list[Issue]:
                 expected="私网或显式白名单",
                 actual=url,
                 repair_hint="确认外发是有意的，或改为内网地址。",
-                evidence=["potential unsafe flow: node.config.url"],
-                confidence=0.7,
+                evidence=["policy: http URL in config (keyword, not taint proof)"],
                 verification_method="POLICY",
                 verdict="FAIL",
             )

@@ -1,0 +1,65 @@
+name: Veriflow reliability gate
+
+on:
+  push:
+    paths:
+      - "examples/compose/**"
+      - "examples/ci/**"
+      - "examples/golden/**"
+      - "examples/veriflow-policy.*"
+      - "packages/**"
+      - "services/api/**"
+      - "tests/**"
+      - ".github/workflows/veriflow.yml"
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -q
+      - name: Gate PASS on commit A
+        env:
+          PYTHONPATH: packages/ir:packages/staticcheck:packages/compare:packages/sandbox:packages/mutate:packages/spec:packages/verify:packages/repair:packages/explain:packages/cli:packages/runtime:services/api
+        run: |
+          mkdir -p artifacts
+          python -m veriflow_cli gate \
+            --workflow examples/ci/commit_a.json \
+            --nl "完整出题：生成器、范围守卫、审题门、入库。" \
+            --policy examples/veriflow-policy.yaml \
+            --report artifacts/gate-a.md \
+            --junit artifacts/gate-a.xml
+      - name: Gate FAIL on commit B (quality gate, not tool error)
+        env:
+          PYTHONPATH: packages/ir:packages/staticcheck:packages/compare:packages/sandbox:packages/mutate:packages/spec:packages/verify:packages/repair:packages/explain:packages/cli:packages/runtime:services/api
+        run: |
+          set +e
+          python -m veriflow_cli gate \
+            --workflow examples/ci/commit_b.json \
+            --nl "完整出题：生成器、范围守卫、审题门、入库。" \
+            --policy examples/veriflow-policy.yaml \
+            --report artifacts/gate-b.md
+          code=$?
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 (QUALITY GATE FAIL), got $code"
+            exit 1
+          fi
+      - name: Runtime CASE 4 (static PASS, runtime FAIL)
+        env:
+          PYTHONPATH: packages/ir:packages/staticcheck:packages/compare:packages/sandbox:packages/mutate:packages/spec:packages/verify:packages/repair:packages/explain:packages/cli:packages/runtime:services/api
+        run: |
+          python -m veriflow_cli runtime \
+            --workflow examples/golden/case4_runtime_ir.json \
+            --nl "完整出题：生成器、范围守卫、审题门、入库。当 payment_status == success 时发送通知。" \
+            --skip-after if_pay
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: veriflow-gate
+          path: artifacts/gate-*
+          if-no-files-found: ignore

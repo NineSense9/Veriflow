@@ -19,8 +19,15 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "验流 Veriflow",
-  description: "可验证算法训练平台",
+  title: {
+    default: "VeriFlow",
+    template: "%s · VeriFlow",
+  },
+  applicationName: "VeriFlow",
+  description: "Specification-guided verification for LLM-generated workflows. AI proposes. VeriFlow proves.",
+  icons: {
+    icon: [{ url: "/icon", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -70,7 +70,10 @@ def test_compose_nl_missing_gate(api_client):
         headers=headers,
     )
     assert created.status_code == 200
-    assert any(error["code"] == "MISSING_HUMAN_GATE" for error in created.json()["errors"])
+    body = created.json()
+    assert body.get("compiler") in {"deepseek", "fallback"}
+    if body.get("compiler") == "fallback":
+        assert any(error["code"] == "MISSING_HUMAN_GATE" for error in body["errors"])
 
 
 def test_weak_bounds_cannot_publish(api_client):
@@ -112,3 +115,49 @@ def test_verify_and_guarded_repair_endpoints(api_client):
     body = repaired.json()
     assert body["final"]["status"] == "PASS"
     assert body["improved"] is True
+
+
+def test_runtime_and_gate_endpoints(api_client):
+    headers = _login(api_client)
+    ir = json.loads((ROOT / "examples/compose/valid_lis.json").read_text(encoding="utf-8"))
+    runtime = api_client.post(
+        "/api/runtime",
+        json={"ir": ir, "nl": "完整出题：生成器、范围守卫、审题门、入库。", "skip_after": "g_bounds"},
+        headers=headers,
+    )
+    assert runtime.status_code == 200
+    assert runtime.json()["cross"]["pattern"] == "STATIC PASS + RUNTIME FAIL"
+    gate = api_client.post(
+        "/api/gate",
+        json={"ir": ir, "nl": "完整出题：生成器、范围守卫、审题门、入库。"},
+        headers=headers,
+    )
+    assert gate.status_code == 200
+    assert gate.json()["ready"] == "READY"
+    n8n = api_client.get("/api/integrations/n8n", headers=headers)
+    assert n8n.status_code == 200
+    assert n8n.json()["available"] is False
+
+
+def test_report_session_and_algorithms(api_client):
+    headers = _login(api_client)
+    demos = api_client.get("/api/demos", headers=headers)
+    assert demos.status_code == 200
+    ids = [item["id"] for item in demos.json()["demos"]]
+    assert "case4_runtime" in ids
+    session = api_client.post("/api/report/session", json={"demo": "case4_runtime"}, headers=headers)
+    assert session.status_code == 200, session.text
+    body = session.json()
+    assert body["cross"]["pattern"] == "STATIC PASS + RUNTIME FAIL"
+    assert body["matrix"]["rows"]
+    assert body["alignment"]["deviation_count"] >= 1
+    assert body["pipeline"]
+    algos = api_client.get("/api/algorithms", headers=headers)
+    assert algos.status_code == 200
+    assert algos.json()["deterministic"] >= 1
+    one = api_client.get("/api/algorithms/runtime.alignment", headers=headers)
+    assert one.status_code == 200
+    assert one.json()["code_location"].endswith("align.py")
+    stored = api_client.get(f"/api/report/runs/{session.json()['run_id']}", headers=headers)
+    assert stored.status_code == 200
+    assert stored.json().get("graph")

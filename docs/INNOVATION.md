@@ -23,6 +23,8 @@
 **Evaluation:** missing_gate witness `gen → pub`.  
 **Evidence:** Studio 点击 constraint 高亮 path。不是因果推断。
 
+Mandatory checkpoint 现为 **avoidance reachability**（删掉 checkpoint 后 source 是否仍达 target），O(V+E)，不再用祖先存在性或 `paths_to(limit=16)`。compose domain 用 DFS 着色检测 `CYCLE_DETECTED`。
+
 ## 4. Minimal Guarded Repair
 
 **Why:** 整图重写不可控。  
@@ -37,9 +39,37 @@
 **Evaluation:** `veriflow bench` 写 metrics.json；检测与定位分列.  
 **Evidence:** 数字随运行变化，禁止写死 0.94。
 
+## 比赛技术点（收敛为 5）
+
+1. Specification-guided multi-dimensional verification  
+2. Evidence & minimized counterexample diagnosis  
+3. Guarded minimal self-repair  
+4. Runtime trace conformance **alignment**（poset + DP，不是 LLM 判相似）  
+5. Incremental reliability gate  
+
+Algorithm Center / Registry / Bench 用来证明上述能力，不另算创新点。
+
+不要再加第五个“核心创新点”。
+
+## Runtime conformance
+
+Mock execution produces `ExecutionTrace`. Temporal constraints compile to a deterministic monitor (`packages/runtime`). Failure emits a **trace slice** (expected vs observed predecessor), not a full log.
+
+CASE 4 (`examples/golden/case4_runtime_ir.json`): static graph PASS, runtime `skip_after=if_pay` → IF.true then terminate, notification never runs. Pattern: **STATIC PASS + RUNTIME FAIL**.
+
+## Incremental verification
+
+`workflow_changes` + `impact_set` + scoped `verify_scoped`. Parameter edits re-run safety only. Topology edits fall back to full verification. Equivalence vs full is compared every time (`equivalence_report.disagreements`). Not hardcoded 100%.
+
+Repair candidates: Patch Guard → incremental screen → full verify before accept.
+
+## CI gate
+
+`veriflow gate` exit 0 = READY, 1 = quality fail, 2 = tool error. Policy: `examples/veriflow-policy.yaml`. GitHub Action runs pytest + commit A PASS / commit B FAIL.
+
 ## Adapter 边界
 
-完整支持 compose-json。n8n/Dify：**NOT IMPLEMENTED**（`NotImplementedError`）。
+compose-json 完整。n8n：**JSON 子集往返已测**；**live instance 未接**（无 Key 不 crash，fallback mock）。Dify：未实现。
 
 ## Partially Implemented
 

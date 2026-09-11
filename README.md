@@ -5,7 +5,7 @@
 中文：面向 LLM 生成出题工作流的规格驱动多维验证与受约束自修复系统。对外仍是 ACM 训练测评站；模型当编译器、攻击者和教练，**Docker 当裁判**。
 
 仓库：<https://github.com/NineSense9/Veriflow>  
-Demo：http://116.62.5.67/
+Demo：http://116.62.5.67:8081/
 
 ## 解决什么问题
 
@@ -18,17 +18,20 @@ LLM 可以直接吐出题图或选手代码。不可信的是：
 Veriflow 把流程变成：
 
 ```text
-Natural Language
-    → WorkflowSpec Compiler
-    → ComposeJson Adapter → WorkflowIR
-    → Multi-Dimensional Verification
-    → Issue + witness path
-    → Guarded Patch (LLM 不许整图重写)
-    → Re-Verify
-    → 入库 / 选手沙箱判定
+Requirement → WorkflowSpec → WorkflowIR
+    → Static verification + evidence
+    → Guarded repair → incremental screen → full re-verify
+    → Runtime trace (mock) → temporal conformance
+    → Reliability gate → deploy / 入库
 ```
 
-**当前完整支持的 IR 适配器：compose-json（出题图）。** n8n / Dify / Coze 仅有接口占位，**未实现**。
+**定位：** specification-guided reliability gate for AI-generated **compose** workflows（对外仍带 ACM 训练站 / Lab）。
+
+**AI proposes. VeriFlow proves.** 模型只解释需求、提出 Patch；结构 / 语义 / 数据流 / 静态可达 / 运行时 / 安全 / Repair 接受 / Gate 由确定性 verifier 裁决。
+
+30 秒路径：粘贴/导入出题图 → 写需求 → Verify → Why（约束·算法·witness）→ 受约束 Patch → Gate。判定不来自 LLM。
+
+**Canonical IR：compose-json。** n8n 仅实现 **nodes/connections 子集往返**（参数里保存 kind/tool/expr）。没有凭证时 **不会** 连接真实 n8n，显示 Integration unavailable 并走 Mock Runtime。Dify 仍未实现。
 
 ## 与「直接问大模型对不对」的区别
 
@@ -43,6 +46,13 @@ Natural Language
 - 出题 Verification Studio（DAG 高亮 Issue）
 - 选手侧：CE/WA/TLE/RE/AC、最小反例、对拍、变异杀死率
 - IR fault-injection bench（ground truth，实测指标）
+- Runtime trace conformance（temporal subset + mock sandbox）
+- Incremental verification（impact set；与 full 对比，禁止写死 100%）
+- `veriflow gate`：exit 0 / 1 / 2，`examples/veriflow-policy.yaml`
+
+面向：AI workflow / 低代码出题图作者、CI/QA。不是“适用于所有行业”的空话。
+
+Bench：`n=9` 的 smoke（含 1 条 clean）适合冒烟，**不能**写成“困难错误检测率 100%”。Repair 在该小集上的数字见 `experiments/runs/smoke/metrics.json`。
 
 文档：
 
@@ -64,6 +74,8 @@ python -m pytest
 python -m veriflow_cli verify --workflow examples/compose/missing_gate.json --nl "完整出题。" --explain
 python -m veriflow_cli verify-repair --workflow examples/compose/missing_gate.json --nl "完整出题。" --max-iterations 3 --output /tmp/fixed.json
 python -m veriflow_cli mutate --workflow examples/compose/valid_lis.json --fault wrong_order --output /tmp/mutated.json
+python -m veriflow_cli runtime --workflow examples/compose/valid_lis.json --nl "完整出题。" --skip-after g_bounds
+python -m veriflow_cli gate --workflow examples/compose/missing_gate.json --nl "完整出题。"
 python -m veriflow_cli bench --workflow examples/compose/valid_lis.json --out experiments/runs/smoke
 ```
 
@@ -89,16 +101,17 @@ http://127.0.0.1:3000  账号 `demo` / `demo`。出题页打开残缺示例后�
 python scripts/competition_smoke.py
 ```
 
-黄金演示：`examples/golden/case1_order.json`（顺序）、`case2_dataflow.json`（类型/数据流）、`case3_safety.json`（硬编码密钥）。
+黄金演示：`examples/golden/case1_order.json`（顺序）、`case2_dataflow.json`（类型/数据流）、`case3_safety.json`（硬编码密钥）、`case4_runtime.json`（静态 PASS / 运行时 FAIL）。CI 回归：`examples/ci/commit_{a,b,c}.json`。
 
 ## Limitations
 
-- 不是 n8n 运行时验证器；adapter 未实现
+- 不是 live n8n 运行时；adapter 是 JSON 子集往返。无 `N8N_BASE_URL`/`N8N_API_KEY` 时标记 OPTIONAL INTEGRATION 并 fallback mock
 - Safety 是风险检测，不是形式化安全证明，也不是 formal verification
 - Spec compiler 默认启发式；DeepSeek 用于 IR 生成，需 Key
 - Bench 数字来自仓库内 gold IR 的合成变异，不是外部竞赛榜
 - Ablation 与 LLM-judge baseline 未跑：指标为 N/A，禁止填假数
-- 分支约束在 compose IR 上多为 UNKNOWN
+- 静态分支约束在 compose IR 上多为 UNKNOWN；运行时 IF_BRANCH_THEN 仅在 mock trace 记录了 branch 时判定
+- Incremental 在节点增删时仍全量验证（保证与 full 一致）
 
 ## 目录
 
@@ -112,9 +125,12 @@ packages/explain       witness 视图
 packages/mutate        解法 AST 变异 + IR 故障注入
 packages/sandbox       沙箱判定
 packages/cli           veriflow 命令
+packages/runtime       mock trace / temporal monitor / n8n live stub
 services/api           FastAPI
-apps/web               训练站 + Verification Studio
+apps/web               训练站 + Verification Studio（Runtime / Changes / Gate）
 examples/compose       gold / missing_gate / missing_bounds
+examples/golden        case1–4
+examples/ci            commit A/B/C
 examples/problems      VF1001–VF1030
 ```
 

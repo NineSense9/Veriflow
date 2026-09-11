@@ -1,0 +1,47 @@
+{
+  "ir_version": "1.0",
+  "domain": "compose",
+  "name": "case4_runtime",
+  "nodes": [
+    {
+      "id": "gen",
+      "kind": "tool",
+      "tool": "test_generator",
+      "in_type": { "type": "object", "required": ["spec"] },
+      "out_type": { "type": "object", "required": ["tests"] }
+    },
+    {
+      "id": "g_bounds",
+      "kind": "guard",
+      "expr": "spec.n_min >= 1 && spec.n_max <= 100000",
+      "on_fail": "reject"
+    },
+    {
+      "id": "if_pay",
+      "kind": "branch",
+      "expr": "payment_status == success"
+    },
+    {
+      "id": "notify_1",
+      "kind": "notify"
+    },
+    {
+      "id": "review",
+      "kind": "human_gate",
+      "assignee_role": "problemsetter",
+      "on_fail": "reject"
+    },
+    {
+      "id": "pub",
+      "kind": "tool",
+      "tool": "publish_problem"
+    }
+  ],
+  "edges": [
+    { "from": "gen", "to": "g_bounds" },
+    { "from": "g_bounds", "to": "if_pay" },
+    { "from": "if_pay", "to": "notify_1" },
+    { "from": "notify_1", "to": "review" },
+    { "from": "review", "to": "pub" }
+  ]
+}

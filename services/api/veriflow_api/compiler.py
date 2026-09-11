@@ -95,4 +95,50 @@ def _parse_ir(text: str) -> WorkflowIR:
     fence = re.search(r"```(?:json)?\s*(\{.*\})\s*```", stripped, re.S)
     if fence:
         stripped = fence.group(1)
-    return WorkflowIR.model_validate_json(stripped)
+    payload = json.loads(stripped)
+    if not isinstance(payload, dict):
+        raise ValueError("IR must be an object")
+    return WorkflowIR.model_validate(_coerce_ir(payload))
+
+
+def _coerce_ir(payload: dict) -> dict:
+    out = dict(payload)
+    out.setdefault("ir_version", "1.0")
+    out.setdefault("domain", "compose")
+    out.setdefault("name", "compiled")
+    if not str(out.get("name") or "").strip():
+        out["name"] = "compiled"
+    nodes = []
+    for raw in out.get("nodes") or []:
+        if not isinstance(raw, dict):
+            continue
+        node = dict(raw)
+        extra = node.pop("params", None)
+        if isinstance(extra, dict):
+            config = dict(node.get("config") or {})
+            config.update(extra)
+            node["config"] = config
+        allowed = {
+            "id",
+            "kind",
+            "tool",
+            "expr",
+            "on_fail",
+            "assignee_role",
+            "in_type",
+            "out_type",
+            "config",
+        }
+        nodes.append({key: node[key] for key in allowed if key in node})
+    out["nodes"] = nodes
+    edges = []
+    for raw in out.get("edges") or []:
+        if not isinstance(raw, dict):
+            continue
+        source = raw.get("from") or raw.get("from_") or raw.get("source")
+        target = raw.get("to") or raw.get("target")
+        if source and target:
+            edges.append({"from": source, "to": target})
+    out["edges"] = edges
+    keep = {"ir_version", "domain", "name", "nodes", "edges"}
+    return {key: out[key] for key in keep if key in out}

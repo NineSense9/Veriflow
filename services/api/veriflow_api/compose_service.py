@@ -20,10 +20,20 @@ def _dump_ir(ir: WorkflowIR) -> str:
     return json.dumps(ir.model_dump(mode="json", by_alias=True), ensure_ascii=False)
 
 
-def _analyze(ir: WorkflowIR) -> tuple[list[dict], list[dict], str]:
+def _pipeline(ir: WorkflowIR, nl: str = ""):
+    from veriflow_spec.compiler import compile_spec
+    from veriflow_verify.pipeline import run_session
+
+    spec = compile_spec(nl or "", ir.domain)
+    return run_session(ir, spec, nl=nl or "")
+
+
+def _analyze(ir: WorkflowIR, nl: str = "") -> tuple[list[dict], list[dict], str]:
     errors = [item.model_dump() for item in check_workflow(ir)]
     findings = attack_compose(ir)
-    status = "blocked" if errors else "checked"
+    session = _pipeline(ir, nl)
+    blocked = session.gate.ready == "BLOCKED" or bool(errors)
+    status = "blocked" if blocked else "checked"
     return errors, findings, status
 
 
@@ -49,12 +59,27 @@ def project_payload(row) -> dict:
         ir = WorkflowIR.model_validate(ir_data)
         spec = compile_spec(row["source_nl"] or "", ir.domain)
         payload["spec"] = spec.model_dump(mode="json")
-        payload["verification"] = verify_workflow(ir, spec).model_dump(mode="json")
+        verification = verify_workflow(ir, spec)
+        payload["verification"] = verification.model_dump(mode="json")
+        from veriflow_runtime.cross import cross_verify
+        from veriflow_runtime.mock_exec import mock_execute
+        from veriflow_runtime.monitor import monitor_trace
+        from veriflow_verify.gate import evaluate_gate
+
+        skip = None
+        if ir.name == "case4_runtime":
+            skip = "if_pay"
+        trace = mock_execute(ir, skip_after=skip)
+        runtime = monitor_trace(trace, spec)
+        payload["trace"] = json.loads(trace.model_dump_json())
+        payload["runtime"] = json.loads(runtime.model_dump_json())
+        payload["cross"] = json.loads(cross_verify(verification, runtime).model_dump_json())
+        payload["gate"] = json.loads(evaluate_gate(ir, spec, static=verification).model_dump_json())
     return payload
 
 
 def _insert(user_id: int, nl: str, ir: WorkflowIR, compiler: str) -> dict:
-    errors, findings, status = _analyze(ir)
+    errors, findings, status = _analyze(ir, nl)
     now = _now()
     with connect() as connection:
         cursor = connection.execute(
@@ -96,7 +121,7 @@ def create_from_example(user_id: int, name: str) -> dict:
     labels = {
         "missing_gate": "把题直接入库，不要审题门。",
         "missing_bounds": "生成测资，但不要写数据范围守卫。",
-        "valid_lis": "完整出题：生成器、范围守卫、暴力、审题门、入库。",
+        "valid_lis": "完整出题：生成器、范围守卫、审题门、入库。",
     }
     return _insert(user_id, labels[name], ir, "example")
 
@@ -126,7 +151,7 @@ def save_ir(user_id: int, project_id: int, ir: WorkflowIR) -> dict:
     row = get_project(user_id, project_id)
     if row is None:
         return None
-    errors, findings, status = _analyze(ir)
+    errors, findings, status = _analyze(ir, nl)
     now = _now()
     with connect() as connection:
         connection.execute(
@@ -162,7 +187,7 @@ def repair(user_id: int, project_id: int, nl: str | None) -> dict:
     ]
     ir, backend = compile_nl(source, errors)
     now = _now()
-    new_errors, findings, status = _analyze(ir)
+    new_errors, findings, status = _analyze(ir, source)
     with connect() as connection:
         connection.execute(
             """
@@ -195,6 +220,10 @@ def set_gate(user_id: int, project_id: int, decision: str) -> dict:
     errors = json.loads(row["check_errors_json"] or "[]")
     if decision == "approved" and errors:
         raise PermissionError("errors block gate")
+    if decision == "approved" and row["ir_json"]:
+        ir = WorkflowIR.model_validate_json(row["ir_json"])
+        if _pipeline(ir, row["source_nl"] or "").gate.ready == "BLOCKED":
+            raise PermissionError("verification blocked")
     status = "gated" if decision == "approved" else "blocked"
     now = _now()
     with connect() as connection:
@@ -239,6 +268,14 @@ def publish(user_id: int, project_id: int) -> dict:
     attack = json.loads(row["attack_json"] or "[]")
     if any(item.get("tag") == "weak_bounds" for item in attack):
         raise PermissionError("weak_tests")
+    if not row["ir_json"]:
+        raise PermissionError("no ir")
+    ir = WorkflowIR.model_validate_json(row["ir_json"])
+    session = _pipeline(ir, row["source_nl"] or "")
+    if session.gate.ready != "READY":
+        raise PermissionError("verification blocked")
+    if session.status == "FAIL":
+        raise PermissionError("verification failed")
     now = _now()
     with connect() as connection:
         used = {

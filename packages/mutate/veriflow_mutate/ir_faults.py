@@ -34,6 +34,7 @@ class MutatedWorkflow(BaseModel):
     target_node: str = ""
     target_edge: str = ""
     mutation_operation: str = ""
+    difficulty: str = "MEDIUM"
 
 
 def mutate_ir(ir: WorkflowIR, fault: str) -> MutatedWorkflow:
@@ -45,6 +46,17 @@ def mutate_ir(ir: WorkflowIR, fault: str) -> MutatedWorkflow:
     after = json.dumps(data, sort_keys=True, ensure_ascii=False)
     if after == before:
         raise InvalidMutation(f"fault {fault} did not change workflow")
+    difficulty = {
+        "orphan_node": "EASY",
+        "hardcoded_secret": "EASY",
+        "broken_edge": "MEDIUM",
+        "missing_required_action": "MEDIUM",
+        "wrong_order": "MEDIUM",
+        "broken_binding": "HARD",
+        "wrong_parameter": "HARD",
+        "missing_branch": "HARD",
+        "unsafe_webhook": "HARD",
+    }.get(fault, "MEDIUM")
     return MutatedWorkflow(
         ir=WorkflowIR.model_validate(data),
         fault=fault,
@@ -54,6 +66,7 @@ def mutate_ir(ir: WorkflowIR, fault: str) -> MutatedWorkflow:
         target_node=target_node,
         target_edge=target_edge,
         mutation_operation=op,
+        difficulty=difficulty,
     )
 
 

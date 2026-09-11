@@ -3,136 +3,253 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import { api, ProblemListItem, SubmissionRow } from "@/lib/api";
+import { api, ComposeSummary, ProblemListItem, SubmissionRow, unwrapBench } from "@/lib/api";
+import StatusChip from "@/components/StatusChip";
+
+type HistRow = {
+  id: number;
+  created_at: string;
+  workflow_name: string;
+  status: string;
+  issue_count: number;
+  runtime_status: string;
+  gate_ready: string;
+  latency_ms: number;
+};
+
+function chip(status: string) {
+  return <StatusChip value={status} />;
+}
+
+function fmt(value: unknown, digits = 3) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return digits === 0 ? String(Math.round(value)) : value.toFixed(digits);
+  }
+  return "—";
+}
 
 export default function HomePage() {
   const [subs, setSubs] = useState<SubmissionRow[]>([]);
   const [problems, setProblems] = useState<ProblemListItem[]>([]);
+  const [runs, setRuns] = useState<HistRow[]>([]);
+  const [projects, setProjects] = useState<ComposeSummary[]>([]);
+  const [bench, setBench] = useState<Record<string, unknown> | null>(null);
+  const [sandbox, setSandbox] = useState("…");
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    api
-      .submissions()
-      .then((data) => setSubs(data.submissions))
-      .catch((err: { status?: number }) => {
-        if (err.status === 401) return;
-        setError("训练记录暂时读不到。");
-      })
-      .finally(() => setLoaded(true));
-    api.problems().then((data) => setProblems(data.problems)).catch(() => undefined);
+    let cancelled = false;
+    Promise.allSettled([
+      api.health(),
+      api.reportHistory(20),
+      api.benchLatest(),
+      api.composeList(),
+      api.submissions(),
+      api.problems(),
+    ]).then((results) => {
+      if (cancelled) return;
+      const [health, history, latest, compose, submissions, problemList] = results;
+      if (health.status === "fulfilled") setSandbox(health.value.sandbox);
+      else setSandbox("down");
+      if (history.status === "fulfilled") setRuns(history.value.runs);
+      if (latest.status === "fulfilled") setBench(unwrapBench(latest.value));
+      if (compose.status === "fulfilled") setProjects(compose.value.projects);
+      if (submissions.status === "fulfilled") setSubs(submissions.value.submissions);
+      else {
+        const reason = submissions.reason as { status?: number };
+        if (reason.status !== 401) setError("训练记录暂时读不到。");
+      }
+      if (problemList.status === "fulfilled") setProblems(problemList.value.problems);
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const latest = subs[0];
-  const wa = subs.find((row) => row.verdict === "WA");
+  const latestRun = runs[0];
+  const passRuns = runs.filter((row) => row.status === "PASS").length;
+  const blocked = runs.filter((row) => row.gate_ready === "BLOCKED").length;
   const acCount = subs.filter((row) => row.verdict === "AC").length;
+  const latestSub = subs[0];
 
   return (
     <Shell>
       <main className="page">
         <header className="page-head">
-          <h1>把样例骗术拆掉</h1>
-          <p className="lead">公开样例很小。隐藏测资、对拍和变异才是裁判。</p>
+          <p className="kicker">AI proposes. VeriFlow proves.</p>
+          <h1>模型提出候选，验证器给出证据</h1>
+          <p className="lead">
+            Requirement → Spec → Workflow → Finding → Counterexample → Guarded Repair → Re-Verify。判定权不在 LLM。
+          </p>
         </header>
 
         <div className="hero-action">
-          <Link className="btn btn-primary" href="/problems/VF1001">
-            开始 VF1001
+          <Link className="btn btn-primary" href="/report?demo=case4_runtime">
+            打开 Runtime FAIL
           </Link>
-          <Link className="btn" href="/problems">
-            题库
+          <Link className="btn" href="/report?demo=case1_order">
+            缺审题门
           </Link>
-          <Link className="btn btn-ghost" href="/stress?id=VF1001">
-            对拍
+          <Link className="btn" href="/compose">
+            需求编译
           </Link>
-          <Link className="btn btn-ghost" href="/compose">
-            出题
+          <Link className="btn btn-ghost" href="/benchmark">
+            看基准
           </Link>
-        </div>
-        <p className="caption">
-          VF1001《签到时长》隐藏数据里有 n=1 和 32 位整数溢出。过样例不要得意。
-        </p>
-
-        <div className="follow">
-          {error ? <p className="ghost">{error}</p> : null}
-          {latest ? (
-            <p className="latest-line">
-              <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict}</span>
-              <Link href={`/problems/${latest.problem_id}`}>{latest.problem_id}</Link>
-              <span className="ghost">
-                {latest.lang} · {latest.time_ms ?? "—"} ms
-              </span>
-            </p>
-          ) : loaded ? (
-            <p className="caption">还没有提交。从题库写一发即可。</p>
-          ) : null}
-          {wa ? (
-            <p className="caption">最近有 WA。回原题看反例三列，或点教练，不要先翻题解。</p>
-          ) : null}
         </div>
 
         <dl className="metric-strip">
           <div>
-            <dt>题库</dt>
-            <dd>{problems.length || "—"}</dd>
+            <dt>沙箱</dt>
+            <dd>{sandbox}</dd>
           </div>
           <div>
-            <dt>提交</dt>
-            <dd>{subs.length}</dd>
+            <dt>最近验证</dt>
+            <dd>{latestRun ? chip(latestRun.status) : loaded ? "—" : "…"}</dd>
           </div>
           <div>
-            <dt>AC</dt>
-            <dd>{acCount}</dd>
+            <dt>最近 Gate</dt>
+            <dd>{latestRun ? chip(latestRun.gate_ready) : "—"}</dd>
           </div>
           <div>
-            <dt>最近判定</dt>
-            <dd>{latest?.verdict ?? "—"}</dd>
+            <dt>最近记录 PASS</dt>
+            <dd>
+              {loaded ? passRuns : "—"}
+              <span className="metric-den">/{runs.length || "—"}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Bench n</dt>
+            <dd>{fmt(bench?.n, 0)}</dd>
+          </div>
+          <div>
+            <dt>Detection F1</dt>
+            <dd>{fmt(bench?.detection_f1)}</dd>
           </div>
         </dl>
+        <p className="caption">
+          PASS 比例只统计最近 {runs.length || 0} 条验证记录。Bench 来自 {String(bench?.source || "experiments/runs")}，合成 IR 故障，不是外部榜。
+        </p>
 
-        <section className="section">
-          <h2 className="section-title">最近提交</h2>
-          {!loaded ? (
-            <div aria-hidden="true">
-              <div className="skel wide" />
-              <div className="skel mid" />
-              <div className="skel short" />
-            </div>
-          ) : !subs.length ? (
-            <div className="empty">
-              <p>提交之后这里会变成成绩条。</p>
-              <Link className="btn" href="/problems">
-                去题库
+        <div className="home-split">
+          <section className="section">
+            <div className="section-row">
+              <h2 className="section-title">最近验证</h2>
+              <Link className="btn btn-ghost btn-sm" href="/history">
+                全部历史
               </Link>
             </div>
-          ) : (
-            <div className="table-wrap">
-              <table className="table tight">
-                <thead>
-                  <tr>
-                    <th className="num">#</th>
-                    <th>题号</th>
-                    <th>判定</th>
-                    <th className="num">耗时</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subs.slice(0, 6).map((row) => (
-                    <tr key={row.id}>
-                      <td className="num">{row.id}</td>
-                      <td>
-                        <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
-                      </td>
-                      <td>
-                        <span className={`verdict ${row.verdict ?? ""}`}>{row.verdict}</span>
-                      </td>
-                      <td className="num">{row.time_ms ?? "—"} ms</td>
+            {!loaded ? (
+              <div aria-hidden="true">
+                <div className="skel wide" />
+                <div className="skel mid" />
+                <div className="skel short" />
+              </div>
+            ) : !runs.length ? (
+              <div className="empty">
+                <p>还没有验证 run。打开黄金例或从出题页编译一张图。</p>
+                <Link className="btn" href="/report?demo=case4_runtime">
+                  跑一条 Demo
+                </Link>
+              </div>
+            ) : (
+              <div className="table-wrap">
+                <table className="table tight">
+                  <thead>
+                    <tr>
+                      <th className="num">#</th>
+                      <th>Workflow</th>
+                      <th>Status</th>
+                      <th>Gate</th>
+                      <th className="num">Issues</th>
+                      <th className="num">ms</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {runs.slice(0, 8).map((row) => (
+                      <tr key={row.id}>
+                        <td className="num">
+                          <Link href={`/report/runs/${row.id}`}>{row.id}</Link>
+                        </td>
+                        <td>{row.workflow_name || "—"}</td>
+                        <td>{chip(row.status)}</td>
+                        <td>{chip(row.gate_ready)}</td>
+                        <td className="num">{row.issue_count}</td>
+                        <td className="num">{Number(row.latency_ms).toFixed(1)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {blocked ? <p className="caption">{blocked} 条最近记录 Gate 为 BLOCKED。</p> : null}
+          </section>
+
+          <aside className="home-aside">
+            <section className="section">
+              <h2 className="section-title">下一步</h2>
+              <ul className="action-list">
+                <li>
+                  <Link href="/report">验证控制台</Link>
+                  <span>黄金例：顺序 / 数据流 / 安全 / 运行时</span>
+                </li>
+                <li>
+                  <Link href="/compose">需求编译</Link>
+                  <span>{projects.length ? `${projects.length} 个草稿` : "从自然语言编译 IR"}</span>
+                </li>
+                <li>
+                  <Link href="/benchmark">Benchmark</Link>
+                  <span>
+                    Repair {fmt(bench?.repair_success_rate)} · Loc {fmt(bench?.fault_localization_accuracy)}
+                  </span>
+                </li>
+                <li>
+                  <Link href="/algorithms">算法中心</Link>
+                  <span>与 verifier 同一份注册表</span>
+                </li>
+              </ul>
+            </section>
+            {error ? <p className="ghost">{error}</p> : null}
+          </aside>
+        </div>
+
+        <section className="section train-block">
+          <h2 className="section-title">训练站（同一套沙箱）</h2>
+          <p className="caption">对外仍是 ACM 训练测评。这里不替代验证，只说明选手侧还在。</p>
+          <dl className="metric-strip compact">
+            <div>
+              <dt>题库</dt>
+              <dd>{problems.length || "—"}</dd>
             </div>
-          )}
+            <div>
+              <dt>提交</dt>
+              <dd>{subs.length}</dd>
+            </div>
+            <div>
+              <dt>AC</dt>
+              <dd>{acCount}</dd>
+            </div>
+            <div>
+              <dt>最近判定</dt>
+              <dd>{latestSub?.verdict ?? "—"}</dd>
+            </div>
+          </dl>
+          {latestSub ? (
+            <p className="latest-line">
+              <span className={`verdict ${latestSub.verdict ?? ""}`}>{latestSub.verdict}</span>
+              <Link href={`/problems/${latestSub.problem_id}`}>{latestSub.problem_id}</Link>
+              <span className="ghost">
+                {latestSub.lang} · {latestSub.time_ms ?? "—"} ms
+              </span>
+              <Link className="btn btn-ghost btn-sm" href="/problems/VF1001">
+                选手题 VF1001
+              </Link>
+            </p>
+          ) : loaded ? (
+            <p className="caption">还没有提交。验证出题图之后，可以从题库写一发。</p>
+          ) : null}
         </section>
       </main>
     </Shell>

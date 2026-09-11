@@ -6,12 +6,15 @@ import { Suspense, useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import CopyButton from "@/components/CopyButton";
 import {
+  CPP_STUB,
   PYTHON_STUB,
   ProblemListItem,
   StressKit,
   StressResult,
   api,
 } from "@/lib/api";
+
+type Lang = "python3" | "cpp17";
 
 const CodeEditor = dynamic(() => import("@/components/CodeEditor"), { ssr: false });
 
@@ -24,6 +27,9 @@ function StressInner() {
   const [gen, setGen] = useState("");
   const [brute, setBrute] = useState("");
   const [sol, setSol] = useState(PYTHON_STUB);
+  const [genLang, setGenLang] = useState<Lang>("python3");
+  const [bruteLang, setBruteLang] = useState<Lang>("python3");
+  const [solLang, setSolLang] = useState<Lang>("python3");
   const [rounds, setRounds] = useState(50);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<StressResult | null>(null);
@@ -53,11 +59,11 @@ function StressInner() {
     setError("");
     try {
       const next = await api.stress(problemId, {
-        sol_lang: "python3",
+        sol_lang: solLang,
         sol_source: sol,
-        gen_lang: "python3",
+        gen_lang: genLang,
         gen_source: gen,
-        brute_lang: "python3",
+        brute_lang: bruteLang,
         brute_source: brute,
         rounds,
       });
@@ -110,16 +116,43 @@ function StressInner() {
         ) : null}
         <div className="stress-cols">
           <div className="stress-col">
-            <h2>生成器</h2>
-            <CodeEditor language="python" value={gen} onChange={setGen} />
+            <h2>
+              生成器
+              <select aria-label="生成器语言" value={genLang} onChange={(e) => setGenLang(e.target.value as Lang)}>
+                <option value="python3">Python3</option>
+                <option value="cpp17">C++17</option>
+              </select>
+            </h2>
+            <CodeEditor language={genLang === "cpp17" ? "cpp" : "python"} value={gen} onChange={setGen} />
           </div>
           <div className="stress-col">
-            <h2>暴力解</h2>
-            <CodeEditor language="python" value={brute} onChange={setBrute} />
+            <h2>
+              暴力解
+              <select aria-label="暴力解语言" value={bruteLang} onChange={(e) => setBruteLang(e.target.value as Lang)}>
+                <option value="python3">Python3</option>
+                <option value="cpp17">C++17</option>
+              </select>
+            </h2>
+            <CodeEditor language={bruteLang === "cpp17" ? "cpp" : "python"} value={brute} onChange={setBrute} />
           </div>
           <div className="stress-col">
-            <h2>选手程序</h2>
-            <CodeEditor language="python" value={sol} onChange={setSol} />
+            <h2>
+              选手程序
+              <select
+                aria-label="选手语言"
+                value={solLang}
+                onChange={(e) => {
+                  const next = e.target.value as Lang;
+                  setSolLang(next);
+                  if (sol === PYTHON_STUB && next === "cpp17") setSol(CPP_STUB);
+                  if (sol === CPP_STUB && next === "python3") setSol(PYTHON_STUB);
+                }}
+              >
+                <option value="python3">Python3</option>
+                <option value="cpp17">C++17</option>
+              </select>
+            </h2>
+            <CodeEditor language={solLang === "cpp17" ? "cpp" : "python"} value={sol} onChange={setSol} />
           </div>
         </div>
         <div className="stress-floor">

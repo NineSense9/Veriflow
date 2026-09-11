@@ -7,6 +7,7 @@ from veriflow_repair.diff import graph_diff
 from veriflow_repair.patch import Patch
 from veriflow_repair.select import pick_plan
 from veriflow_spec.models import WorkflowSpec
+from veriflow_verify.incremental import incremental_verify
 from veriflow_verify.result import VerificationResult, verify_workflow
 
 
@@ -24,9 +25,13 @@ class RepairStep(BaseModel):
     issues_fixed: int = 0
     issues_remaining: int = 0
     candidates_evaluated: int = 0
+    candidates_rejected_guard: int = 0
+    candidates_rejected_incremental: int = 0
+    candidates_fully_verified: int = 0
     changed_nodes: int = 0
     changed_edges: int = 0
     changed_parameters: int = 0
+    reevaluated_constraints: int = 0
 
 
 class RepairReport(BaseModel):
@@ -43,6 +48,18 @@ class RepairReport(BaseModel):
     changed_parameters: int = 0
     patch_operations: int = 0
     regression_rate: float = 0.0
+    candidates_generated: int = 0
+    candidates_rejected_guard: int = 0
+    candidates_rejected_incremental: int = 0
+    candidates_fully_verified: int = 0
+    selected_candidate: str = ""
+    impact_nodes: list[str] = Field(default_factory=list)
+    reevaluated_constraints: int = 0
+    total_constraints: int = 0
+    used_full_fallback: bool = True
+    repair_mode: str = "PATCH"
+    affected_verifiers: list[str] = Field(default_factory=list)
+    impact_reason: str = ""
 
 
 def verify_repair_loop(
@@ -75,7 +92,7 @@ def verify_repair_loop(
             )
             break
         seen.add(fingerprint)
-        plan, after, nxt, decision, n_cand = pick_plan(current, spec, current_result, k=3)
+        plan, after, nxt, decision, stats = pick_plan(current, spec, current_result, k=3)
         accepted = decision == "REPAIR_ACCEPTED" and nxt is not None and after is not None
         if not accepted:
             rejected += 1
@@ -88,12 +105,16 @@ def verify_repair_loop(
                     new_status=current_result.status,
                     patches=plan or [],
                     issues_remaining=len(current_result.issues),
-                    candidates_evaluated=n_cand,
+                    candidates_evaluated=stats.generated,
+                    candidates_rejected_guard=stats.rejected_guard,
+                    candidates_rejected_incremental=stats.rejected_incremental,
+                    candidates_fully_verified=stats.fully_verified,
                 )
             )
             break
         assert after is not None and nxt is not None and plan is not None
         diff = graph_diff(current, nxt)
+        impact = incremental_verify(current, nxt, spec, previous=current_result)
         steps.append(
             RepairStep(
                 iteration=iteration,
@@ -104,10 +125,14 @@ def verify_repair_loop(
                 patches=plan,
                 issues_fixed=max(len(current_result.issues) - len(after.issues), 0),
                 issues_remaining=len(after.issues),
-                candidates_evaluated=n_cand,
+                candidates_evaluated=stats.generated,
+                candidates_rejected_guard=stats.rejected_guard,
+                candidates_rejected_incremental=stats.rejected_incremental,
+                candidates_fully_verified=stats.fully_verified,
                 changed_nodes=diff["changed_nodes"],
                 changed_edges=diff["changed_edges"],
                 changed_parameters=diff["changed_parameters"],
+                reevaluated_constraints=impact.reevaluated_constraints,
             )
         )
         current = nxt
@@ -116,6 +141,7 @@ def verify_repair_loop(
             break
     total_diff = graph_diff(ir, current)
     attempts = max(len(steps), 1)
+    closing = incremental_verify(ir, current, spec, previous=initial)
     return RepairReport(
         ir=current,
         initial=initial,
@@ -128,4 +154,16 @@ def verify_repair_loop(
         changed_parameters=total_diff["changed_parameters"],
         patch_operations=sum(len(step.patches) for step in steps if step.accepted),
         regression_rate=rejected / attempts,
+        candidates_generated=sum(step.candidates_evaluated for step in steps),
+        candidates_rejected_guard=sum(step.candidates_rejected_guard for step in steps),
+        candidates_rejected_incremental=sum(step.candidates_rejected_incremental for step in steps),
+        candidates_fully_verified=sum(step.candidates_fully_verified for step in steps),
+        selected_candidate=next((step.reason for step in reversed(steps) if step.accepted), ""),
+        impact_nodes=closing.impact.affected_nodes,
+        reevaluated_constraints=closing.reevaluated_constraints,
+        total_constraints=closing.total_constraints,
+        used_full_fallback=closing.used_full_fallback,
+        repair_mode="PATCH",
+        affected_verifiers=list(closing.impact.affected_verifiers),
+        impact_reason=closing.impact.reason,
     )

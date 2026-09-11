@@ -41,8 +41,14 @@ def sandbox_mode() -> str:
     return "process"
 
 
+class SandboxUnavailable(RuntimeError):
+    """Production fail-closed: docker requested but not healthy."""
+
+
 def get_sandbox() -> Sandbox:
     mode = sandbox_mode()
+    if mode == "sandbox_down":
+        raise SandboxUnavailable("VERIFLOW_SANDBOX=docker but docker is unavailable")
     if mode == "docker":
         return DockerSandbox()
     return ProcessSandbox()

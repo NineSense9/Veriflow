@@ -1,103 +1,184 @@
 {
-  "timestamp": "2026-09-10T13:31:19.240278+00:00",
+  "timestamp": "2026-09-10T16:58:27.384260+00:00",
   "gold": "vf1012_compose",
   "n": 9,
+  "n_clean": 1,
+  "tp": 9,
+  "fp": 0,
+  "tn": 1,
+  "fn": 0,
   "detection_precision": 1.0,
   "detection_recall": 1.0,
   "detection_f1": 1.0,
   "false_positive_rate": 0.0,
   "false_negative_rate": 0.0,
-  "fault_localization_accuracy": 0.7777777777777778,
-  "repair_success_rate": 0.5555555555555556,
-  "post_repair_pass_rate": 0.5555555555555556,
-  "average_repair_iterations": 1.3333333333333333,
+  "fault_localization_accuracy": 0.8888888888888888,
+  "repair_success_rate": 1.0,
+  "post_repair_pass_rate": 1.0,
+  "average_repair_iterations": 1.0,
+  "average_patch_operations": 2.111111111111111,
+  "average_changed_nodes": 0.6666666666666666,
+  "repair_regression_rate": 0.0,
+  "node_top1_localization": 0.4444444444444444,
+  "edge_top1_localization": 0.2222222222222222,
+  "llm_judge_baseline": "N/A",
+  "average_original_affected_nodes": 3.888888888888889,
+  "average_minimized_witness_nodes": 1.1111111111111112,
+  "witness_reduction_ratio": 0.7142857142857143,
+  "easy_recall": 1.0,
+  "medium_recall": 1.0,
+  "hard_recall": 1.0,
+  "false_negatives": [],
+  "repair_failures": [],
   "cases": [
     {
+      "fault": "clean",
+      "difficulty": "EASY",
+      "category": "clean",
+      "expected": "PASS",
+      "detected": false,
+      "localized": false,
+      "node_top1": false,
+      "edge_top1": false,
+      "codes": [],
+      "repaired": true,
+      "repair_iterations": 0,
+      "changed_nodes": 0,
+      "patch_operations": 0,
+      "regression_rate": 0.0,
+      "repair_reason": "n/a"
+    },
+    {
       "fault": "orphan_node",
+      "difficulty": "EASY",
       "category": "structural",
       "expected": "DEAD_NODE",
       "detected": true,
       "localized": true,
+      "node_top1": true,
+      "edge_top1": false,
       "codes": [
         "DEAD_NODE"
       ],
       "repaired": true,
-      "repair_iterations": 1
+      "repair_iterations": 1,
+      "changed_nodes": 1,
+      "patch_operations": 1,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "broken_edge",
+      "difficulty": "MEDIUM",
       "category": "structural",
       "expected": "DEAD_NODE",
       "detected": true,
       "localized": false,
+      "node_top1": false,
+      "edge_top1": false,
       "codes": [
         "DEAD_NODE",
         "MISSING_HUMAN_GATE",
         "ORDER_VIOLATION"
       ],
-      "repaired": false,
-      "repair_iterations": 2
+      "repaired": true,
+      "repair_iterations": 1,
+      "changed_nodes": 0,
+      "patch_operations": 1,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "missing_required_action",
+      "difficulty": "MEDIUM",
       "category": "semantic",
       "expected": "MISSING_HUMAN_GATE",
       "detected": true,
       "localized": true,
+      "node_top1": false,
+      "edge_top1": false,
       "codes": [
         "MISSING_HUMAN_GATE",
         "MISSING_REQUIRED_ACTION"
       ],
       "repaired": true,
-      "repair_iterations": 1
+      "repair_iterations": 1,
+      "changed_nodes": 1,
+      "patch_operations": 4,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "wrong_order",
+      "difficulty": "MEDIUM",
       "category": "semantic",
       "expected": "ORDER_VIOLATION",
       "detected": true,
       "localized": true,
+      "node_top1": false,
+      "edge_top1": true,
       "codes": [
         "DEAD_NODE",
         "MISSING_HUMAN_GATE",
         "ORDER_VIOLATION",
         "ORDER_VIOLATION"
       ],
-      "repaired": false,
-      "repair_iterations": 2
+      "repaired": true,
+      "repair_iterations": 1,
+      "changed_nodes": 0,
+      "patch_operations": 2,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "missing_branch",
+      "difficulty": "HARD",
       "category": "branch",
       "expected": "WEAK_BOUNDS",
       "detected": true,
       "localized": true,
+      "node_top1": false,
+      "edge_top1": false,
       "codes": [
         "MISSING_REQUIRED_ACTION",
         "WEAK_BOUNDS"
       ],
       "repaired": true,
-      "repair_iterations": 1
+      "repair_iterations": 1,
+      "changed_nodes": 1,
+      "patch_operations": 4,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "wrong_parameter",
+      "difficulty": "HARD",
       "category": "parameter",
       "expected": "GUARD_NOT_EXPR",
       "detected": true,
       "localized": true,
+      "node_top1": true,
+      "edge_top1": false,
       "codes": [
         "GUARD_NOT_EXPR",
         "WEAK_BOUNDS"
       ],
       "repaired": true,
-      "repair_iterations": 1
+      "repair_iterations": 1,
+      "changed_nodes": 1,
+      "patch_operations": 1,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "broken_binding",
+      "difficulty": "HARD",
       "category": "dataflow",
       "expected": "BROKEN_BINDING",
       "detected": true,
-      "localized": false,
+      "localized": true,
+      "node_top1": false,
+      "edge_top1": true,
       "codes": [
         "DEAD_NODE",
         "DEAD_NODE",
@@ -107,32 +188,50 @@
         "ORDER_VIOLATION",
         "BROKEN_BINDING"
       ],
-      "repaired": false,
-      "repair_iterations": 2
+      "repaired": true,
+      "repair_iterations": 1,
+      "changed_nodes": 0,
+      "patch_operations": 4,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "hardcoded_secret",
+      "difficulty": "EASY",
       "category": "safety",
       "expected": "HARDCODED_SECRET",
       "detected": true,
       "localized": true,
+      "node_top1": true,
+      "edge_top1": false,
       "codes": [
         "HARDCODED_SECRET"
       ],
       "repaired": true,
-      "repair_iterations": 1
+      "repair_iterations": 1,
+      "changed_nodes": 1,
+      "patch_operations": 1,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     },
     {
       "fault": "unsafe_webhook",
+      "difficulty": "HARD",
       "category": "safety",
       "expected": "UNRESTRICTED_WEBHOOK",
       "detected": true,
       "localized": true,
+      "node_top1": true,
+      "edge_top1": false,
       "codes": [
         "UNRESTRICTED_WEBHOOK"
       ],
-      "repaired": false,
-      "repair_iterations": 1
+      "repaired": true,
+      "repair_iterations": 1,
+      "changed_nodes": 1,
+      "patch_operations": 1,
+      "regression_rate": 0.0,
+      "repair_reason": "REPAIR_ACCEPTED"
     }
   ],
   "note": "measured on gold compose IR + synthetic mutations; NOT a published leaderboard"

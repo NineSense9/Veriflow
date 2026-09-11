@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from veriflow_ir.graph import match_nodes, paths_to, shortest_path
+from veriflow_ir.graph import bypass_path, match_nodes, shortest_path
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_spec.models import WorkflowSpec
 from veriflow_verify.issue import Issue
@@ -58,16 +58,10 @@ def _order(ir: WorkflowIR, spec: WorkflowSpec) -> list[Issue]:
         if not befores or not afters:
             continue
         for after in afters:
-            bad_path: list[str] | None = None
-            for path in paths_to(ir, after.id):
-                before_ids = {node.id for node in befores}
-                if not before_ids.intersection(path):
-                    bad_path = path
-                    break
+            before_ids = {node.id for node in befores}
+            bad_path = bypass_path(ir, before_ids, after.id)
             if bad_path is None:
-                if not any(
-                    shortest_path(ir, before.id, after.id) for before in befores
-                ):
+                if not any(shortest_path(ir, before.id, after.id) for before in befores):
                     bad_path = [after.id]
             if bad_path is None:
                 continue

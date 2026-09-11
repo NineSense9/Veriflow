@@ -17,11 +17,18 @@ export default function ComposeProjectPage() {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<VerifyIssue | null>(null);
+  const [skipAfter, setSkipAfter] = useState("");
+  const [runtimeOverlay, setRuntimeOverlay] = useState<ComposeProject["runtime"]>();
+  const [traceOverlay, setTraceOverlay] = useState<ComposeProject["trace"]>();
+  const [crossOverlay, setCrossOverlay] = useState<ComposeProject["cross"]>();
 
   function apply(next: ComposeProject) {
     setProject(next);
     setNl(next.source_nl);
     setSelected(next.verification?.issues[0] ?? null);
+    setRuntimeOverlay(undefined);
+    setTraceOverlay(undefined);
+    setCrossOverlay(undefined);
   }
 
   useEffect(() => {
@@ -68,6 +75,13 @@ export default function ComposeProjectPage() {
           <span className={`verdict ${status === "PASS" ? "AC" : status === "WARNING" ? "TLE" : "WA"}`}>
             {status}
           </span>
+          <span
+            className={`verdict ${
+              project.gate?.ready === "READY" ? "AC" : project.gate?.ready === "REVIEW REQUIRED" ? "TLE" : "WA"
+            }`}
+          >
+            {project.gate?.ready ?? "GATE"}
+          </span>
           <span className="ghost">{verification ? `risk ${verification.risk_level}` : project.compiler}</span>
           <button
             type="button"
@@ -107,9 +121,7 @@ export default function ComposeProjectPage() {
             入库
           </button>
         </div>
-        <label className="sr-only" htmlFor="compose-nl-edit">
-          题意 / 规格
-        </label>
+        <label htmlFor="compose-nl-edit">Requirement</label>
         <textarea
           id="compose-nl-edit"
           className="compose-nl tight"
@@ -120,7 +132,17 @@ export default function ComposeProjectPage() {
         <div className="compose-split">
           <section className="compose-canvas">
             {project.ir ? (
-              <ComposeCanvas ir={project.ir} errors={project.errors} highlight={highlight} />
+              <ComposeCanvas
+                ir={project.ir}
+                errors={project.errors}
+                highlight={highlight}
+                failing={(verification?.issues ?? []).flatMap((item) => item.affected_nodes || [])}
+                onSelectNode={(id) => {
+                  const hit = (verification?.issues ?? []).find((item) => item.affected_nodes?.includes(id));
+                  setSelected(hit ?? null);
+                  if (!hit) setMessage(`节点 ${id} 没有 finding。`);
+                }}
+              />
             ) : (
               <p className="ghost" style={{ padding: 16 }}>
                 还没有 IR
@@ -128,7 +150,7 @@ export default function ComposeProjectPage() {
             )}
           </section>
           <aside className="side">
-            <h2>规格覆盖</h2>
+            <h2>验证</h2>
             <p className="caption">
               {verification
                 ? `${verification.constraints_passed ?? verification.requirements_passed} PASS · ${verification.constraints_failed ?? 0} FAIL · ${verification.constraints_unknown ?? 0} UNKNOWN`
@@ -164,8 +186,10 @@ export default function ComposeProjectPage() {
             ))}
             {verification?.dimensions.map((item) => (
               <div key={item.name} className="latest-line">
-                <span className={`verdict ${item.status === "PASS" ? "AC" : "WA"}`}>{item.status}</span>
-                <span>{item.name}</span>
+                <span className={`verdict ${item.status === "PASS" ? "AC" : item.status === "WARNING" || item.status === "UNKNOWN" ? "TLE" : "WA"}`}>
+                  {item.status}
+                </span>
+                <span>{item.name === "executable" ? "静态可达" : item.name === "runtime" ? "运行时模拟" : item.name}</span>
                 <span className="ghost">{item.issue_count}</span>
               </div>
             ))}
@@ -233,6 +257,131 @@ export default function ComposeProjectPage() {
                 )}
               </>
             ) : null}
+            <h2>Gate</h2>
+            <p>
+              <span
+                className={`verdict ${
+                  project.gate?.ready === "READY" ? "AC" : project.gate?.ready === "REVIEW REQUIRED" ? "TLE" : "WA"
+                }`}
+              >
+                {project.gate?.ready ?? "—"}
+              </span>
+            </p>
+            {Object.entries(project.gate?.dimensions ?? {}).map(([name, status]) => (
+              <div key={name} className="latest-line">
+                <span className={`verdict ${status === "PASS" || status === "READY" ? "AC" : status === "WARNING" || status === "UNKNOWN" ? "TLE" : "WA"}`}>
+                  {status}
+                </span>
+                <span>{name}</span>
+              </div>
+            ))}
+            {(project.gate?.reasons ?? []).map((reason) => (
+              <p className="caption" key={reason}>
+                {reason}
+              </p>
+            ))}
+            <h2>Runtime</h2>
+            <p className="caption">
+              {(crossOverlay ?? project.cross)?.pattern ?? "NOT RUN"} · coverage{" "}
+              {(runtimeOverlay ?? project.runtime)?.constraint_runtime_coverage != null
+                ? `${Math.round(((runtimeOverlay ?? project.runtime)?.constraint_runtime_coverage ?? 0) * 100)}%`
+                : "—"}
+            </p>
+            <p className="caption">{(crossOverlay ?? project.cross)?.story}</p>
+            {project.ir ? (
+              <label className="caption">
+                截断运行时
+                <select value={skipAfter} onChange={(event) => setSkipAfter(event.target.value)}>
+                  <option value="">完整 DAG</option>
+                  {project.ir.nodes.map((node) => (
+                    <option key={node.id} value={node.id}>
+                      {node.id}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  disabled={Boolean(busy)}
+                  onClick={async () => {
+                    setBusy("runtime");
+                    setMessage("");
+                    try {
+                      const payload = await api.runtime(project.ir!, nl, skipAfter || undefined);
+                      setTraceOverlay(payload.trace);
+                      setRuntimeOverlay(payload.runtime);
+                      setCrossOverlay(payload.cross);
+                    } catch (err) {
+                      setMessage((err as Error).message);
+                    } finally {
+                      setBusy("");
+                    }
+                  }}
+                >
+                  模拟
+                </button>
+              </label>
+            ) : null}
+            {(traceOverlay ?? project.trace)?.events.map((event, index, events) => (
+              <div key={event.event_index} className="caption">
+                #{event.event_index} {event.operation}
+                {event.branch ? ` ${event.branch.toUpperCase()}` : ""} {event.status}
+                {event.external_effect ? ` · ${event.external_effect}` : ""}
+                {events[index + 1] ? ` ↓ ${event.duration_ms}ms` : ` · ${event.duration_ms}ms`}
+              </div>
+            ))}
+            {(runtimeOverlay ?? project.runtime)?.issues
+              ?.filter((item) => item.status === "FAIL")
+              .map((item) => (
+                <button
+                  type="button"
+                  className="sample fail"
+                  key={item.constraint_id}
+                  onClick={() =>
+                    setSelected({
+                      id: item.constraint_id,
+                      category: "runtime",
+                      severity: "HIGH",
+                      code: item.constraint_id,
+                      title: item.expected,
+                      description: item.observed,
+                      affected_nodes: item.affected_nodes ?? [],
+                      witness_path: (traceOverlay ?? project.trace)?.events
+                        .filter((event) => item.trace_slice?.includes(event.event_index))
+                        .map((event) => event.node_id) ?? [],
+                      expected: item.expected,
+                      actual: item.observed,
+                    })
+                  }
+                >
+                  <span className="verdict WA">{item.constraint_id}</span>
+                  <div>
+                    {(item.counterexample?.slice_labels ?? []).join(" → ") || item.observed}
+                  </div>
+                </button>
+              ))}
+            <h2>Changes</h2>
+            {project.repair ? (
+              <>
+                <p className="caption">
+                  Changed nodes: {(project.repair.impact_nodes ?? []).join(", ") || project.repair.changed_nodes}
+                </p>
+                <p className="caption">
+                  Re-evaluated: {project.repair.reevaluated_constraints ?? "—"} / {project.repair.total_constraints ?? "—"}{" "}
+                  constraints
+                  {project.repair.used_full_fallback ? " · full fallback" : " · incremental"}
+                </p>
+                <p className="caption">
+                  Candidates {project.repair.candidates_generated ?? 0} · guard-reject{" "}
+                  {project.repair.candidates_rejected_guard ?? 0} · incremental-reject{" "}
+                  {project.repair.candidates_rejected_incremental ?? 0} · fully verified{" "}
+                  {project.repair.candidates_fully_verified ?? 0}
+                </p>
+                <p className="caption">Final full verification: {project.repair.final.status}</p>
+              </>
+            ) : (
+              <p className="ghost">没有 Patch。Incremental 只在修复或对比两次 IR 时计算。</p>
+            )}
             <h2>弱测资攻击</h2>
             {project.attack.length === 0 ? (
               <p className="ghost">没有明显弱数据。</p>

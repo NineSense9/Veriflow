@@ -8,4 +8,7 @@
 - publish_problem 之前必须有 human_gate
 - guard.expr 必须是可解析表达式（可用 && ||），禁止自然语言
 - 需要数据范围守卫，例如 spec.n_min >= 1 && spec.n_max <= 100000
+- 必须包含 name（短英文或拼音 id）
+- 节点额外参数放在 config，不要用 params
+- 边用 {"from": "...", "to": "..."}
 - 只输出一个 JSON 对象

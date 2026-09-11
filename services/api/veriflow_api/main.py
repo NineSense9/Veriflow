@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query
@@ -19,10 +21,28 @@ from veriflow_api.report import export_markdown, sets_payload, summary
 from veriflow_api.solver import solve as draft_solution
 from veriflow_api.tutor import ask_tutor
 from veriflow_ir.workflow import WorkflowIR
-from veriflow_sandbox.factory import get_sandbox, sandbox_mode
+from veriflow_sandbox.factory import SandboxUnavailable, get_sandbox, sandbox_mode
 from veriflow_sandbox.judge import Case, judge_submission
 from veriflow_sandbox.stress import StressProgram, run_stress
 from veriflow_staticcheck.check import check_workflow
+
+
+def _load_dotenv() -> None:
+    path = Path(__file__).resolve().parents[3] / ".env"
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        os.environ[key] = value.strip().strip('"').strip("'")
+
+
+_load_dotenv()
 
 
 @asynccontextmanager
@@ -77,6 +97,34 @@ class SpecCompileBody(BaseModel):
 class VerifyBody(BaseModel):
     ir: dict
     nl: str = ""
+    skip_after: str | None = None
+
+
+class IncrementalBody(BaseModel):
+    before: dict
+    after: dict
+    nl: str = ""
+
+
+class SessionBody(BaseModel):
+    ir: dict | None = None
+    nl: str = ""
+    skip_after: str | None = None
+    demo: str | None = None
+    parent_run_id: int | None = None
+
+
+class CompareBody(BaseModel):
+    left_id: int
+    right_id: int
+
+
+class AlgoTryBody(BaseModel):
+    ir: dict
+    source: str = ""
+    target: str = ""
+    nl: str = ""
+    skip_after: str | None = None
 
 
 class RepairLoopBody(BaseModel):
@@ -147,8 +195,12 @@ def grade_submission(user_id: int, problem_id: str, lang: str, source: str) -> d
         )
         for row in tests
     ]
+    try:
+        sandbox = get_sandbox()
+    except SandboxUnavailable as exc:
+        raise HTTPException(status_code=503, detail={"code": "sandbox_down", "message": str(exc)}) from exc
     result = judge_submission(
-        get_sandbox(),
+        sandbox,
         lang,
         source,
         cases,
@@ -274,15 +326,284 @@ def _register_routes(application: FastAPI) -> None:
         ir = WorkflowIR.model_validate(body.ir)
         return json.loads(mutate_ir(ir, body.fault).model_dump_json())
 
+    @application.post("/api/runtime")
+    def api_runtime(body: VerifyBody, user=Depends(current_user)):
+        del user
+        from veriflow_runtime.cross import cross_verify
+        from veriflow_runtime.mock_exec import mock_execute
+        from veriflow_runtime.monitor import monitor_trace
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.result import verify_workflow
+
+        ir = WorkflowIR.model_validate(body.ir)
+        spec = compile_spec(body.nl, ir.domain)
+        static = verify_workflow(ir, spec)
+        trace = mock_execute(ir, skip_after=body.skip_after)
+        runtime = monitor_trace(trace, spec)
+        return {
+            "trace": json.loads(trace.model_dump_json()),
+            "runtime": json.loads(runtime.model_dump_json()),
+            "cross": json.loads(cross_verify(static, runtime).model_dump_json()),
+        }
+
+    @application.post("/api/incremental")
+    def api_incremental(body: IncrementalBody, user=Depends(current_user)):
+        del user
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.incremental import equivalence_report, incremental_verify
+        from veriflow_verify.result import verify_workflow
+
+        before = WorkflowIR.model_validate(body.before)
+        after = WorkflowIR.model_validate(body.after)
+        spec = compile_spec(body.nl, after.domain)
+        previous = verify_workflow(before, spec)
+        inc = incremental_verify(before, after, spec, previous=previous)
+        full = verify_workflow(after, spec)
+        eq = equivalence_report(full, inc.result)
+        return {
+            "incremental": json.loads(inc.model_dump_json()),
+            "full": json.loads(full.model_dump_json()),
+            "equivalence": json.loads(eq.model_dump_json()),
+        }
+
+    @application.post("/api/gate")
+    def api_gate(body: VerifyBody, user=Depends(current_user)):
+        del user
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.gate import evaluate_gate
+
+        ir = WorkflowIR.model_validate(body.ir)
+        spec = compile_spec(body.nl, ir.domain)
+        return json.loads(evaluate_gate(ir, spec).model_dump_json())
+
+    @application.get("/api/integrations/n8n")
+    def api_n8n_status(user=Depends(current_user)):
+        del user
+        from veriflow_runtime.n8n_live import n8n_status
+
+        return n8n_status()
+
+    @application.get("/api/demos")
+    def api_demos(user=Depends(current_user)):
+        del user
+        from veriflow_api.demos import list_demos
+
+        return {"demos": list_demos()}
+
+    @application.get("/api/demos/{demo_id}")
+    def api_demo(demo_id: str, user=Depends(current_user)):
+        del user
+        from veriflow_api.demos import load_demo
+
+        try:
+            return load_demo(demo_id)
+        except KeyError:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "demo not found"})
+
+    @application.post("/api/report/session")
+    def api_report_session(body: SessionBody, user=Depends(current_user)):
+        from veriflow_api.demos import load_demo
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.history import record_session
+        from veriflow_verify.pipeline import run_session
+
+        skip = body.skip_after
+        nl = body.nl
+        if body.demo:
+            demo = load_demo(body.demo)
+            ir = WorkflowIR.model_validate(demo["ir"])
+            nl = nl or demo["nl"]
+            skip = skip if skip is not None else demo.get("skip_after")
+        elif body.ir:
+            ir = WorkflowIR.model_validate(body.ir)
+        else:
+            raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "ir or demo required"})
+        spec = compile_spec(nl, ir.domain)
+        session = run_session(ir, spec, nl=nl, skip_after=skip)
+        with connect() as connection:
+            run_id = record_session(connection, user["id"], session, parent_run_id=body.parent_run_id)
+        payload = json.loads(session.model_dump_json())
+        payload["run_id"] = run_id
+        if body.parent_run_id:
+            payload["parent_run_id"] = body.parent_run_id
+        return payload
+
+    @application.post("/api/report/export")
+    def api_report_export(body: SessionBody, user=Depends(current_user)):
+        from veriflow_api.demos import load_demo
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.export import export_json, export_markdown
+        from veriflow_verify.pipeline import run_session
+
+        skip = body.skip_after
+        nl = body.nl
+        if body.demo:
+            demo = load_demo(body.demo)
+            ir = WorkflowIR.model_validate(demo["ir"])
+            nl = nl or demo["nl"]
+            skip = skip if skip is not None else demo.get("skip_after")
+        elif body.ir:
+            ir = WorkflowIR.model_validate(body.ir)
+        else:
+            raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "ir or demo required"})
+        session = run_session(ir, compile_spec(nl, ir.domain), nl=nl, skip_after=skip)
+        return {"markdown": export_markdown(session), "json": export_json(session)}
+
+    @application.get("/api/report/history")
+    def api_report_history(user=Depends(current_user), limit: int = Query(30)):
+        from veriflow_verify.history import list_sessions
+
+        with connect() as connection:
+            return {"runs": list_sessions(connection, user["id"], limit=min(max(limit, 1), 100))}
+
+    @application.get("/api/report/runs/{run_id}")
+    def api_report_run(run_id: int, user=Depends(current_user)):
+        from veriflow_verify.history import get_session
+
+        with connect() as connection:
+            row = get_session(connection, run_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "run not found"})
+        session = row.get("session")
+        if not session:
+            raise HTTPException(status_code=404, detail={"code": "no_payload", "message": "run has no stored session"})
+        session["run_id"] = run_id
+        if row.get("parent_run_id"):
+            session["parent_run_id"] = row["parent_run_id"]
+        return session
+
+    @application.post("/api/report/compare")
+    def api_report_compare(body: CompareBody, user=Depends(current_user)):
+        del user
+        from veriflow_verify.history import compare_sessions, get_session
+
+        with connect() as connection:
+            left = get_session(connection, body.left_id)
+            right = get_session(connection, body.right_id)
+        if not left or not right:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "run not found"})
+        return compare_sessions(left, right)
+
+    @application.get("/api/algorithms")
+    def api_algorithms(user=Depends(current_user)):
+        del user
+        from veriflow_verify.algorithms import attach_benchmarks, list_algorithms, load_smoke_metrics
+
+        attach_benchmarks(load_smoke_metrics())
+        items = [item.model_dump() for item in list_algorithms()]
+        det = sum(1 for item in items if item["deterministic"])
+        return {
+            "algorithms": items,
+            "count": len(items),
+            "deterministic": det,
+            "ai_assisted": len(items) - det,
+            "benchmark_version": (load_smoke_metrics() or {}).get("timestamp"),
+        }
+
+    @application.get("/api/algorithms/{algorithm_id}")
+    def api_algorithm(algorithm_id: str, user=Depends(current_user)):
+        del user
+        from veriflow_verify.algorithms import attach_benchmarks, get_algorithm, load_smoke_metrics
+
+        attach_benchmarks(load_smoke_metrics())
+        item = get_algorithm(algorithm_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "algorithm not found"})
+        return item.model_dump()
+
+    @application.post("/api/algorithms/{algorithm_id}/try")
+    def api_algorithm_try(algorithm_id: str, body: AlgoTryBody, user=Depends(current_user)):
+        del user
+        ir = WorkflowIR.model_validate(body.ir)
+        from veriflow_spec.compiler import compile_spec
+        from veriflow_verify.sdk import ADAPTERS, run_algorithm
+
+        if algorithm_id in ADAPTERS:
+            spec = compile_spec(body.nl, ir.domain)
+            return run_algorithm(
+                algorithm_id,
+                {"ir": ir, "spec": spec, "source": body.source, "target": body.target, "skip_after": body.skip_after},
+            )
+        if algorithm_id == "graph.reachability":
+            from veriflow_ir.graph import shortest_path
+
+            path = shortest_path(ir, body.source, body.target) if body.source and body.target else None
+            return {"reachable": path is not None, "path": path or []}
+        if algorithm_id == "runtime.alignment":
+            from veriflow_runtime.align import align_trace
+            from veriflow_runtime.mock_exec import mock_execute
+            from veriflow_spec.compiler import compile_spec
+
+            spec = compile_spec(body.nl, ir.domain)
+            trace = mock_execute(ir, skip_after=body.skip_after)
+            return json.loads(align_trace(ir, spec, trace).model_dump_json())
+        raise HTTPException(status_code=400, detail={"code": "no_demo", "message": "no interactive demo for this algorithm"})
+
+    @application.get("/api/semantics")
+    def api_semantics(user=Depends(current_user)):
+        del user
+        from veriflow_ir.semantics import registry_dump
+
+        return {"nodes": registry_dump()}
+
     @application.get("/api/bench/latest")
     def api_bench_latest(user=Depends(current_user)):
         del user
         from pathlib import Path
 
-        path = Path("experiments/runs/smoke/metrics.json")
-        if not path.exists():
-            return {"status": "NOT RUN", "metrics": None}
-        return {"status": "ok", "metrics": json.loads(path.read_text(encoding="utf-8"))}
+        root = Path(__file__).resolve().parents[3]
+        preferred = [
+            root / "experiments" / "runs" / "dev" / "metrics.json",
+            root / "experiments" / "runs" / "smoke" / "metrics.json",
+        ]
+        existing = [path for path in preferred if path.exists()]
+        if not existing:
+            return {"status": "NOT RUN", "metrics": None, "source": None, "note": "运行 python -m veriflow_cli bench"}
+        path = existing[0]
+        metrics = json.loads(path.read_text(encoding="utf-8"))
+        relative = path.relative_to(root).as_posix()
+        payload: dict[str, object] = {
+            "status": "ok",
+            "source": relative,
+            "suite": metrics.get("suite") or ("dev" if "dev" in relative else "smoke"),
+            "metrics": metrics,
+            "note": metrics.get("note")
+            or "仓库内 gold IR 故障注入。不是外部竞赛榜，禁止写成 SOTA。",
+        }
+        for key, value in metrics.items():
+            if key not in payload:
+                payload[key] = value
+        payload["baselines"] = {
+            "accept_without_verifier": {
+                "status": "ok",
+                "label": "生成后直接接受（无 verifier）",
+                "detection_recall": 0.0,
+                "detection_f1": 0.0,
+                "note": "对照基线：LLM 生成后不经检查。不是模型调用。",
+            },
+            "deterministic_static": {
+                "status": "ok",
+                "label": "确定性静态验证",
+                "detection_f1": payload.get("detection_f1"),
+                "detection_recall": payload.get("detection_recall"),
+                "n": payload.get("n"),
+                "note": "verify_workflow。判定不来自 LLM。",
+            },
+            "veriflow_hybrid": {
+                "status": "ok",
+                "label": "VeriFlow Hybrid",
+                "detection_f1": payload.get("detection_f1"),
+                "repair_success_rate": payload.get("repair_success_rate"),
+                "fault_localization_accuracy": payload.get("fault_localization_accuracy"),
+                "note": "static + repair.guard + incremental.impact + patch selection。",
+            },
+            "llm_as_judge": {
+                "status": "NOT RUN",
+                "label": "LLM-as-judge",
+                "reason": "未执行模型打分（无评测 Key 或不允许用 LLM 当裁判）。禁止填假数。",
+            },
+        }
+        return payload
 
     @application.post("/api/auth/login")
     def login(body: LoginBody):
@@ -539,8 +860,12 @@ def _register_routes(application: FastAPI) -> None:
                 status_code=400,
                 detail={"code": "no_gen", "message": "本题没有生成器"},
             )
+        try:
+            sandbox = get_sandbox()
+        except SandboxUnavailable as exc:
+            raise HTTPException(status_code=503, detail={"code": "sandbox_down", "message": str(exc)}) from exc
         result = run_stress(
-            get_sandbox(),
+            sandbox,
             StressProgram(lang=body.gen_lang, source=gen_source, role="gen"),
             StressProgram(lang=body.brute_lang, source=brute_source, role="brute"),
             StressProgram(lang=body.sol_lang, source=body.sol_source, role="sol"),

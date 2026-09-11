@@ -14,7 +14,7 @@ from veriflow_verify.safety import safety_issues
 from veriflow_verify.semantic import semantic_issues
 
 _SEV = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
-VERIFIER_VERSION = "0.2.1"
+VERIFIER_VERSION = "0.3.0"
 
 
 class DimensionResult(BaseModel):
@@ -63,21 +63,49 @@ class VerificationResult(BaseModel):
 
 def verify_workflow(ir: WorkflowIR, spec: WorkflowSpec | None = None) -> VerificationResult:
     spec = spec or compile_spec("", ir.domain)
+    issues, spec_issues = collect_issues(ir, spec)
+    return assemble_result(ir, spec, issues, spec_issues)
+
+
+def collect_issues(
+    ir: WorkflowIR,
+    spec: WorkflowSpec,
+    run: set[str] | None = None,
+) -> tuple[list[Issue], list[SpecIssue]]:
+    """Collect issues from selected verifiers. `run` is a set of Issue.category names."""
     spec_issues = check_spec(spec)
-    structural = [
-        issue_from_check_error(error, index)
-        for index, error in enumerate(check_workflow(ir))
-    ]
-    for issue in structural:
-        if issue.code == "MISSING_HUMAN_GATE" and issue.affected_nodes:
-            found = paths_to(ir, issue.affected_nodes[0])
-            if found:
-                issue.witness_path = found[0]
-                issue.expected = "human_gate → publish_problem"
-                issue.actual = " → ".join(found[0])
-    semantic = semantic_issues(ir, spec)
-    safety = safety_issues(ir, spec)
-    issues = _dedupe([*structural, *semantic, *safety])
+    wanted = run or {"structural", "semantic", "dataflow", "executable", "safety"}
+    issues: list[Issue] = []
+    if wanted & {"structural", "dataflow", "executable"}:
+        structural = [
+            issue_from_check_error(error, index)
+            for index, error in enumerate(check_workflow(ir))
+        ]
+        for issue in structural:
+            if issue.code == "MISSING_HUMAN_GATE" and issue.affected_nodes:
+                found = paths_to(ir, issue.affected_nodes[0])
+                if found:
+                    issue.witness_path = found[0]
+                    issue.expected = "human_gate → publish_problem"
+                    issue.actual = " → ".join(found[0])
+            if issue.category in wanted:
+                issues.append(issue)
+    if "semantic" in wanted:
+        issues.extend(semantic_issues(ir, spec))
+    if "safety" in wanted:
+        issues.extend(safety_issues(ir, spec))
+    return _dedupe(issues), spec_issues
+
+
+def assemble_result(
+    ir: WorkflowIR,
+    spec: WorkflowSpec,
+    issues: list[Issue],
+    spec_issues: list[SpecIssue] | None = None,
+) -> VerificationResult:
+    issues = _dedupe(issues)
+    spec_issues = spec_issues if spec_issues is not None else check_spec(spec)
+    _stamp_provenance(issues)
     roots = group_issues(issues)
     constraints = _constraint_verdicts(ir, spec, issues)
     by_cat: dict[str, list[Issue]] = {
@@ -105,7 +133,7 @@ def verify_workflow(ir: WorkflowIR, spec: WorkflowSpec | None = None) -> Verific
     return VerificationResult(
         status=_overall(issues, unknown, failed),
         risk_level=_risk(issues),
-        confidence=min((issue.confidence for issue in issues), default=1.0) if issues else spec.confidence,
+        confidence=1.0,
         issues=issues,
         dimensions=dimensions,
         requirements_passed=passed,
@@ -123,6 +151,36 @@ def verify_workflow(ir: WorkflowIR, spec: WorkflowSpec | None = None) -> Verific
         spec_issues=spec_issues,
         root_causes=roots,
     )
+
+
+_STATICCHECK_CODES = {
+    "TOOL_NOT_ALLOWED",
+    "MISSING_ON_FAIL",
+    "GUARD_NOT_EXPR",
+    "UNDEF_VAR",
+    "TYPE_MISMATCH",
+    "DEAD_NODE",
+    "MISSING_HUMAN_GATE",
+}
+
+
+def verify_scoped(
+    ir: WorkflowIR,
+    spec: WorkflowSpec,
+    previous: VerificationResult,
+    rerun: set[str],
+) -> VerificationResult:
+    fresh, spec_issues = collect_issues(ir, spec, run=rerun)
+    staticcheck_rerun = bool(rerun & {"structural", "dataflow", "executable"})
+    kept: list[Issue] = []
+    for issue in previous.issues:
+        from_graph = issue.code in _STATICCHECK_CODES
+        if from_graph and not staticcheck_rerun:
+            kept.append(issue)
+            continue
+        if issue.category not in rerun:
+            kept.append(issue)
+    return assemble_result(ir, spec, [*kept, *fresh], spec_issues)
 
 
 def quality(result: VerificationResult) -> int:
@@ -270,6 +328,23 @@ def _risk(issues: list[Issue]) -> Risk:
     if any(issue.severity == "MEDIUM" for issue in issues):
         return "MEDIUM"
     return "LOW"
+
+
+def _stamp_provenance(issues: list[Issue]) -> None:
+    mapping = {
+        "structural": ("graph.integrity", "1.0"),
+        "semantic": ("semantic.constraint", "1.0"),
+        "dataflow": ("dataflow.slice", "1.0"),
+        "executable": ("graph.reachability", "1.1"),
+        "safety": ("safety.policy", "1.0"),
+    }
+    for issue in issues:
+        if not issue.detected_by:
+            algo, ver = mapping.get(issue.category, ("graph.integrity", "1.0"))
+            issue.detected_by = algo
+            issue.algorithm_version = ver
+        if not issue.evidence_source:
+            issue.evidence_source = issue.evidence[0] if issue.evidence else issue.code
 
 
 def _dedupe(issues: list[Issue]) -> list[Issue]:

@@ -90,6 +90,21 @@ CREATE TABLE IF NOT EXISTS compose_projects (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS verification_runs (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER,
+  created_at TEXT NOT NULL,
+  workflow_name TEXT,
+  workflow_hash TEXT,
+  status TEXT,
+  issue_count INTEGER,
+  coverage REAL,
+  runtime_status TEXT,
+  gate_ready TEXT,
+  latency_ms REAL,
+  summary_json TEXT NOT NULL,
+  payload_json TEXT
+);
 """
 
 
@@ -109,4 +124,7 @@ def connect() -> sqlite3.Connection:
 def init_db() -> None:
     with connect() as connection:
         connection.executescript(SCHEMA)
+        cols = [row[1] for row in connection.execute("PRAGMA table_info(verification_runs)").fetchall()]
+        if cols and "payload_json" not in cols:
+            connection.execute("ALTER TABLE verification_runs ADD COLUMN payload_json TEXT")
         connection.commit()

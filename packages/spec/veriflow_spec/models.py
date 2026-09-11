@@ -59,6 +59,38 @@ class SafetyPolicy(BaseModel):
     requirement: str = ""
 
 
+class SourceTrace(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    constraint_id: str
+    start: int | None = None
+    end: int | None = None
+    snippet: str = ""
+    kind: Literal["nl_span", "platform_policy"] = "platform_policy"
+
+
+class TemporalConstraint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    kind: Literal[
+        "BEFORE",
+        "AFTER",
+        "EVENTUALLY",
+        "NEVER",
+        "EXACTLY_ONCE",
+        "AT_LEAST_ONCE",
+        "AT_MOST_ONCE",
+        "IF_EXECUTED_THEN",
+        "IF_BRANCH_THEN",
+        "DATA_FROM",
+    ]
+    a: str
+    b: str | None = None
+    branch: Literal["true", "false"] | None = None
+    requirement: str = ""
+
+
 class WorkflowSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -72,6 +104,8 @@ class WorkflowSpec(BaseModel):
     branch_constraints: list[BranchConstraint] = Field(default_factory=list)
     data_dependencies: list[DataDependency] = Field(default_factory=list)
     safety_policies: list[SafetyPolicy] = Field(default_factory=list)
-    confidence: float = 1.0
+    temporal_constraints: list[TemporalConstraint] = Field(default_factory=list)
+    source_traces: list[SourceTrace] = Field(default_factory=list)
     compiler: str = "heuristic"
+    compiler_basis: Literal["empty", "keyword", "platform_template"] = "platform_template"
     evidence: list[str] = Field(default_factory=list)

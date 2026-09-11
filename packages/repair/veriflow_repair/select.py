@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pydantic import BaseModel, ConfigDict
+
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_repair.diff import graph_diff
 from veriflow_repair.executor import apply_patches
@@ -7,13 +9,29 @@ from veriflow_repair.guard import validate_patches
 from veriflow_repair.patch import Patch
 from veriflow_repair.planner import plan_patches
 from veriflow_spec.models import WorkflowSpec
+from veriflow_verify.incremental import incremental_verify
 from veriflow_verify.issue import Issue
 from veriflow_verify.result import VerificationResult, verify_workflow
 
 HIGH = {"HIGH", "CRITICAL"}
 
 
-def plan_candidates(ir: WorkflowIR, issues: list[Issue], k: int = 3) -> list[list[Patch]]:
+class PickStats(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    generated: int = 0
+    rejected_guard: int = 0
+    rejected_incremental: int = 0
+    fully_verified: int = 0
+    selected: str = ""
+
+
+def plan_candidates(
+    ir: WorkflowIR,
+    issues: list[Issue],
+    k: int = 3,
+    spec: WorkflowSpec | None = None,
+) -> list[list[Patch]]:
     plans: list[list[Patch]] = []
     primary = plan_patches(ir, issues)
     if primary:
@@ -35,6 +53,18 @@ def plan_candidates(ir: WorkflowIR, issues: list[Issue], k: int = 3) -> list[lis
         unique.append(plan)
         if len(unique) >= k:
             break
+    if spec is not None and len(unique) < k:
+        from veriflow_repair.ai_planner import propose_ai_patches
+
+        extra, _reason = propose_ai_patches(ir, spec, issues)
+        for plan in extra:
+            key = repr([item.model_dump() for item in plan])
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(plan)
+            if len(unique) >= k:
+                break
     return unique
 
 
@@ -94,27 +124,46 @@ def accept_candidate(before: VerificationResult, after: VerificationResult, targ
     return "REPAIR_ACCEPTED"
 
 
+def _promising(before: VerificationResult, screened: VerificationResult, target: Issue | None) -> bool:
+    if target_fixed(before, screened, target):
+        return True
+    if len(screened.issues) < len(before.issues):
+        return True
+    if screened.constraints_failed < before.constraints_failed:
+        return True
+    return False
+
+
 def pick_plan(
     ir: WorkflowIR,
     spec: WorkflowSpec,
     before: VerificationResult,
     k: int = 3,
-) -> tuple[list[Patch] | None, VerificationResult | None, WorkflowIR | None, str, int]:
+) -> tuple[list[Patch] | None, VerificationResult | None, WorkflowIR | None, str, PickStats]:
     target = before.issues[0] if before.issues else None
-    candidates = plan_candidates(ir, before.issues, k=k)
+    candidates = plan_candidates(ir, before.issues, k=k, spec=spec)
+    stats = PickStats(generated=len(candidates))
     ranked: list[tuple[tuple, list[Patch], VerificationResult, WorkflowIR]] = []
     for plan in candidates:
-        ok, reason = validate_patches(ir, plan)
+        ok, _reason = validate_patches(ir, plan)
         if not ok:
+            stats.rejected_guard += 1
             continue
         nxt = apply_patches(ir, plan)
+        screened = incremental_verify(ir, nxt, spec, previous=before)
+        if not _promising(before, screened.result, target):
+            stats.rejected_incremental += 1
+            continue
         after = verify_workflow(nxt, spec)
+        stats.fully_verified += 1
         ranked.append((lex_key(before, after, target, plan, ir, nxt), plan, after, nxt))
     if not ranked:
-        return None, None, None, "REPAIR_REJECTED_INVALID_PATCH", len(candidates)
+        decision = "REPAIR_REJECTED_INVALID_PATCH" if stats.rejected_guard == stats.generated else "REPAIR_REJECTED_NO_IMPROVEMENT"
+        return None, None, None, decision, stats
     ranked.sort(key=lambda item: item[0])
     _key, plan, after, nxt = ranked[0]
     decision = accept_candidate(before, after, target)
+    stats.selected = decision
     if decision != "REPAIR_ACCEPTED":
-        return plan, after, ir, decision, len(candidates)
-    return plan, after, nxt, decision, len(candidates)
+        return plan, after, ir, decision, stats
+    return plan, after, nxt, decision, stats

@@ -1,0 +1,16 @@
+{
+  "ir_version": "1.0",
+  "domain": "compose",
+  "name": "ci_commit_c",
+  "nodes": [
+    { "id": "gen", "kind": "tool", "tool": "test_generator" },
+    { "id": "g_bounds", "kind": "guard", "expr": "spec.n_max <= 100000", "on_fail": "reject" },
+    { "id": "review", "kind": "human_gate", "assignee_role": "problemsetter", "on_fail": "reject" },
+    { "id": "pub", "kind": "tool", "tool": "publish_problem" }
+  ],
+  "edges": [
+    { "from": "gen", "to": "g_bounds" },
+    { "from": "g_bounds", "to": "review" },
+    { "from": "review", "to": "pub" }
+  ]
+}
