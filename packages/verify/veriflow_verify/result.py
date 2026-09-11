@@ -82,12 +82,10 @@ def collect_issues(
             for index, error in enumerate(check_workflow(ir))
         ]
         for issue in structural:
-            if issue.code == "MISSING_HUMAN_GATE" and issue.affected_nodes:
-                found = paths_to(ir, issue.affected_nodes[0])
-                if found:
-                    issue.witness_path = found[0]
-                    issue.expected = "human_gate → publish_problem"
-                    issue.actual = " → ".join(found[0])
+            if issue.code == "MISSING_HUMAN_GATE":
+                issue.expected = issue.expected or "human_gate on every path to publish"
+                if issue.witness_path:
+                    issue.actual = "bypass " + " → ".join(issue.witness_path)
             if issue.category in wanted:
                 issues.append(issue)
     if "semantic" in wanted:

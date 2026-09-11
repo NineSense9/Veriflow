@@ -138,7 +138,10 @@ def _coerce_ir(payload: dict) -> dict:
         source = raw.get("from") or raw.get("from_") or raw.get("source")
         target = raw.get("to") or raw.get("target")
         if source and target:
-            edges.append({"from": source, "to": target})
+            item = {"from": source, "to": target}
+            if raw.get("branch") in {"true", "false"}:
+                item["branch"] = raw["branch"]
+            edges.append(item)
     out["edges"] = edges
     keep = {"ir_version", "domain", "name", "nodes", "edges"}
     return {key: out[key] for key in keep if key in out}

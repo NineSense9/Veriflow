@@ -72,7 +72,15 @@ def mock_execute(
         if skip_after == nid:
             terminal_status = "completed"
             break
-        queue.extend(adj.get(nid, []))
+        nxts = adj.get(nid, [])
+        if node.kind == "branch":
+            labeled = [edge for edge in ir.edges if edge.from_ == nid and edge.branch in {"true", "false"}]
+            if labeled:
+                wanted = "true" if take_true_branch else "false"
+                nxts = [edge.to for edge in labeled if edge.branch == wanted]
+            elif nxts:
+                nxts = [nxts[0]] if take_true_branch else nxts[1:2] or nxts[:1]
+        queue.extend(nxts)
     return ExecutionTrace(
         trace_id="mock",
         workflow_id=ir.name,

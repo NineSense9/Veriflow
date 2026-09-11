@@ -55,10 +55,12 @@ EOF
 fi
 
 mkdir -p "$APP/artifacts"
-if docker info >/dev/null 2>&1; then
-  docker build -t veriflow-sandbox:latest "$APP/deploy/sandbox"
-else
-  sed -i 's/^VERIFLOW_SANDBOX=.*/VERIFLOW_SANDBOX=process/' "$APP/.env"
+if grep -q '^VERIFLOW_ENV=production' "$APP/.env" 2>/dev/null || grep -q '^VERIFLOW_SANDBOX=docker' "$APP/.env" 2>/dev/null; then
+  if docker info >/dev/null 2>&1; then
+    docker build -t veriflow-sandbox:latest "$APP/deploy/sandbox"
+  else
+    echo "WARNING: production sandbox is docker but docker is unavailable. Leaving VERIFLOW_SANDBOX=docker (fail-closed)."
+  fi
 fi
 
 cd "$APP/apps/web"

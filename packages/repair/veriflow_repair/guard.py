@@ -21,8 +21,9 @@ def validate_preconditions(ir: WorkflowIR, patches: list[Patch]) -> tuple[bool, 
                 return False, "add_node missing id"
             if nid in pending_ids:
                 return False, f"node {nid} already exists"
+            kind = patch.kind or (patch.node or {}).get("kind")
             tool = patch.tool or (patch.node or {}).get("tool")
-            if patch.kind == "tool" and tool and tool not in allowed:
+            if (kind == "tool" or tool) and tool and tool not in allowed:
                 return False, f"tool {tool} not in whitelist"
             pending_ids.add(nid)
         elif patch.operation == "remove_node":

@@ -31,8 +31,11 @@ def docker_available() -> bool:
 
 
 def sandbox_mode() -> str:
+    env = os.environ.get("VERIFLOW_ENV", "").strip().lower()
     requested = os.environ.get("VERIFLOW_SANDBOX", "auto").strip().lower()
-    if requested == "docker":
+    if env == "production" or requested == "docker":
+        if requested == "process" and env == "production":
+            return "sandbox_down"
         return "docker" if docker_available() else "sandbox_down"
     if requested == "process":
         return "process"

@@ -106,6 +106,28 @@ def test_cycle_three_nodes():
     assert "CYCLE_DETECTED" in {e.code for e in check_workflow(ir)}
 
 
+def test_missing_gate_issue_keeps_bypass_witness():
+    ir = _ir(
+        [
+            {"id": "s", "kind": "tool", "tool": "test_generator"},
+            {"id": "g", "kind": "human_gate", "assignee_role": "problemsetter", "on_fail": "reject"},
+            {"id": "p", "kind": "tool", "tool": "publish_problem"},
+        ],
+        [("s", "g"), ("g", "p"), ("s", "p")],
+        name="bypass2",
+    )
+    from veriflow_spec.compiler import compile_spec
+    from veriflow_verify.result import verify_workflow
+
+    spec = compile_spec("完整出题：生成器、范围守卫、审题门、入库。")
+    result = verify_workflow(ir, spec)
+    gates = [i for i in result.issues if i.code == "MISSING_HUMAN_GATE"]
+    assert gates
+    path = gates[0].witness_path
+    assert path[0] == "s" and path[-1] == "p"
+    assert "g" not in path
+
+
 def test_ordering_bypass_not_bounded_by_16_paths():
     ir = _ir(
         [

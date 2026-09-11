@@ -247,3 +247,45 @@ def test_temporal_never_and_after():
     )
     runtime = monitor_trace(mock_execute(ir), spec)
     assert runtime.status == "PASS"
+
+
+def test_if_branch_then_is_selector_specific():
+    from veriflow_runtime.models import ExecutionTrace, TraceEvent
+    from veriflow_spec.models import TemporalConstraint, WorkflowSpec
+
+    spec = WorkflowSpec(
+        domain="compose",
+        goal="t",
+        temporal_constraints=[
+            TemporalConstraint(
+                id="tmp_pay",
+                kind="IF_BRANCH_THEN",
+                a="if_payment",
+                b="notify",
+                branch="true",
+                requirement="payment true then notify",
+            )
+        ],
+    )
+    trace = ExecutionTrace(
+        trace_id="t",
+        workflow_id="branches",
+        workflow_hash="x",
+        source="mock",
+        events=[
+            TraceEvent(
+                event_index=0,
+                timestamp_ms=1,
+                node_id="if_admin",
+                node_type="branch",
+                operation="branch",
+                status="success",
+                branch="true",
+            )
+        ],
+        status="completed",
+    )
+    result = monitor_trace(trace, spec)
+    issue = next(i for i in result.issues if i.constraint_id == "tmp_pay")
+    assert issue.status in {"UNKNOWN", "FAIL"}
+

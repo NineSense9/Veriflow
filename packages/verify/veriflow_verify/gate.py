@@ -140,6 +140,8 @@ def evaluate_gate(
     run_runtime: bool = True,
     policy: dict | None = None,
     skip_after: str | None = None,
+    runtime: ConformanceResult | None = None,
+    cross: CrossVerificationResult | None = None,
 ) -> GateResult:
     policy = _merge_policy(DEFAULT_POLICY, policy or {})
     static = static or verify_workflow(ir, spec)
@@ -157,14 +159,15 @@ def evaluate_gate(
             reasons.append("SAFETY_UNKNOWN")
     runtime_status = "NOT_RUN"
     coverage: float | None = None
-    runtime: ConformanceResult | None = None
-    cross: CrossVerificationResult | None = None
-    if run_runtime:
+    if runtime is None and run_runtime:
         trace = mock_execute(ir, skip_after=skip_after)
         runtime = monitor_trace(trace, spec)
+        cross = cross_verify(static, runtime)
+    if runtime is not None:
         runtime_status = runtime.status
         coverage = runtime.constraint_runtime_coverage
-        cross = cross_verify(static, runtime)
+        if cross is None:
+            cross = cross_verify(static, runtime)
         if runtime.status == "FAIL":
             reasons.append("RUNTIME_FAIL")
         if runtime.status == "UNKNOWN" and unknown_policy.get("runtime") == "fail":

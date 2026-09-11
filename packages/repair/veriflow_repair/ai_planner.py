@@ -93,7 +93,9 @@ def propose_ai_patches(
         for patch in patches:
             if patch.operation not in ALLOWED_OPS:
                 return [], "invalid_operation"
-            if patch.kind == "tool" and patch.tool and patch.tool not in DOMAIN_TOOLS.get(ir.domain, ()):
+            kind = patch.kind or (patch.node or {}).get("kind")
+            tool = patch.tool or (patch.node or {}).get("tool")
+            if (kind == "tool" or tool) and tool and tool not in DOMAIN_TOOLS.get(ir.domain, ()):
                 return [], "forbidden_tool"
         plans.append(patches)
     return plans, None

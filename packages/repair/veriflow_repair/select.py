@@ -51,9 +51,8 @@ def plan_candidates(
             continue
         seen.add(key)
         unique.append(plan)
-        if len(unique) >= k:
-            break
-    if spec is not None and len(unique) < k:
+    extra: list[list[Patch]] = []
+    if spec is not None:
         from veriflow_repair.ai_planner import propose_ai_patches
 
         extra, _reason = propose_ai_patches(ir, spec, issues)
@@ -63,9 +62,16 @@ def plan_candidates(
                 continue
             seen.add(key)
             unique.append(plan)
-            if len(unique) >= k:
-                break
-    return unique
+    mixed: list[list[Patch]] = []
+    if extra:
+        mixed.append(extra[0])
+    for plan in unique:
+        if plan in mixed:
+            continue
+        mixed.append(plan)
+        if len(mixed) >= k:
+            break
+    return mixed or unique[:k]
 
 
 def target_fixed(before: VerificationResult, after: VerificationResult, target: Issue | None) -> bool:

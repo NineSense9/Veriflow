@@ -122,10 +122,15 @@ def cycle_witness(ir: WorkflowIR) -> list[str] | None:
 
     def reconstruct(end: str, start: str) -> list[str]:
         path = [end]
-        while path[-1] != start and parent.get(path[-1]) is not None:
-            path.append(parent[path[-1]] or start)
-        path.append(start)
+        while path[-1] != start:
+            prev = parent.get(path[-1])
+            if prev is None:
+                break
+            path.append(prev)
         path.reverse()
+        if not path or path[0] != start:
+            path = [start, *path]
+        path.append(start)
         return path
 
     def dfs(node: str) -> list[str] | None:

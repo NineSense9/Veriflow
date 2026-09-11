@@ -42,6 +42,7 @@ class Edge(BaseModel):
 
     from_: str = Field(alias="from")
     to: str
+    branch: str | None = None
 
 
 class WorkflowIR(BaseModel):

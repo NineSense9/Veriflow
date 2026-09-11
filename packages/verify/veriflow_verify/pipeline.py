@@ -236,7 +236,7 @@ def run_session(
             }.get(issue.category, "graph.integrity")
             issue.algorithm_version = (ALGORITHMS.get(issue.detected_by).version if ALGORITHMS.get(issue.detected_by) else "1.0")
             issue.evidence_source = (issue.evidence[0] if issue.evidence else issue.code)
-    gate = evaluate_gate(ir, spec, static=static, skip_after=skip_after)
+    gate = evaluate_gate(ir, spec, static=static, runtime=runtime, run_runtime=False)
     matrix = build_matrix(spec, static, runtime)
     run_key = workflow_hash(ir)
     graph = build_graph(run_id=run_key, spec=spec, ir=ir, static=static, runtime=runtime, trace=trace)

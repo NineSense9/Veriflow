@@ -128,7 +128,16 @@ def _check(trace: ExecutionTrace, rule: MonitorRule) -> ConformanceIssue:
         )
     if rule.kind == "IF_BRANCH_THEN":
         wanted = rule.branch or "true"
-        branches = [event for event in trace.events if event.branch == wanted]
+        branches = [
+            event
+            for event in trace.events
+            if event.branch == wanted
+            and (
+                event.node_id == rule.a
+                or event.operation == rule.a
+                or event.node_type == rule.a
+            )
+        ]
         if not branches:
             return ConformanceIssue(
                 constraint_id=rule.constraint_id,

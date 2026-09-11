@@ -66,15 +66,14 @@ def project_payload(row) -> dict:
         from veriflow_runtime.monitor import monitor_trace
         from veriflow_verify.gate import evaluate_gate
 
-        skip = None
-        if ir.name == "case4_runtime":
-            skip = "if_pay"
-        trace = mock_execute(ir, skip_after=skip)
+        trace = mock_execute(ir)
         runtime = monitor_trace(trace, spec)
         payload["trace"] = json.loads(trace.model_dump_json())
         payload["runtime"] = json.loads(runtime.model_dump_json())
         payload["cross"] = json.loads(cross_verify(verification, runtime).model_dump_json())
-        payload["gate"] = json.loads(evaluate_gate(ir, spec, static=verification).model_dump_json())
+        payload["gate"] = json.loads(
+            evaluate_gate(ir, spec, static=verification, runtime=runtime, run_runtime=False).model_dump_json()
+        )
     return payload
 
 
@@ -151,7 +150,8 @@ def save_ir(user_id: int, project_id: int, ir: WorkflowIR) -> dict:
     row = get_project(user_id, project_id)
     if row is None:
         return None
-    errors, findings, status = _analyze(ir, nl)
+    source_nl = row["source_nl"] or ""
+    errors, findings, status = _analyze(ir, source_nl)
     now = _now()
     with connect() as connection:
         connection.execute(

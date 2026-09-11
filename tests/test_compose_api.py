@@ -62,6 +62,31 @@ def test_compose_valid_gate_and_publish(api_client):
     assert problem_id in ids
 
 
+def test_compose_save_ir_uses_project_requirement(api_client):
+    headers = _login(api_client)
+    created = api_client.post("/api/compose/example", json={"name": "valid_lis"}, headers=headers)
+    assert created.status_code == 200
+    project_id = created.json()["id"]
+    ir = created.json()["ir"]
+    saved = api_client.post(f"/api/compose/{project_id}/ir", json={"ir": ir}, headers=headers)
+    assert saved.status_code == 200, saved.text
+    body = saved.json()
+    assert body["gate_status"] == "pending"
+    assert "verification" in body
+
+
+def test_compose_guarded_repair_roundtrip(api_client):
+    headers = _login(api_client)
+    created = api_client.post("/api/compose/example", json={"name": "missing_gate"}, headers=headers)
+    assert created.status_code == 200
+    project_id = created.json()["id"]
+    repaired = api_client.post(f"/api/compose/{project_id}/verify-repair", headers=headers)
+    assert repaired.status_code == 200, repaired.text
+    again = api_client.get(f"/api/compose/{project_id}", headers=headers)
+    assert again.status_code == 200
+    assert "verification" in again.json()
+
+
 def test_compose_nl_missing_gate(api_client):
     headers = _login(api_client)
     created = api_client.post(

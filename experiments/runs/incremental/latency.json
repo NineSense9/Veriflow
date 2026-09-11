@@ -1,6 +1,6 @@
 {
-  "full_ms": 0.226,
-  "incremental_ms": 0.154,
+  "full_ms": 0.16,
+  "incremental_ms": 0.22,
   "equivalent": true,
   "used_full_fallback": false,
   "nodes": 4,
