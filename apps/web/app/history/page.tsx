@@ -143,7 +143,9 @@ export default function HistoryPage() {
             </table>
           </div>
         )}
-        <p className="caption">最多 {runs.length} 条。Run=静态总判，Gate=能否入库，运行时=Mock trace。三者含义不同。</p>
+        <p className="caption">
+          最多 {runs.length} 条。Run=静态总判，Gate=能否入库，运行时=Mock trace。parent_run_id 链在 Workflow 列。History 不跑 GridScan/Scanner。
+        </p>
       </main>
     </Shell>
   );

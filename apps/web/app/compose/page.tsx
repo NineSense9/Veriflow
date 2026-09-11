@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import { api, ComposeSummary } from "@/lib/api";
+import { useEffects } from "@/lib/effects";
 
 const EXAMPLES = [
   { name: "missing_gate", label: "缺审题门" },
@@ -19,6 +20,8 @@ export default function ComposeIndexPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const { prefs } = useEffects();
+  const [phase, setPhase] = useState("");
 
   function refresh() {
     api
@@ -36,7 +39,8 @@ export default function ComposeIndexPage() {
     setBusy(true);
     setError("");
     try {
-      const project = await api.composeCreate(nl);
+      setPhase(prefs.aiInterpret ? "AI workflow proposal requested" : "Heuristic compile (allow_ai=false)");
+      const project = await api.composeCreate(nl, prefs.aiInterpret);
       router.push(`/compose/${project.id}`);
     } catch (err) {
       setError((err as Error).message);
@@ -79,7 +83,7 @@ export default function ComposeIndexPage() {
         </div>
         <div className="compose-actions">
           <button className="primary" type="button" disabled={busy} onClick={compile}>
-            {busy ? "编译中" : "编译"}
+            {busy ? phase || "编译中" : "编译"}
           </button>
           {EXAMPLES.map((item) => (
             <button key={item.name} type="button" disabled={busy} onClick={() => loadExample(item.name)}>

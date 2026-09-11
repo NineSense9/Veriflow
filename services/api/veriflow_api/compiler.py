@@ -39,9 +39,14 @@ def fallback_compile(nl: str, errors: list[CheckError] | None = None) -> Workflo
     return load_example("valid_lis")
 
 
-def compile_nl(nl: str, errors: list[CheckError] | None = None) -> tuple[WorkflowIR, str]:
+def compile_nl(
+    nl: str,
+    errors: list[CheckError] | None = None,
+    allow_ai: bool = True,
+) -> tuple[WorkflowIR, str, object]:
     """Return IR and backend name: deepseek | fallback. AI never decides PASS/FAIL."""
     from veriflow_api.llm import complete
+    from veriflow_verify.ai_trace import AIInvocationTrace
 
     system = PROMPT.read_text(encoding="utf-8")
     user = nl
@@ -49,6 +54,12 @@ def compile_nl(nl: str, errors: list[CheckError] | None = None) -> tuple[Workflo
         payload = [item.model_dump() for item in errors]
         user += "\n\n上次静态检查失败，请修复后只输出完整 IR JSON：\n" + json.dumps(
             payload, ensure_ascii=False
+        )
+    if not allow_ai:
+        return (
+            fallback_compile(nl, errors),
+            "fallback",
+            AIInvocationTrace(stage="nl_ir", requested=False, used=False, status="NOT_USED", prompt_version="compiler-v1"),
         )
     result = complete(
         [
@@ -59,11 +70,56 @@ def compile_nl(nl: str, errors: list[CheckError] | None = None) -> tuple[Workflo
         temperature=0.2,
     )
     if result.error or not result.text:
-        return fallback_compile(nl, errors), "fallback"
+        return (
+            fallback_compile(nl, errors),
+            "fallback",
+            AIInvocationTrace(
+                stage="nl_ir",
+                requested=True,
+                used=False,
+                provider="deepseek",
+                model=result.model or None,
+                status="FALLBACK",
+                latency_ms=result.latency_ms,
+                fallback_reason=result.fallback_reason or result.error,
+                retries=result.retries,
+                request_id=result.request_id,
+                prompt_version="compiler-v1",
+            ),
+        )
     try:
-        return _parse_ir(result.text), "deepseek"
+        return (
+            _parse_ir(result.text),
+            "deepseek",
+            AIInvocationTrace(
+                stage="nl_ir",
+                requested=True,
+                used=True,
+                provider="deepseek",
+                model=result.model,
+                status="SUCCESS",
+                latency_ms=result.latency_ms,
+                prompt_tokens=result.prompt_tokens,
+                completion_tokens=result.completion_tokens,
+                retries=result.retries,
+                request_id=result.request_id,
+                prompt_version="compiler-v1",
+            ),
+        )
     except Exception:
-        return fallback_compile(nl, errors), "fallback"
+        return (
+            fallback_compile(nl, errors),
+            "fallback",
+            AIInvocationTrace(
+                stage="nl_ir",
+                requested=True,
+                used=False,
+                provider="deepseek",
+                status="FALLBACK",
+                fallback_reason="ir_parse",
+                prompt_version="compiler-v1",
+            ),
+        )
 
 
 def _parse_ir(text: str) -> WorkflowIR:

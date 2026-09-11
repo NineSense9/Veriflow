@@ -219,6 +219,48 @@ export type RepairPatch = {
   reason?: string;
 };
 
+export type AIInvocationTrace = {
+  stage: "nl_ir" | "repair";
+  requested: boolean;
+  used: boolean;
+  provider?: string | null;
+  model?: string | null;
+  status: "SUCCESS" | "FALLBACK" | "NOT_USED" | "ERROR" | "UNKNOWN";
+  latency_ms?: number | null;
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  retries?: number;
+  request_id?: string | null;
+  fallback_reason?: string | null;
+  prompt_version?: string | null;
+};
+
+export type RepairCandidate = {
+  id: string;
+  source: "rule" | "deepseek";
+  model?: string | null;
+  prompt_version?: string | null;
+  target_issue_id?: string | null;
+  rationale?: string;
+  patches: RepairPatch[];
+  llm_latency_ms?: number | null;
+  fallback_reason?: string | null;
+};
+
+export type GuardStageResult = {
+  name: string;
+  status: "PASS" | "FAIL" | "SKIPPED";
+  reason?: string;
+  latency_ms?: number | null;
+};
+
+export type CandidateEvaluation = {
+  candidate_id: string;
+  stages: GuardStageResult[];
+  accepted: boolean;
+  reject_reason?: string | null;
+};
+
 export type ComposeProject = {
   id: number;
   source_nl: string;
@@ -230,6 +272,7 @@ export type ComposeProject = {
   published_problem_id: string | null;
   compiler: string | null;
   updated_at: string;
+  ai_trace?: AIInvocationTrace;
   spec?: { goal: string; compiler: string };
   verification?: Verification;
   gate?: {
@@ -291,6 +334,11 @@ export type ComposeProject = {
     candidates_rejected_guard?: number;
     candidates_rejected_incremental?: number;
     candidates_fully_verified?: number;
+    selected_candidate_id?: string | null;
+    final_decision?: string;
+    candidates?: RepairCandidate[];
+    evaluations?: CandidateEvaluation[];
+    ai_trace?: AIInvocationTrace | null;
     steps: {
       iteration: number;
       accepted: boolean;
@@ -441,10 +489,14 @@ export const api = {
       },
     ),
   kit: (id: string) => request<StressKit>(`/api/problems/${id}/kit`),
-  composeCreate: (nl: string) =>
+  version: () =>
+    request<{ git_commit: string | null; build_time: string | null; app_version: string; verifier_version: string }>(
+      "/api/version",
+    ),
+  composeCreate: (nl: string, allow_ai = true) =>
     request<ComposeProject>("/api/compose", {
       method: "POST",
-      body: JSON.stringify({ nl }),
+      body: JSON.stringify({ nl, allow_ai }),
     }),
   composeExample: (name: string) =>
     request<ComposeProject>("/api/compose/example", {
@@ -458,10 +510,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ ir }),
     }),
-  composeRepair: (id: number, nl: string) =>
+  composeRepair: (id: number, nl: string, allow_ai = true) =>
     request<ComposeProject>(`/api/compose/${id}/repair`, {
       method: "POST",
-      body: JSON.stringify({ nl }),
+      body: JSON.stringify({ nl, allow_ai }),
     }),
   composeGate: (id: number, decision: "approved" | "rejected") =>
     request<ComposeProject>(`/api/compose/${id}/gate`, {
@@ -470,8 +522,11 @@ export const api = {
     }),
   composePublish: (id: number) =>
     request<ComposeProject>(`/api/compose/${id}/publish`, { method: "POST" }),
-  composeVerifyRepair: (id: number) =>
-    request<ComposeProject>(`/api/compose/${id}/verify-repair`, { method: "POST" }),
+  composeVerifyRepair: (id: number, allow_ai = true) =>
+    request<ComposeProject>(`/api/compose/${id}/verify-repair`, {
+      method: "POST",
+      body: JSON.stringify({ allow_ai }),
+    }),
   runtime: (ir: WorkflowIR, nl: string, skipAfter?: string) =>
     request<{
       trace: ComposeProject["trace"];
@@ -540,7 +595,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  verifyRepair: (ir: WorkflowIR, nl: string) =>
+  verifyRepair: (ir: WorkflowIR, nl: string, allow_ai = true) =>
     request<{
       ir: WorkflowIR;
       improved: boolean;
@@ -558,10 +613,15 @@ export const api = {
       affected_verifiers?: string[];
       impact_reason?: string;
       selected_candidate?: string;
+      selected_candidate_id?: string | null;
+      final_decision?: string;
+      candidates?: RepairCandidate[];
+      evaluations?: CandidateEvaluation[];
+      ai_trace?: AIInvocationTrace | null;
       final: Verification;
       initial: Verification;
       steps: { iteration: number; accepted: boolean; reason: string; patches: RepairPatch[]; candidates_evaluated?: number }[];
-    }>("/api/verify-repair", { method: "POST", body: JSON.stringify({ ir, nl, max_iterations: 3 }) }),
+    }>("/api/verify-repair", { method: "POST", body: JSON.stringify({ ir, nl, max_iterations: 3, allow_ai }) }),
   mutate: (id: string) => request<{ problem_id: string; kill_rate: number | null }>(`/api/problems/${id}/mutate`, { method: "POST" }),
   stress: (
     id: string,

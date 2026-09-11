@@ -3,10 +3,12 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from veriflow_ir.workflow import WorkflowIR
+from veriflow_repair.candidate import CandidateEvaluation, RepairCandidate
 from veriflow_repair.diff import graph_diff
 from veriflow_repair.patch import Patch
-from veriflow_repair.select import pick_plan
+from veriflow_repair.select import PickStats, pick_plan
 from veriflow_spec.models import WorkflowSpec
+from veriflow_verify.ai_trace import AIInvocationTrace
 from veriflow_verify.incremental import incremental_verify
 from veriflow_verify.result import VerificationResult, verify_workflow
 
@@ -53,6 +55,11 @@ class RepairReport(BaseModel):
     candidates_rejected_incremental: int = 0
     candidates_fully_verified: int = 0
     selected_candidate: str = ""
+    selected_candidate_id: str | None = None
+    final_decision: str = ""
+    candidates: list[RepairCandidate] = Field(default_factory=list)
+    evaluations: list[CandidateEvaluation] = Field(default_factory=list)
+    ai_trace: AIInvocationTrace | None = None
     impact_nodes: list[str] = Field(default_factory=list)
     reevaluated_constraints: int = 0
     total_constraints: int = 0
@@ -66,6 +73,7 @@ def verify_repair_loop(
     ir: WorkflowIR,
     spec: WorkflowSpec,
     max_iterations: int = 3,
+    allow_ai: bool = True,
 ) -> RepairReport:
     initial = verify_workflow(ir, spec)
     current = ir
@@ -75,6 +83,7 @@ def verify_repair_loop(
     if initial.status == "PASS":
         return RepairReport(ir=current, initial=initial, final=initial, iterations=0, improved=False)
     seen: set[str] = set()
+    stats = PickStats()
     for iteration in range(1, max_iterations + 1):
         fingerprint = "|".join(
             sorted(f"{item.code}:{','.join(item.affected_nodes)}" for item in current_result.issues)
@@ -92,7 +101,7 @@ def verify_repair_loop(
             )
             break
         seen.add(fingerprint)
-        plan, after, nxt, decision, stats = pick_plan(current, spec, current_result, k=3)
+        plan, after, nxt, decision, stats = pick_plan(current, spec, current_result, k=3, allow_ai=allow_ai)
         accepted = decision == "REPAIR_ACCEPTED" and nxt is not None and after is not None
         if not accepted:
             rejected += 1
@@ -159,6 +168,11 @@ def verify_repair_loop(
         candidates_rejected_incremental=sum(step.candidates_rejected_incremental for step in steps),
         candidates_fully_verified=sum(step.candidates_fully_verified for step in steps),
         selected_candidate=next((step.reason for step in reversed(steps) if step.accepted), ""),
+        selected_candidate_id=stats.selected_candidate_id,
+        final_decision=stats.selected or next((step.reason for step in reversed(steps)), ""),
+        candidates=list(stats.candidates),
+        evaluations=list(stats.evaluations),
+        ai_trace=stats.ai_trace,
         impact_nodes=closing.impact.affected_nodes,
         reevaluated_constraints=closing.reevaluated_constraints,
         total_constraints=closing.total_constraints,

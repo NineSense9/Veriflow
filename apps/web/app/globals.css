@@ -2774,12 +2774,283 @@ html[data-motion="reduce"] .nav-indicator {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  .rb-bg,
+  .dot-grid,
+  .threads-container,
+  .vf-scanner,
+  .chroma-overlay,
+  .chroma-fade {
+    animation: none !important;
   }
+}
+
+html[data-effects="off"] .rb-bg,
+html[data-effects="reduced"] .rb-bg {
+  display: none;
+}
+
+html[data-effects="balanced"] .rb-bg {
+  opacity: 0.4;
+}
+
+html[data-effects="off"] .skel,
+html[data-effects="off"] :focus-visible,
+html[data-effects="off"] dialog,
+html[data-effects="off"] .drawer {
+  animation: none;
+}
+
+.rb-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.home-page,
+.arch-page,
+.login-wrap,
+.evidence-topo,
+.stress {
+  position: relative;
+}
+
+.home-page > *:not(.rb-bg),
+.arch-page > *:not(.rb-bg),
+.login-wrap > *:not(.rb-bg) {
+  position: relative;
+  z-index: 1;
+}
+
+.arch-threads {
+  height: 280px;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.arch-stage {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.arch-svg {
+  width: 100%;
+  min-width: 1100px;
+  height: auto;
+}
+
+.arch-edge {
+  stroke: var(--graph-edge);
+  stroke-width: 1.4;
+}
+
+.arch-edge.ai {
+  stroke: var(--accent);
+  stroke-dasharray: 4 3;
+}
+
+.arch-node rect {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+}
+
+.arch-node.ai rect {
+  stroke: var(--accent);
+}
+
+.arch-node.on rect {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.arch-title {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.arch-layer {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.arch-drawer {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.vf-bento.card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: none;
+  padding: 0;
+  margin: 16px 0 24px;
+}
+
+.vf-bento .magic-bento-card {
+  min-height: 140px;
+  aspect-ratio: auto;
+  background: var(--surface) !important;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.vf-bento .magic-bento-card:nth-child(3),
+.vf-bento .magic-bento-card:nth-child(4),
+.vf-bento .magic-bento-card:nth-child(6) {
+  grid-column: auto;
+  grid-row: auto;
+}
+
+.vf-bento .magic-bento-card__title,
+.vf-bento .magic-bento-card__description,
+.vf-bento .magic-bento-card__label,
+.vf-bento .magic-bento-card__header,
+.vf-bento .magic-bento-card__content {
+  color: var(--text);
+}
+
+.home-latest {
+  margin: 0 0 24px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.chroma-grid {
+  color: var(--text);
+}
+
+.algo-pipe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.algo-pipe li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.witness-motion,
+.runtime-replay ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.witness-motion li,
+.runtime-replay li {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}
+
+.witness-motion li.on,
+.runtime-replay li.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.repair-swap {
+  position: relative;
+  height: 240px;
+  margin: 12px 0 24px;
+}
+
+.repair-swap .card-swap-container {
+  position: relative;
+  transform: none;
+  inset: auto;
+}
+
+.vf-rb-stepper.outer-container {
+  min-height: 0;
+  padding: 0;
+  align-items: stretch;
+  aspect-ratio: auto;
+}
+
+.vf-rb-stepper .step-circle-container {
+  max-width: none;
+  margin: 0 0 16px;
+  box-shadow: none;
+  border-radius: 12px;
+}
+
+.vf-rb-stepper .step-indicator-row {
+  padding: 12px 16px;
+}
+
+.vf-rb-stepper .step-default {
+  padding: 0 16px 16px;
+}
+
+.arch-node {
+  cursor: pointer;
+}
+
+.repair-swap .card {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+  padding: 16px;
+}
+
+.evidence-topo {
+  min-height: 80px;
+  color: var(--muted);
+}
+
+.slider-container {
+  color: var(--text);
+}
+
+.card-spotlight {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text);
+}
+
+.scroll-list-container {
+  width: 100%;
+}
+
+.scroll-list .item {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.login-rays {
+  pointer-events: none;
+}
+
+.threads-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.magic-bento-card--border-glow::after {
+  background: radial-gradient(
+    var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+    rgba(15, 118, 110, calc(var(--glow-intensity) * 0.8)) 0%,
+    rgba(15, 118, 110, calc(var(--glow-intensity) * 0.4)) 30%,
+    transparent 60%
+  );
 }

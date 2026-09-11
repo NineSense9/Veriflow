@@ -6,6 +6,8 @@ import { api, setSession } from "@/lib/api";
 import { readTheme, type Theme } from "@/lib/theme";
 import ThemeToggle from "@/components/ThemeToggle";
 import Brand from "@/components/Brand";
+import LightRays from "@/components/reactbits/LightRays";
+import { effectsAllowBackground, useEffects } from "@/lib/effects";
 
 const PIPE = [
   { id: "req", label: "Requirement", hint: "自然语言题意 / 出题约束" },
@@ -25,6 +27,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [theme, setTheme] = useState<Theme>("light");
+  const { effects } = useEffects();
 
   useEffect(() => {
     setTheme(readTheme());
@@ -54,6 +57,7 @@ export default function LoginPage() {
 
   return (
     <div className="login-wrap">
+      {effectsAllowBackground(effects) ? <LightRays className="rb-bg login-rays" /> : null}
       <div className="theme-dock">
         <ThemeToggle theme={theme} onToggle={setTheme} />
       </div>

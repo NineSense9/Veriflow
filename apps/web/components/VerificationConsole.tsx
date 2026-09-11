@@ -6,13 +6,21 @@ import { useEffect, useMemo, useState } from "react";
 import {
   api,
   AlgorithmRecord,
+  CandidateEvaluation,
+  RepairCandidate,
   VerifyIssue,
   VerifySession,
   WorkflowIR,
 } from "@/lib/api";
 import { DIM_META, dimLabel, gateWhy } from "@/lib/status";
 import StatusChip from "@/components/StatusChip";
-import { ActivityList } from "@/components/AiRail";
+import AnimatedList from "@/components/reactbits/AnimatedList";
+import Stepper, { Step } from "@/components/reactbits/Stepper";
+import GridScan from "@/components/reactbits/GridScan";
+import CardSwap, { Card } from "@/components/reactbits/CardSwap";
+import WitnessMotion from "@/components/WitnessMotion";
+import RuntimeReplay from "@/components/RuntimeReplay";
+import { effectsAllowScan, useEffects } from "@/lib/effects";
 
 const ComposeCanvas = dynamic(() => import("@/components/ComposeCanvas"), { ssr: false });
 const EvidenceGraphView = dynamic(() => import("@/components/EvidenceGraphView"), { ssr: false });
@@ -65,6 +73,9 @@ export default function VerificationConsole({
   const [demoId, setDemoId] = useState(initialDemo);
   const [origin, setOrigin] = useState<VerifySession | null>(null);
   const [nodeNote, setNodeNote] = useState("");
+  const { prefs, effects } = useEffects();
+  const [scan, setScan] = useState(false);
+  const [fresh, setFresh] = useState(!initialSession);
   const [repair, setRepair] = useState<{
     improved: boolean;
     patch_operations?: number;
@@ -79,6 +90,10 @@ export default function VerificationConsole({
     total_constraints?: number;
     affected_verifiers?: string[];
     impact_reason?: string;
+    selected_candidate_id?: string | null;
+    final_decision?: string;
+    candidates?: RepairCandidate[];
+    evaluations?: CandidateEvaluation[];
     initial?: { status: string; issues?: VerifyIssue[]; dimensions?: { name: string; status: string; issue_count: number }[] };
     final: { status: string; issues?: VerifyIssue[]; dimensions?: { name: string; status: string; issue_count: number }[] };
     steps: { reason: string; patches: { operation: string; source?: string | null; target?: string | null; node_id?: string | null; reason?: string }[] }[];
@@ -100,6 +115,8 @@ export default function VerificationConsole({
     setBusy(id);
     setDemoId(id);
     setError("");
+    setScan(true);
+    setFresh(true);
     try {
       apply(await api.reportSession({ demo: id }));
       const hist = await api.reportHistory(20);
@@ -108,6 +125,7 @@ export default function VerificationConsole({
       setError((err as Error).message);
     } finally {
       setBusy("");
+      setScan(false);
     }
   }
 
@@ -232,8 +250,10 @@ export default function VerificationConsole({
             disabled={Boolean(busy)}
             onClick={async () => {
               setBusy("repair");
+              setScan(true);
+              setFresh(true);
               try {
-                const report = await api.verifyRepair(session.ir, nl);
+                const report = await api.verifyRepair(session.ir, nl, prefs.aiRepair);
                 const next = await api.reportSession({
                   ir: report.ir,
                   nl,
@@ -245,6 +265,7 @@ export default function VerificationConsole({
                 setError((err as Error).message);
               } finally {
                 setBusy("");
+                setScan(false);
               }
             }}
           >
@@ -301,39 +322,35 @@ export default function VerificationConsole({
             </dl>
           </section>
 
-          <nav className="vf-stepper" aria-label="Verification pipeline">
-            {session.pipeline.map((step) => {
-              const who = step.kind === "ai" || step.algorithm_id?.includes("repair") && step.status === "NOT_RUN" ? "AI / Deterministic" : "Deterministic";
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  className={`${pipe === step.id ? "on" : ""} ${step.status !== "PASS" && step.status !== "NOT_RUN" ? "running" : ""}`}
-                  onClick={() => setPipe(step.id)}
-                >
-                  <span className="who">{who}</span>
-                  <strong>{step.name}</strong>
-                  {chip(step.status)}
-                </button>
-              );
-            })}
-          </nav>
-          <ActivityList
+          <Stepper
+            className="vf-rb-stepper"
+            hideFooter
+            glowRunning={Boolean(busy) && effectsAllowScan(effects)}
+            currentStep={Math.max(1, session.pipeline.findIndex((step) => step.id === pipe) + 1)}
+            statuses={session.pipeline.map((step) => (busy && step.id === pipe ? "RUNNING" : step.status))}
+            onStepChange={(n) => setPipe(session.pipeline[n - 1]?.id ?? null)}
+          >
+            {session.pipeline.map((step) => (
+              <Step key={step.id}>
+                <p>
+                  <strong>{step.name}</strong> {chip(step.status)}
+                </p>
+                <p className="caption">
+                  {step.kind} · {step.algorithm_id} · {step.latency_ms.toFixed(1)}ms · cache {step.cache_status}
+                </p>
+              </Step>
+            ))}
+          </Stepper>
+          <AnimatedList
+            showGradients={false}
             items={[
-              ...(String((session.spec as { compiler?: string }).compiler) === "deepseek"
-                ? [{ t: "1", actor: "DeepSeek", action: "interpreted requirement → IR proposal", result: specBasis || "deepseek" }]
-                : [{ t: "1", actor: "Heuristic", action: "compiled spec without model", result: "fallback" }]),
-              { t: "2", actor: "Verifier", action: `static ${session.static.status}`, result: `${issues.length} findings` },
-              { t: "3", actor: "Verifier", action: `runtime ${session.runtime?.status ?? "NOT_RUN"}`, result: session.gate.ready },
+              `Spec compiler · Deterministic spec compiler · ${specBasis || "heuristic"}`,
+              `Verifier · static ${session.static.status} · ${issues.length} findings`,
+              `Verifier · runtime ${session.runtime?.status ?? "NOT_RUN"} · ${session.gate.ready}`,
               ...(repair
                 ? [
-                    {
-                      t: "4",
-                      actor: "DeepSeek / rules",
-                      action: "proposed repair patches",
-                      result: repair.improved ? "improved after guard" : "not improved",
-                    },
-                    { t: "5", actor: "Guard", action: "schema / graph / policy / regression", result: repair.final.status },
+                    `Proposal · ${repair.candidates?.some((c) => c.source === "deepseek") ? "DeepSeek + rules" : "Rules"} · ${repair.selected_candidate_id || repair.final_decision || "n/a"}`,
+                    `Guard · schema / graph / policy / regression · ${repair.final.status}`,
                   ]
                 : []),
             ]}
@@ -490,7 +507,8 @@ export default function VerificationConsole({
                   Evidence
                 </button>
               </div>
-              <div className="vf-dag">
+              <div className="vf-dag" style={{ position: "relative" }}>
+                {scan && effectsAllowScan(effects) ? <GridScan active /> : null}
                 {graphMode === "workflow" && ir ? (
                   <ComposeCanvas
                     ir={ir}
@@ -586,6 +604,7 @@ export default function VerificationConsole({
                     <dt>Witness</dt>
                     <dd>{(highlight?.path ?? selected.witness_path).join(" → ") || "—"}</dd>
                   </div>
+                  <WitnessMotion path={highlight?.path ?? selected.witness_path ?? []} play={fresh && Boolean(busy === "")} />
                   <div>
                     <dt>Minimal counterexample</dt>
                     <dd>
@@ -638,12 +657,47 @@ export default function VerificationConsole({
               ) : null}
             </aside>
           </div>
+          {session.trace?.events?.length ? (
+            <RuntimeReplay events={session.trace.events} play={fresh && !initialSession && !scan} />
+          ) : null}
           {repair && origin ? (
             <section className="vf-repair committed-verdict">
               <h2>Repair → Guard → Re-Verify</h2>
               <p className="caption">
-                AI Proposed Patch，然后 repair.guard + incremental.impact 裁决。Before 是原始 run
-                {origin.run_id ? ` #${origin.run_id}` : ""}，After 是新 session{session.run_id ? ` #${session.run_id}` : ""}。
+                Problem / Proposal / Guard playback / Outcome. selected_candidate_id 与 final_decision 分离。source 来自 API，不在前端猜。
+                {origin.run_id ? ` Before #${origin.run_id}` : ""}
+                {session.run_id ? ` · After #${session.run_id}` : ""}.
+              </p>
+              {repair.candidates && repair.candidates.length >= 2 && effects !== "reduced" && effects !== "off" ? (
+                <div className="repair-swap">
+                  <CardSwap width={360} height={200} delay={3600}>
+                    {repair.candidates.map((cand) => (
+                      <Card key={cand.id}>
+                        <strong>{cand.id}</strong>
+                        <p>source={cand.source}</p>
+                        <p>{cand.rationale || cand.patches.map((p) => p.operation).join(", ")}</p>
+                      </Card>
+                    ))}
+                  </CardSwap>
+                </div>
+              ) : repair.candidates?.length ? (
+                <ul className="action-list">
+                  {repair.candidates.map((cand) => (
+                    <li key={cand.id}>
+                      {cand.id} · source={cand.source}
+                      {repair.selected_candidate_id === cand.id ? " · selected" : ""}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {repair.evaluations?.map((ev) => (
+                <p key={ev.candidate_id} className="caption">
+                  {ev.candidate_id}: {ev.stages.map((s) => `${s.name}=${s.status}`).join(" → ")}
+                  {ev.accepted ? " · accepted" : ` · ${ev.reject_reason || "rejected"}`}
+                </p>
+              ))}
+              <p className="caption">
+                decision {repair.final_decision || "—"} · selected {repair.selected_candidate_id || "—"}
               </p>
               <p className="caption">
                 Guard rejected {repair.candidates_rejected_guard ?? 0} · Incremental rejected{" "}

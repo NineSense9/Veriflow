@@ -63,6 +63,23 @@ if grep -q '^VERIFLOW_ENV=production' "$APP/.env" 2>/dev/null || grep -q '^VERIF
   fi
 fi
 
+if [ -d "$APP/.git" ]; then
+  COMMIT=$(git -C "$APP" rev-parse HEAD)
+  BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  python3 - "$APP/.env" "$COMMIT" "$BUILD_TIME" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+commit, build_time = sys.argv[2], sys.argv[3]
+text = path.read_text(encoding="utf-8") if path.exists() else ""
+keys = {"VERIFLOW_GIT_COMMIT=", "VERIFLOW_BUILD_TIME="}
+lines = [ln for ln in text.splitlines() if not any(ln.startswith(k) for k in keys)]
+lines.append(f"VERIFLOW_GIT_COMMIT={commit}")
+lines.append(f"VERIFLOW_BUILD_TIME={build_time}")
+path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+PY
+fi
+
 cd "$APP/apps/web"
 npm install
 NODE_OPTIONS=--max-old-space-size=768 npm run build

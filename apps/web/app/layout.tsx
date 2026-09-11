@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono, Literata } from "next/font/google";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 const serif = Literata({
@@ -36,12 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('vf_theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);var p=JSON.parse(localStorage.getItem('vf_prefs')||'{}');if(p.density)document.documentElement.dataset.density=p.density;if(p.reducedMotion)document.documentElement.dataset.motion='reduce';}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('vf_theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);var p=JSON.parse(localStorage.getItem('vf_prefs')||'{}');if(p.density)document.documentElement.dataset.density=p.density;var lvl=p.effectsLevel||(p.reducedMotion?'reduced':'full');document.documentElement.dataset.effects=lvl;document.documentElement.dataset.motion=(lvl==='full'||lvl==='balanced')?'full':'reduce';if(p.codeFontPx)document.documentElement.style.setProperty('--code-font-size',p.codeFontPx+'px');}catch(e){}`,
           }}
         />
       </head>
       <body className={`${serif.variable} ${ui.variable} ${mono.variable}`}>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

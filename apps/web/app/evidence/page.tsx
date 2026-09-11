@@ -6,6 +6,7 @@ import Shell from "@/components/Shell";
 import StatusChip from "@/components/StatusChip";
 import { api, VerifySession } from "@/lib/api";
 import { dimLabel } from "@/lib/status";
+import Topography from "@/components/reactbits/Topography";
 
 type Clause = {
   id: string;
@@ -52,6 +53,46 @@ export default function EvidencePage() {
           <p className="ghost">读取最近 run…</p>
         ) : (
           <>
+            <div className="evidence-topo" aria-hidden="true">
+              <Topography opacity={0.12} />
+            </div>
+            <section>
+              <h2>Proposal vs Decision</h2>
+              <p className="caption">Kill “Deterministic: yes”. 左边是提案来源，右边是 verifier 裁决。</p>
+              <div className="table-wrap">
+                <table className="table tight">
+                  <thead>
+                    <tr>
+                      <th>Stage</th>
+                      <th>Proposal</th>
+                      <th>Decision</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>NL → IR</td>
+                      <td>DeepSeek or heuristic (WorkflowIR proposal)</td>
+                      <td>not a verdict</td>
+                    </tr>
+                    <tr>
+                      <td>Spec</td>
+                      <td>compile_spec heuristic</td>
+                      <td>constraints only</td>
+                    </tr>
+                    <tr>
+                      <td>Verify</td>
+                      <td>—</td>
+                      <td>{session.status} · gate {session.gate.ready}</td>
+                    </tr>
+                    <tr>
+                      <td>Repair</td>
+                      <td>rule / deepseek candidates</td>
+                      <td>Guard + lex selection</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
             <dl className="vf-strip">
               <div>
                 <dt>Run</dt>
@@ -70,8 +111,8 @@ export default function EvidencePage() {
                 <dd>{session.workflow_hash.slice(0, 12)}</dd>
               </div>
               <div>
-                <dt>Deterministic</dt>
-                <dd>yes</dd>
+                <dt>Authority</dt>
+                <dd>verifier</dd>
               </div>
             </dl>
             <p className="caption">

@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS compose_projects (
   status TEXT NOT NULL,
   published_problem_id TEXT,
   compiler TEXT,
+  ai_trace_json TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -127,4 +128,7 @@ def init_db() -> None:
         cols = [row[1] for row in connection.execute("PRAGMA table_info(verification_runs)").fetchall()]
         if cols and "payload_json" not in cols:
             connection.execute("ALTER TABLE verification_runs ADD COLUMN payload_json TEXT")
+        compose_cols = [row[1] for row in connection.execute("PRAGMA table_info(compose_projects)").fetchall()]
+        if compose_cols and "ai_trace_json" not in compose_cols:
+            connection.execute("ALTER TABLE compose_projects ADD COLUMN ai_trace_json TEXT")
         connection.commit()

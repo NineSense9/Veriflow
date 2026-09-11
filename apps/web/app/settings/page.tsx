@@ -3,21 +3,27 @@
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
-import { applyPrefs, DEFAULT_PREFS, readPrefs, writePrefs, type Prefs } from "@/lib/prefs";
+import { type EffectsLevel, type Prefs } from "@/lib/prefs";
 import { api } from "@/lib/api";
 import { DualPlane } from "@/components/AiRail";
+import { useEffects } from "@/lib/effects";
+import ElasticSlider from "@/components/reactbits/ElasticSlider";
+
+const LEVELS: { id: EffectsLevel; label: string; hint: string }[] = [
+  { id: "full", label: "Full", hint: "backgrounds + pointer + scan + witness" },
+  { id: "balanced", label: "Balanced", hint: "backgrounds dim; keep pipeline/witness" },
+  { id: "reduced", label: "Reduced", hint: "no looping backgrounds; 150–180ms fades" },
+  { id: "off", label: "Off", hint: "optional motion off; keep loading/focus/modal" },
+];
 
 export default function SettingsPage() {
   const [theme, setTheme] = useState<Theme>("light");
-  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
+  const { prefs, patch } = useEffects();
   const [ai, setAi] = useState<{ configured?: boolean; model?: string; provider?: string }>({});
   const [sandbox, setSandbox] = useState("…");
 
   useEffect(() => {
     setTheme(readTheme());
-    const next = readPrefs();
-    setPrefs(next);
-    applyPrefs(next);
     api
       .health()
       .then((h) => {
@@ -27,10 +33,14 @@ export default function SettingsPage() {
       .catch(() => undefined);
   }, []);
 
-  function patch(partial: Partial<Prefs>) {
-    const next = { ...prefs, ...partial };
-    setPrefs(next);
-    writePrefs(next);
+  function applyPreset(name: NonNullable<Prefs["preset"]>) {
+    if (name === "demo") {
+      patch({ preset: name, effectsLevel: "full", density: "comfortable", showTechnical: false, aiInterpret: true, aiRepair: true });
+    } else if (name === "developer") {
+      patch({ preset: name, effectsLevel: "balanced", density: "compact", showTechnical: true, showRawJson: true, aiInterpret: true, aiRepair: true });
+    } else {
+      patch({ preset: name, effectsLevel: "reduced", density: "compact", showTechnical: false, aiInterpret: false, aiRepair: false });
+    }
   }
 
   return (
@@ -46,7 +56,7 @@ export default function SettingsPage() {
           proof={{ sandbox, gate: "deterministic", status: "authority" }}
         />
 
-        <section className="setting-list">
+        <section className="setting-list" id="settings-appearance">
           <div className="setting-row">
             <div>
               <h2>外观</h2>
@@ -89,15 +99,55 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
+        </section>
+
+        <section className="setting-list" id="settings-effects">
           <div className="setting-row">
             <div>
-              <h2>减少动效</h2>
-              <p className="ghost">关闭导航指示条与列表进入动画。</p>
+              <h2>Effects Level</h2>
+              <p className="ghost">replaces reduced-motion boolean. prefers-reduced-motion still forces Reduced.</p>
             </div>
-            <button type="button" className={`btn ${prefs.reducedMotion ? "btn-primary" : ""}`} onClick={() => patch({ reducedMotion: !prefs.reducedMotion })}>
-              {prefs.reducedMotion ? "已开启" : "关闭"}
-            </button>
+            <div className="seg" role="group" aria-label="Effects level">
+              {LEVELS.map((item) => (
+                <button key={item.id} type="button" className={prefs.effectsLevel === item.id ? "on" : ""} onClick={() => patch({ effectsLevel: item.id, reducedMotion: item.id === "reduced" || item.id === "off" })}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
+          <p className="caption">{LEVELS.find((item) => item.id === prefs.effectsLevel)?.hint}</p>
+          <div className="setting-row">
+            <div>
+              <h2>Code font size</h2>
+              <p className="ghost">ElasticSlider (vendored React Bits). Off still keeps this control.</p>
+            </div>
+            <ElasticSlider
+              defaultValue={prefs.codeFontPx}
+              startingValue={11}
+              maxValue={20}
+              isStepped
+              stepSize={1}
+              onChange={(value) => patch({ codeFontPx: Math.round(value) })}
+              leftIcon={<span className="ghost">A</span>}
+              rightIcon={<span>A</span>}
+            />
+          </div>
+          <div className="setting-row">
+            <div>
+              <h2>Presets</h2>
+              <p className="ghost">UX only. Does not change verifier semantics.</p>
+            </div>
+            <div className="seg" id="settings-lab">
+              {(["demo", "developer", "minimal"] as const).map((name) => (
+                <button key={name} type="button" className={prefs.preset === name ? "on" : ""} onClick={() => applyPreset(name)}>
+                  {name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="setting-list" id="settings-ai">
           <div className="setting-row">
             <div>
               <h2>显示技术细节</h2>
@@ -110,7 +160,7 @@ export default function SettingsPage() {
           <div className="setting-row">
             <div>
               <h2>AI Requirement Interpretation</h2>
-              <p className="ghost">关闭后需求编译走 heuristic，不调用模型。模型仍不裁决 PASS/FAIL。</p>
+              <p className="ghost">关闭后需求编译走 heuristic，不调用模型。模型仍不裁决 PASS/FAIL。请求带 allow_ai。</p>
             </div>
             <button type="button" className={`btn ${prefs.aiInterpret ? "btn-primary" : ""}`} onClick={() => patch({ aiInterpret: !prefs.aiInterpret })}>
               {prefs.aiInterpret ? "ON" : "OFF"}

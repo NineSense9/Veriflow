@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from veriflow_ir.workflow import WorkflowIR
+from veriflow_repair.candidate import RepairCandidate
 from veriflow_repair.patch import Patch
 from veriflow_spec.models import WorkflowSpec
 from veriflow_staticcheck.whitelist import DOMAIN_TOOLS
+from veriflow_verify.ai_trace import AIInvocationTrace
 from veriflow_verify.issue import Issue
 
 MAX_AI_CANDIDATES = 2
@@ -99,3 +101,42 @@ def propose_ai_patches(
                 return [], "forbidden_tool"
         plans.append(patches)
     return plans, None
+
+
+def propose_ai_candidates(
+    ir: WorkflowIR,
+    spec: WorkflowSpec,
+    issues: list[Issue],
+    *,
+    complete_fn=None,
+) -> tuple[list[RepairCandidate], AIInvocationTrace]:
+    plans, reason = propose_ai_patches(ir, spec, issues, complete_fn=complete_fn)
+    requested = True
+    used = bool(plans)
+    status = "SUCCESS" if plans else ("FALLBACK" if reason else "NOT_USED")
+    trace = AIInvocationTrace(
+        stage="repair",
+        requested=requested,
+        used=used,
+        provider="deepseek" if used or reason not in {None, "llm_unavailable"} else None,
+        model="deepseek-chat" if used else None,
+        status="SUCCESS" if used else ("ERROR" if reason == "malformed_json" else "FALLBACK" if reason else "NOT_USED"),
+        fallback_reason=reason,
+        prompt_version="repair-v1",
+    )
+    target = issues[0].id if issues else None
+    cands = [
+        RepairCandidate(
+            id=f"deepseek-{index:02d}",
+            source="deepseek",
+            model=trace.model,
+            prompt_version="repair-v1",
+            target_issue_id=target,
+            rationale="ai patch proposal",
+            patches=plan,
+            fallback_reason=reason,
+        )
+        for index, plan in enumerate(plans, start=1)
+    ]
+    return cands, trace
+

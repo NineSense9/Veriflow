@@ -6,6 +6,9 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Shell from "@/components/Shell";
 import { api, ComposeProject, VerifyIssue } from "@/lib/api";
+import { useEffects } from "@/lib/effects";
+import WitnessMotion from "@/components/WitnessMotion";
+import RuntimeReplay from "@/components/RuntimeReplay";
 
 const ComposeCanvas = dynamic(() => import("@/components/ComposeCanvas"), { ssr: false });
 
@@ -21,6 +24,7 @@ export default function ComposeProjectPage() {
   const [runtimeOverlay, setRuntimeOverlay] = useState<ComposeProject["runtime"]>();
   const [traceOverlay, setTraceOverlay] = useState<ComposeProject["trace"]>();
   const [crossOverlay, setCrossOverlay] = useState<ComposeProject["cross"]>();
+  const { prefs } = useEffects();
 
   function apply(next: ComposeProject) {
     setProject(next);
@@ -86,7 +90,7 @@ export default function ComposeProjectPage() {
           <button
             type="button"
             disabled={Boolean(busy)}
-            onClick={() => run("repair", () => api.composeRepair(id, nl))}
+            onClick={() => run("repair", () => api.composeRepair(id, nl, prefs.aiInterpret))}
           >
             再编译
           </button>
@@ -94,7 +98,7 @@ export default function ComposeProjectPage() {
             type="button"
             className="primary"
             disabled={Boolean(busy)}
-            onClick={() => run("verify-repair", () => api.composeVerifyRepair(id))}
+            onClick={() => run("verify-repair", () => api.composeVerifyRepair(id, prefs.aiRepair))}
           >
             {busy === "verify-repair" ? "修复中" : "受约束修复"}
           </button>
@@ -150,6 +154,35 @@ export default function ComposeProjectPage() {
             )}
           </section>
           <aside className="side">
+            <h2>AI scene</h2>
+            <p className="caption">
+              {busy
+                ? prefs.aiInterpret
+                  ? "AI workflow proposal requested"
+                  : "Heuristic compile in flight (allow_ai=false)"
+                : project.ai_trace
+                  ? `${project.ai_trace.status}${project.ai_trace.fallback_reason ? ` · ${project.ai_trace.fallback_reason}` : ""}`
+                  : "UNKNOWN · provenance unavailable"}
+            </p>
+            <dl className="vf-kv compact">
+              <div>
+                <dt>NL → IR</dt>
+                <dd>WorkflowIR proposal · {project.compiler || "—"}</dd>
+              </div>
+              <div>
+                <dt>Spec</dt>
+                <dd>Deterministic spec compiler</dd>
+              </div>
+              <div>
+                <dt>IR</dt>
+                <dd>
+                  {project.ir ? `${project.ir.name} · ${project.ir.nodes.length} nodes · ${project.ir.edges.length} edges` : "—"}
+                </dd>
+              </div>
+            </dl>
+            {project.ai_trace?.status === "UNKNOWN" ? (
+              <p className="caption">legacy row: provenance unavailable (not NOT_USED).</p>
+            ) : null}
             <h2>验证</h2>
             <p className="caption">
               {verification
@@ -218,10 +251,16 @@ export default function ComposeProjectPage() {
                 <p className="caption">expected: {selected.expected ?? "—"}</p>
                 <p className="caption">actual: {selected.actual ?? "—"}</p>
                 {selected.witness_path.length ? (
-                  <p className="caption">path: {selected.witness_path.join(" → ")}</p>
+                  <>
+                    <p className="caption">path: {selected.witness_path.join(" → ")}</p>
+                    <WitnessMotion path={selected.witness_path} play={!busy} />
+                  </>
                 ) : null}
                 {selected.repair_hint ? <p className="caption">{selected.repair_hint}</p> : null}
               </>
+            ) : null}
+            {(traceOverlay || project.trace)?.events?.length ? (
+              <RuntimeReplay events={(traceOverlay || project.trace)!.events} play={Boolean(traceOverlay)} />
             ) : null}
             {project.repair ? (
               <>

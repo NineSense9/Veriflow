@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import CopyButton from "@/components/CopyButton";
+import Scanner from "@/components/reactbits/Scanner";
+import { effectsAllowScan, useEffects } from "@/lib/effects";
 import {
   CPP_STUB,
   PYTHON_STUB,
@@ -34,6 +36,7 @@ function StressInner() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<StressResult | null>(null);
   const [error, setError] = useState("");
+  const { effects } = useEffects();
 
   useEffect(() => {
     api.problems().then((data) => setProblems(data.problems)).catch(() => undefined);
@@ -79,7 +82,8 @@ function StressInner() {
 
   return (
     <Shell>
-      <div className="stress">
+      <div className="stress" style={{ position: "relative" }}>
+        {busy && effectsAllowScan(effects) ? <Scanner active /> : null}
         <div className="arena-top">
           <span className="pid">STRESS</span>
           <label className="sr-only" htmlFor="stress-problem">

@@ -9,7 +9,7 @@ export function DualPlane({
     <div className="dual-plane">
       <article className="ai-proposal">
         <p className="kicker">AI layer</p>
-        <h2>{ai.model || "DeepSeek"}</h2>
+        <h2>{ai.configured ? ai.model || "DeepSeek" : "AI not configured"}</h2>
         <p>
           {ai.configured ? "Connected" : "Not configured"} · interpret / propose
           {ai.fallback ? " · fallback heuristic" : ""}

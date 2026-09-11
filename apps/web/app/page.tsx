@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import { api, ComposeSummary, ProblemListItem, SubmissionRow, unwrapBench } from "@/lib/api";
 import StatusChip from "@/components/StatusChip";
 import { DualPlane } from "@/components/AiRail";
+import DotGrid from "@/components/reactbits/DotGrid";
+import SpotlightCard from "@/components/reactbits/SpotlightCard";
+import MagicBento from "@/components/reactbits/MagicBento";
+import { effectsAllowBackground, useEffects } from "@/lib/effects";
 
 type HistRow = {
   id: number;
@@ -73,15 +77,40 @@ export default function HomePage() {
     };
   }, []);
 
-  const latestRun = runs[0];
-  const passRuns = runs.filter((row) => row.status === "PASS").length;
-  const blocked = runs.filter((row) => row.gate_ready === "BLOCKED").length;
+  const { effects } = useEffects();
+  const uniqueRuns = useMemo(() => {
+    const seen = new Set<string>();
+    const out: HistRow[] = [];
+    for (const row of runs) {
+      const key = row.workflow_name || String(row.id);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(row);
+    }
+    return out;
+  }, [runs]);
+  const latestRun = uniqueRuns[0];
+  const passRuns = uniqueRuns.filter((row) => row.status === "PASS").length;
+  const blocked = uniqueRuns.filter((row) => row.gate_ready === "BLOCKED").length;
   const acCount = subs.filter((row) => row.verdict === "AC").length;
   const latestSub = subs[0];
+  const bento = [
+    { title: "需求编译", description: "NL → WorkflowIR proposal", label: "Compose", href: "/compose" },
+    { title: "验证", description: "Playback of recorded pipeline", label: "Verify", href: "/report" },
+    { title: "证据", description: "Proposal vs Decision", label: "Evidence", href: "/evidence" },
+    { title: "系统地图", description: "Authored, not auto-discovery", label: "Map", href: "/architecture" },
+    { title: "算法中心", description: "Same registry as verifiers", label: "Algorithms", href: "/algorithms" },
+    { title: "设置", description: "Effects Level + allow_ai", label: "Settings", href: "/settings" },
+  ];
 
   return (
     <Shell>
-      <main className="page">
+      <main className="page home-page">
+        {effectsAllowBackground(effects) ? (
+          <div className="rb-bg">
+            <DotGrid baseColor="#98a2b3" activeColor="#0f766e" />
+          </div>
+        ) : null}
         <section className="reliability-overview">
           <header className="page-head split">
             <div>
@@ -116,9 +145,26 @@ export default function HomePage() {
         </section>
 
         <DualPlane
-          ai={{ model: ai.model, configured: ai.configured }}
+          ai={{ model: ai.configured ? ai.model : undefined, configured: Boolean(ai.configured) }}
           proof={{ sandbox, gate: latestRun?.gate_ready, status: latestRun?.status }}
         />
+        <p className="caption">{ai.configured ? "AI Connected (DeepSeek configured)." : "AI not configured. Heuristic fallback only."}</p>
+        <MagicBento
+          className="vf-bento"
+          cards={bento}
+          disableAnimations={effects === "reduced" || effects === "off"}
+        />
+        {latestRun ? (
+          <SpotlightCard className="home-latest">
+            <p className="kicker">Latest unique workflow</p>
+            <h2>
+              <Link href={`/report/runs/${latestRun.id}`}>#{latestRun.id}</Link> {latestRun.workflow_name}
+            </h2>
+            <p>
+              {chip(latestRun.status)} · Gate {chip(latestRun.gate_ready)} · issues {latestRun.issue_count}
+            </p>
+          </SpotlightCard>
+        ) : null}
 
         <dl className="metric-strip">
           <div>
@@ -188,7 +234,7 @@ export default function HomePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {runs.slice(0, 8).map((row) => (
+                    {uniqueRuns.slice(0, 8).map((row) => (
                       <tr key={row.id}>
                         <td className="num">
                           <Link href={`/report/runs/${row.id}`}>{row.id}</Link>

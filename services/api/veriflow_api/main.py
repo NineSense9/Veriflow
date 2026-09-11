@@ -75,6 +75,7 @@ class SolveBody(BaseModel):
 
 class ComposeNL(BaseModel):
     nl: str = Field(min_length=1, max_length=20_000)
+    allow_ai: bool = True
 
 
 class ComposeExample(BaseModel):
@@ -130,6 +131,12 @@ class AlgoTryBody(BaseModel):
 class RepairLoopBody(BaseModel):
     ir: dict
     nl: str = ""
+    max_iterations: int = Field(default=3, ge=1, le=5)
+    allow_ai: bool = True
+
+
+class AllowAiBody(BaseModel):
+    allow_ai: bool = True
     max_iterations: int = Field(default=3, ge=1, le=5)
 
 
@@ -262,6 +269,12 @@ def current_user(
 
 
 def _register_routes(application: FastAPI) -> None:
+    @application.get("/api/version")
+    def api_version() -> dict[str, object]:
+        from veriflow_verify.version import version_payload
+
+        return version_payload()
+
     @application.get("/api/health")
     def health() -> dict[str, object]:
         mode = sandbox_mode()
@@ -323,7 +336,7 @@ def _register_routes(application: FastAPI) -> None:
 
         ir = WorkflowIR.model_validate(body.ir)
         spec = compile_spec(body.nl, ir.domain)
-        report = verify_repair_loop(ir, spec, max_iterations=body.max_iterations)
+        report = verify_repair_loop(ir, spec, max_iterations=body.max_iterations, allow_ai=body.allow_ai)
         return json.loads(report.model_dump_json())
 
     @application.post("/api/mutate")
@@ -948,7 +961,7 @@ def _register_routes(application: FastAPI) -> None:
 
     @application.post("/api/compose")
     def compose_create(body: ComposeNL, user=Depends(current_user)):
-        return compose_service.create_from_nl(user["id"], body.nl)
+        return compose_service.create_from_nl(user["id"], body.nl, allow_ai=body.allow_ai)
 
     @application.post("/api/compose/example")
     def compose_example(body: ComposeExample, user=Depends(current_user)):
@@ -984,7 +997,7 @@ def _register_routes(application: FastAPI) -> None:
 
     @application.post("/api/compose/{project_id}/repair")
     def compose_repair(project_id: int, body: ComposeNL, user=Depends(current_user)):
-        payload = compose_service.repair(user["id"], project_id, body.nl)
+        payload = compose_service.repair(user["id"], project_id, body.nl, allow_ai=body.allow_ai)
         if payload is None:
             raise HTTPException(
                 status_code=404, detail={"code": "not_found", "message": "project not found"}
@@ -992,8 +1005,12 @@ def _register_routes(application: FastAPI) -> None:
         return payload
 
     @application.post("/api/compose/{project_id}/verify-repair")
-    def compose_verify_repair(project_id: int, user=Depends(current_user)):
-        payload = compose_service.guarded_repair(user["id"], project_id)
+    def compose_verify_repair(project_id: int, body: AllowAiBody | None = None, user=Depends(current_user)):
+        allow_ai = True if body is None else body.allow_ai
+        max_iterations = 3 if body is None else body.max_iterations
+        payload = compose_service.guarded_repair(
+            user["id"], project_id, max_iterations=max_iterations, allow_ai=allow_ai
+        )
         if payload is None:
             raise HTTPException(
                 status_code=404, detail={"code": "not_found", "message": "project not found"}

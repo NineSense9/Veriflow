@@ -20,6 +20,14 @@ def _dump_ir(ir: WorkflowIR) -> str:
     return json.dumps(ir.model_dump(mode="json", by_alias=True), ensure_ascii=False)
 
 
+def _trace_json(ai_trace) -> str | None:
+    if ai_trace is None:
+        return None
+    if hasattr(ai_trace, "model_dump"):
+        return json.dumps(ai_trace.model_dump(), ensure_ascii=False)
+    return json.dumps(ai_trace, ensure_ascii=False)
+
+
 def _pipeline(ir: WorkflowIR, nl: str = ""):
     from veriflow_spec.compiler import compile_spec
     from veriflow_verify.pipeline import run_session
@@ -51,6 +59,21 @@ def project_payload(row) -> dict:
         "compiler": row["compiler"],
         "updated_at": row["updated_at"],
     }
+    raw_trace = None
+    try:
+        raw_trace = row["ai_trace_json"]
+    except (KeyError, IndexError):
+        raw_trace = None
+    if raw_trace:
+        payload["ai_trace"] = json.loads(raw_trace)
+    else:
+        payload["ai_trace"] = {
+            "stage": "nl_ir",
+            "requested": False,
+            "used": False,
+            "status": "UNKNOWN",
+            "fallback_reason": "provenance unavailable",
+        }
     if ir_data:
         from veriflow_ir.workflow import WorkflowIR
         from veriflow_spec.compiler import compile_spec
@@ -77,7 +100,7 @@ def project_payload(row) -> dict:
     return payload
 
 
-def _insert(user_id: int, nl: str, ir: WorkflowIR, compiler: str) -> dict:
+def _insert(user_id: int, nl: str, ir: WorkflowIR, compiler: str, ai_trace=None) -> dict:
     errors, findings, status = _analyze(ir, nl)
     now = _now()
     with connect() as connection:
@@ -85,8 +108,8 @@ def _insert(user_id: int, nl: str, ir: WorkflowIR, compiler: str) -> dict:
             """
             INSERT INTO compose_projects(
                 user_id, source_nl, ir_json, check_errors_json, attack_json,
-                gate_status, status, compiler, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)
+                gate_status, status, compiler, ai_trace_json, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)
             """,
             (
                 user_id,
@@ -96,6 +119,7 @@ def _insert(user_id: int, nl: str, ir: WorkflowIR, compiler: str) -> dict:
                 json.dumps(findings, ensure_ascii=False),
                 status,
                 compiler,
+                _trace_json(ai_trace),
                 now,
                 now,
             ),
@@ -108,9 +132,9 @@ def _insert(user_id: int, nl: str, ir: WorkflowIR, compiler: str) -> dict:
     return project_payload(row)
 
 
-def create_from_nl(user_id: int, nl: str) -> dict:
-    ir, backend = compile_nl(nl)
-    return _insert(user_id, nl, ir, backend)
+def create_from_nl(user_id: int, nl: str, allow_ai: bool = True) -> dict:
+    ir, backend, trace = compile_nl(nl, allow_ai=allow_ai)
+    return _insert(user_id, nl, ir, backend, trace)
 
 
 def create_from_example(user_id: int, name: str) -> dict:
@@ -122,7 +146,21 @@ def create_from_example(user_id: int, name: str) -> dict:
         "missing_bounds": "生成测资，但不要写数据范围守卫。",
         "valid_lis": "完整出题：生成器、范围守卫、审题门、入库。",
     }
-    return _insert(user_id, labels[name], ir, "example")
+    from veriflow_verify.ai_trace import AIInvocationTrace
+
+    return _insert(
+        user_id,
+        labels[name],
+        ir,
+        "example",
+        AIInvocationTrace(
+            stage="nl_ir",
+            requested=False,
+            used=False,
+            status="NOT_USED",
+            prompt_version="example",
+        ),
+    )
 
 
 def get_project(user_id: int, project_id: int):
@@ -174,7 +212,7 @@ def save_ir(user_id: int, project_id: int, ir: WorkflowIR) -> dict:
     return project_payload(get_project(user_id, project_id))
 
 
-def repair(user_id: int, project_id: int, nl: str | None) -> dict:
+def repair(user_id: int, project_id: int, nl: str | None, allow_ai: bool = True) -> dict:
     row = get_project(user_id, project_id)
     if row is None:
         return None
@@ -185,7 +223,7 @@ def repair(user_id: int, project_id: int, nl: str | None) -> dict:
         CheckError.model_validate(item)
         for item in json.loads(row["check_errors_json"] or "[]")
     ]
-    ir, backend = compile_nl(source, errors)
+    ir, backend, trace = compile_nl(source, errors, allow_ai=allow_ai)
     now = _now()
     new_errors, findings, status = _analyze(ir, source)
     with connect() as connection:
@@ -193,7 +231,7 @@ def repair(user_id: int, project_id: int, nl: str | None) -> dict:
             """
             UPDATE compose_projects
             SET source_nl = ?, ir_json = ?, check_errors_json = ?, attack_json = ?,
-                status = ?, compiler = ?, gate_status = 'pending', updated_at = ?
+                status = ?, compiler = ?, ai_trace_json = ?, gate_status = 'pending', updated_at = ?
             WHERE id = ?
             """,
             (
@@ -203,6 +241,7 @@ def repair(user_id: int, project_id: int, nl: str | None) -> dict:
                 json.dumps(findings, ensure_ascii=False),
                 status,
                 backend,
+                _trace_json(trace),
                 now,
                 project_id,
             ),
@@ -239,7 +278,7 @@ def set_gate(user_id: int, project_id: int, decision: str) -> dict:
     return project_payload(get_project(user_id, project_id))
 
 
-def guarded_repair(user_id: int, project_id: int, max_iterations: int = 3) -> dict:
+def guarded_repair(user_id: int, project_id: int, max_iterations: int = 3, allow_ai: bool = True) -> dict:
     row = get_project(user_id, project_id)
     if row is None or not row["ir_json"]:
         return None
@@ -248,10 +287,19 @@ def guarded_repair(user_id: int, project_id: int, max_iterations: int = 3) -> di
 
     ir = WorkflowIR.model_validate_json(row["ir_json"])
     spec = compile_spec(row["source_nl"] or "", ir.domain)
-    report = verify_repair_loop(ir, spec, max_iterations=max_iterations)
+    report = verify_repair_loop(ir, spec, max_iterations=max_iterations, allow_ai=allow_ai)
     payload = save_ir(user_id, project_id, report.ir)
     if payload is None:
         return None
+    if report.ai_trace is not None:
+        now = _now()
+        with connect() as connection:
+            connection.execute(
+                "UPDATE compose_projects SET ai_trace_json = ?, updated_at = ? WHERE id = ?",
+                (_trace_json(report.ai_trace), now, project_id),
+            )
+            connection.commit()
+        payload = project_payload(get_project(user_id, project_id))
     payload["repair"] = json.loads(report.model_dump_json())
     return payload
 

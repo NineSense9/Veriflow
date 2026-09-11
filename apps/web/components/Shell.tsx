@@ -20,6 +20,7 @@ const EVAL_ITEMS = [
   { href: "/history", label: "历史" },
   { href: "/benchmark", label: "基准" },
   { href: "/algorithms", label: "算法中心" },
+  { href: "/architecture", label: "系统地图" },
 ];
 
 const LAB_ITEMS = [
