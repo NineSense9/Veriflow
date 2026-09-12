@@ -80,6 +80,7 @@ export default function VerificationConsole({
   const [nodeNote, setNodeNote] = useState("");
   const { prefs, effects } = useEffects();
   const graphRef = useRef<GraphHandle>(null);
+  const evidenceRef = useRef<GraphHandle>(null);
   const [focused, setFocused] = useState("");
   const [scan, setScan] = useState(false);
   const [candidateId, setCandidateId] = useState("");
@@ -397,7 +398,7 @@ export default function VerificationConsole({
           <MagicBento gridClassName="vf-evidence-grid" enableSpotlight={false} enableBorderGlow={false} disableAnimations>
             <section className="vf-viz" ref={graphSection} tabIndex={-1} aria-label="工作流图">
               <div className="vf-toolbar vf-graph-toolbar">
-                <h2><GitBranch size={16} /> 工作流图 <span>{session.ir.nodes.length} 节点 · {session.ir.edges.length} 连线</span></h2>
+                <h2><GitBranch size={16} /> {graphMode === "workflow" ? "工作流图" : "当前问题证据图"} {graphMode === "workflow" ? <span>{session.ir.nodes.length} 节点 · {session.ir.edges.length} 连线</span> : null}</h2>
                 <button
                   type="button"
                   className={graphMode === "workflow" ? "btn btn-sm btn-primary" : "btn btn-sm"}
@@ -417,15 +418,13 @@ export default function VerificationConsole({
                   className="btn btn-sm"
                   aria-label="适应画布"
                   title="适应画布"
-                  disabled={graphMode !== "workflow"}
                   onClick={() => {
-                    graphRef.current?.fitAll();
-                    setFocused("");
+                    (graphMode === "workflow" ? graphRef : evidenceRef).current?.fitAll();
                   }}
                 >
                   <Maximize2 size={14} />
                 </button>
-                {focused ? <span className="caption">Focused: {focused}</span> : null}
+                {focused && graphMode === "workflow" ? <span className="caption">高亮: {focused}</span> : null}
               </div>
               <div className="vf-dag" style={{ position: "relative" }}>
                 {scan && effectsAllowScan(effects) ? <GridScan active /> : null}
@@ -433,13 +432,12 @@ export default function VerificationConsole({
                   <ComposeCanvas
                     ref={graphRef}
                     ir={ir}
-                    height={300}
                     errors={[]}
                     highlight={highlight}
                     failing={issues.flatMap((item) => item.affected_nodes || [])}
                     onSelectNode={(id) => {
                       const hit = issues.find(
-                        (item) => item.affected_nodes?.includes(id) || item.minimized_nodes?.includes(id),
+                        (item) => matchingIssueNodes(item, ir.nodes).includes(id),
                       );
                       setNodeNote(hit ? "" : `节点 ${id} 没有 finding。`);
                       if (hit) {
@@ -455,8 +453,8 @@ export default function VerificationConsole({
                     }}
                   />
                 ) : session.graph ? (
-                  <div className="vf-dag-frame" style={{ height: 318, minHeight: 318 }}>
                     <EvidenceGraphView
+                      ref={evidenceRef}
                       entities={session.graph.entities}
                       relations={session.graph.relations}
                       focusId={
@@ -466,8 +464,7 @@ export default function VerificationConsole({
                         )?.id
                       }
                     />
-                  </div>
-                ) : null}
+                ) : <div className="graph-empty" role="status">当前问题没有可用证据图</div>}
               </div>
               <div className="vf-trace-inline">
                 <RuntimeReplay events={session.trace?.events || []} play={false} selectedEventIndices={selectedEvents} selectionKey={selected?.id || ""} />

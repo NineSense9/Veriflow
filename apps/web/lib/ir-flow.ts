@@ -1,6 +1,11 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { ComposeError, WorkflowIR } from "@/lib/api";
 
+export const NODE_WIDTH = 176;
+export const NODE_HEIGHT = 100;
+export const COLUMN_STEP = 220;
+export const ROW_STEP = 132;
+
 export function irToFlow(
   ir: WorkflowIR,
   errors: ComposeError[],
@@ -18,7 +23,7 @@ export function irToFlow(
   const indeg = new Map<string, number>();
   ir.nodes.forEach((node) => indeg.set(node.id, 0));
   const outgoing = new Map<string, string[]>();
-  ir.edges.forEach((edge) => {
+  ir.edges.filter((edge) => indeg.has(edge.from) && indeg.has(edge.to)).forEach((edge) => {
     indeg.set(edge.to, (indeg.get(edge.to) || 0) + 1);
     outgoing.set(edge.from, [...(outgoing.get(edge.from) || []), edge.to]);
   });
@@ -26,14 +31,24 @@ export function irToFlow(
   const queue = ir.nodes.filter((node) => (indeg.get(node.id) || 0) === 0).map((node) => node.id);
   queue.forEach((id) => level.set(id, 0));
   const remaining = new Map(indeg);
+  const visited = new Set<string>();
   while (queue.length) {
     const current = queue.shift() as string;
+    visited.add(current);
     for (const next of outgoing.get(current) || []) {
       level.set(next, Math.max(level.get(next) || 0, (level.get(current) || 0) + 1));
       remaining.set(next, (remaining.get(next) || 1) - 1);
       if ((remaining.get(next) || 0) === 0) queue.push(next);
     }
   }
+  // Invalid/cyclic input is still useful to inspect: retain it without overlapping nodes.
+  let fallbackColumn = visited.size ? Math.max(...Array.from(level.values())) + 1 : 0;
+  for (const node of ir.nodes) {
+    if (!visited.has(node.id)) level.set(node.id, fallbackColumn++);
+  }
+  const counts = new Map<number, number>();
+  for (const node of ir.nodes) counts.set(level.get(node.id) || 0, (counts.get(level.get(node.id) || 0) || 0) + 1);
+  const maxRows = Math.max(1, ...Array.from(counts.values()));
   const slots = new Map<number, number>();
   const nodes: Node[] = ir.nodes.map((node) => {
     const col = level.get(node.id) || 0;
@@ -50,7 +65,8 @@ export function irToFlow(
     return {
       id: node.id,
       type: "kind",
-      position: { x: 32 + col * 168, y: 28 + row * 96 },
+      position: { x: col * COLUMN_STEP, y: ((maxRows - (counts.get(col) || 1)) / 2 + row) * ROW_STEP },
+      style: { width: NODE_WIDTH, height: NODE_HEIGHT },
       data: {
         label,
         kind: node.kind,
@@ -58,20 +74,21 @@ export function irToFlow(
         status: errorIds.has(node.id) ? "fail" : selected.has(node.id) ? "sel" : "ok",
         selected: selected.has(node.id) || pathSet.has(node.id),
         onPath: pathSet.has(node.id),
-        dim: Boolean(highlight) && !selected.has(node.id) && !pathSet.has(node.id),
+        dim: Boolean(selected.size || pathSet.size) && !selected.has(node.id) && !pathSet.has(node.id),
       },
     };
   });
-  const edges: Edge[] = ir.edges.map((edge, index) => ({
+  const witnessEdges = new Set((highlight?.path || []).slice(1).map((id, i) => `${highlight!.path[i]}\u0000${id}`));
+  const edges: Edge[] = ir.edges.filter((edge) => indeg.has(edge.from) && indeg.has(edge.to)).map((edge, index) => ({
     id: `e${index}`,
     source: edge.from,
     target: edge.to,
+    type: "smoothstep",
+    markerEnd: { type: "arrowclosed" as import("@xyflow/react").MarkerType, color: "var(--graph-edge)" },
     style:
-      pathSet.has(edge.from) && pathSet.has(edge.to)
-        ? { stroke: "var(--wa)", strokeWidth: 2 }
-        : highlight
-          ? { stroke: "var(--border-strong)", strokeWidth: 1, opacity: 0.35 }
-          : undefined,
+      witnessEdges.has(`${edge.from}\u0000${edge.to}`)
+        ? { stroke: "var(--accent)", strokeWidth: 2.5 }
+        : { stroke: "var(--graph-edge)", strokeWidth: 1.5, opacity: selected.size || pathSet.size ? 0.65 : 1 },
   }));
   return { nodes, edges };
 }
@@ -82,7 +99,7 @@ export function graphMetrics(ir: WorkflowIR) {
   let maxRows = 0;
   const colCount = new Map<number, number>();
   for (const node of nodes) {
-    const col = Math.round((node.position.x - 32) / 168);
+    const col = Math.round(node.position.x / COLUMN_STEP);
     maxDepth = Math.max(maxDepth, col);
     colCount.set(col, (colCount.get(col) || 0) + 1);
   }
@@ -90,9 +107,8 @@ export function graphMetrics(ir: WorkflowIR) {
   return { nodeCount: ir.nodes.length, maxDepth: maxDepth + 1, maxRows: maxRows || 1 };
 }
 
-export function dagFrameHeight(metrics: { maxRows: number; nodeCount: number }) {
-  if (metrics.maxRows <= 1 && metrics.nodeCount <= 8) return 268;
-  if (metrics.maxRows <= 2) return 318;
-  if (metrics.maxRows <= 3) return 362;
-  return 420;
+export function dagFrameHeight(metrics: { maxRows: number; nodeCount: number; maxDepth?: number }, viewportWidth = 1000) {
+  const width = Math.max(NODE_WIDTH, ((metrics.maxDepth ?? metrics.nodeCount) - 1) * COLUMN_STEP + NODE_WIDTH);
+  const scale = Math.min(1.1, Math.max(0.35, (viewportWidth - 32) / width));
+  return Math.max(260, Math.min(520, Math.ceil(((metrics.maxRows - 1) * ROW_STEP + NODE_HEIGHT) * scale + 48)));
 }
