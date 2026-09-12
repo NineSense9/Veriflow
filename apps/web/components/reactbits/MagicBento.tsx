@@ -98,7 +98,7 @@ const MagicBento: React.FC<BentoProps> = ({
           style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}
         />
       ) : null}
-      <div className={`card-grid ${gridClassName}`} data-border-glow={enableBorderGlow && interactive ? "true" : undefined}>
+      <div className={`card-grid ${gridClassName}`} data-layout={gridClassName ? "custom" : "default"} data-border-glow={enableBorderGlow && interactive ? "true" : undefined}>
       {children
         ? children
         : (cards || []).map((card) => {

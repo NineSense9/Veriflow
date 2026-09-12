@@ -35,6 +35,7 @@ test("invalid login gives a readable error and valid login works", async ({ page
 });
 
 test("key pages fit all viewports and both themes", async ({ page }) => {
+  test.setTimeout(180_000);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await login(page);

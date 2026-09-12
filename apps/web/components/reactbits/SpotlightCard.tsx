@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { effectsAllowPointer, useEffects } from "@/lib/effects";
 import "./SpotlightCard.css";
 
@@ -17,6 +17,13 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
   const divRef = useRef<HTMLDivElement>(null);
   const { effects } = useEffects();
   const interactive = effectsAllowPointer(effects);
+  const enabled = interactive || effects === "balanced";
+  useEffect(() => {
+    if (!interactive && divRef.current) {
+      divRef.current.style.setProperty("--mouse-x", "50%");
+      divRef.current.style.setProperty("--mouse-y", "50%");
+    }
+  }, [interactive]);
 
   const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = (e) => {
     if (!divRef.current) return;
@@ -27,7 +34,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
   };
 
   return (
-    <div ref={divRef} onMouseMove={interactive ? handleMouseMove : undefined} data-spotlight={interactive ? "on" : "off"} className={`card-spotlight ${className}`}>
+    <div ref={divRef} onMouseMove={interactive ? handleMouseMove : undefined} data-spotlight={enabled ? "on" : "off"} data-pointer={interactive ? "on" : "off"} className={`card-spotlight ${className}`}>
       {children}
     </div>
   );

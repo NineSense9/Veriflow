@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { effectsAllowScan, useEffects } from "@/lib/effects";
+import { useVisibleMotion } from "@/lib/use-visible-motion";
+import { Play, Pause, RotateCcw } from "lucide-react";
 
 export type ReplayEvent = {
   event_index: number;
@@ -15,13 +17,24 @@ export type ReplayEvent = {
 export default function RuntimeReplay({
   events,
   play,
+  selectedEventIndices = [],
+  selectionKey = "",
 }: {
   events: ReplayEvent[];
   play: boolean;
+  selectedEventIndices?: number[];
+  selectionKey?: string;
 }) {
   const { effects } = useEffects();
   const [index, setIndex] = useState(play ? 0 : events.length);
   const [playing, setPlaying] = useState(play);
+  const { ref, visible } = useVisibleMotion();
+  useEffect(() => {
+    if (!selectionKey) return;
+    const selected = events.findIndex((event) => selectedEventIndices.includes(event.event_index));
+    setIndex(selected < 0 ? events.length : selected);
+    setPlaying(false);
+  }, [selectionKey, events, selectedEventIndices]);
 
   useEffect(() => {
     if (!play || !effectsAllowScan(effects)) {
@@ -34,7 +47,7 @@ export default function RuntimeReplay({
   }, [effects, events, play]);
 
   useEffect(() => {
-    if (!playing || !events.length) return;
+    if (!playing || !events.length || !visible || !effectsAllowScan(effects)) return;
     if (index >= events.length - 1) {
       setPlaying(false);
       return;
@@ -42,31 +55,33 @@ export default function RuntimeReplay({
     const hold = Math.min(Math.max(events[index]?.duration_ms || 180, 120), 480);
     const id = window.setTimeout(() => setIndex((n) => n + 1), hold);
     return () => window.clearTimeout(id);
-  }, [events, index, playing]);
+  }, [events, index, playing, visible, effects]);
 
-  if (!events.length) return <p className="ghost">No recorded trace.</p>;
+  if (!events.length) return <div ref={ref}><p className="ghost">本次记录没有运行事件。</p></div>;
   const current = events[Math.min(index, events.length - 1)];
   return (
-    <section className="runtime-replay">
+    <div ref={ref} className="runtime-replay">
       <header className="section-row">
-        <h3>Runtime replay</h3>
+        <h3>运行轨迹</h3>
         <span className="caption">
-          {playing ? "playing recorded trace" : "recorded"} · {Math.min(index + 1, events.length)}/{events.length}
+          {playing ? "回放中" : "已记录"} · {events.length} events
         </span>
+        <div className="vf-replay-controls">
+          <button type="button" className="icon-btn" title={playing ? "暂停回放" : "回放记录"} aria-label={playing ? "暂停回放" : "回放记录"} disabled={!effectsAllowScan(effects)} onClick={() => { if (!playing && index >= events.length - 1) setIndex(0); setPlaying(!playing); }}>{playing ? <Pause size={13} /> : <Play size={13} />}</button>
+          <button type="button" className="icon-btn" title="回到首个事件" aria-label="回到首个事件" onClick={() => { setPlaying(false); setIndex(0); }}><RotateCcw size={13} /></button>
+        </div>
       </header>
       <ol>
         {events.map((ev, i) => (
-          <li key={ev.event_index} className={i === index ? "on" : i < index ? "done" : ""}>
-            <span className="mono">{ev.node_id}</span>
-            <span>{ev.operation}</span>
-            <span>{ev.status}</span>
+          <li key={ev.event_index} data-related={selectedEventIndices.includes(ev.event_index) ? "true" : undefined} className={i === index ? "on" : i < index ? "done" : ""}>
+            <button type="button" aria-label={`事件 ${ev.event_index}: ${ev.node_id}`} aria-pressed={i === index} onClick={() => { setPlaying(false); setIndex(i); }}><span className="mono">{ev.node_id}</span><span>{ev.status}</span></button>
           </li>
         ))}
       </ol>
       <p className="caption">
-        Cursor on {current.node_id}
-        {current.branch ? ` · branch ${current.branch}` : ""}. This is playback of session.trace, not a re-exec.
+        当前 {current.node_id}{current.branch ? ` · branch ${current.branch}` : ""} · 记录回放
+        {selectionKey ? selectedEventIndices.length ? ` · ${selectedEventIndices.length} 个相关事件` : " · 当前问题无匹配事件" : ""}
       </p>
-    </section>
+    </div>
   );
 }

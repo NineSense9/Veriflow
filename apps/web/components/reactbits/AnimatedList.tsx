@@ -93,7 +93,7 @@ const AnimatedList: React.FC<AnimatedListProps> = ({
 
   return (
     <div className={`scroll-list-container ${className}`}>
-      <div ref={listRef} className={`scroll-list ${displayScrollbar ? "" : "no-scrollbar"}`} onScroll={handleScroll}>
+      <div ref={listRef} className={`scroll-list ${displayScrollbar ? "" : "no-scrollbar"}`} onScroll={handleScroll} style={{ width: "100%" }}>
         {items.map((item, index) => (
           <AnimatedItem
             key={index}

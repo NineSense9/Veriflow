@@ -158,7 +158,7 @@ const ComposeCanvas = forwardRef<
     () => irToFlow(ir, errors, highlight, failing),
     [ir, errors, highlight, failing],
   );
-  const token = `${ir.nodes.map((item) => item.id).join(",")}:${highlight?.nodes.join(",") ?? ""}:${ir.edges.length}`;
+  const token = `${ir.nodes.map((item) => item.id).join(",")}:${highlight?.nodes.join(",") ?? ""}:${highlight?.path.join(",") ?? ""}:${failing?.join(",") ?? ""}:${ir.edges.length}`;
   const frame = height ?? dagFrameHeight(graphMetrics(ir));
   return (
     <div className="vf-dag-frame" style={{ height: frame, minHeight: frame }}>
