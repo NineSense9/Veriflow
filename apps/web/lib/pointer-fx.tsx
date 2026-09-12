@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { effectsAllowPointer, useEffects } from "@/lib/effects";
 
 export type PointerSnapshot = {
   x: number;
@@ -95,10 +96,9 @@ export function subscribePointer(fn: () => void) {
 const Ctx = createContext<{ getPointer: () => PointerSnapshot }>({ getPointer });
 
 export function PointerFXProvider({ children }: { children: ReactNode }) {
-  const started = useRef(false);
+  const { effects } = useEffects();
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
+    if (!effectsAllowPointer(effects)) return;
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerdown", onDown, { passive: true });
     window.addEventListener("pointerup", onUp, { passive: true });
@@ -121,10 +121,13 @@ export function PointerFXProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
       if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      pending = false;
+      Object.assign(pointer, EMPTY);
       stopDebug?.();
       overlay?.remove();
     };
-  }, []);
+  }, [effects]);
   return <Ctx.Provider value={{ getPointer }}>{children}</Ctx.Provider>;
 }
 

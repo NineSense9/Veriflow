@@ -8,6 +8,7 @@ import { getAmbientActivity, subscribeAmbientActivity } from "@/lib/ambient-acti
 import { resolveAmbient } from "@/lib/route-ambient";
 import { readTheme, type Theme } from "@/lib/theme";
 import Scanner from "@/components/reactbits/Scanner";
+import { useVisibleMotion } from "@/lib/use-visible-motion";
 
 const FaultyTerminal = dynamic(() => import("@/components/reactbits/FaultyTerminal"), { ssr: false });
 const LightRays = dynamic(() => import("@/components/reactbits/LightRays"), { ssr: false });
@@ -37,16 +38,14 @@ export default function AmbientBackground() {
   const theme = useThemeNow();
   const activity = useActivity();
   const cfg = resolveAmbient(pathname);
+  const { ref, visible } = useVisibleMotion();
   const allow = effectsAllowBackground(effects);
   const pointerOk = effectsAllowPointer(effects) && cfg.pointer;
   const reduced = effects === "reduced";
   const off = effects === "off";
 
-  if (off || cfg.variant === "none") {
-    return <div className="ambient-host ambient-wash" aria-hidden="true" />;
-  }
-  if (!allow && cfg.variant !== "scanner-field") {
-    return <div className="ambient-host ambient-wash" aria-hidden="true" />;
+  if (off || cfg.variant === "none" || !allow || !visible) {
+    return <div ref={ref} className="ambient-host ambient-wash" aria-hidden="true" />;
   }
 
   const light = theme === "light";
@@ -95,7 +94,7 @@ export default function AmbientBackground() {
       ) : null}
       {cfg.variant === "scanner-field" ? (
         <div className="ambient-fill" style={{ opacity: intensity, position: "relative" }}>
-          <Scanner active={!reduced} />
+          <Scanner active={!reduced && (activity === "running" || activity === "executing")} />
         </div>
       ) : null}
       <div className="ambient-vignette" />
@@ -103,7 +102,7 @@ export default function AmbientBackground() {
   );
 
   return (
-    <div className={`ambient-host ambient-${cfg.variant}`} aria-hidden="true">
+    <div ref={ref} className={`ambient-host ambient-${cfg.variant}`} aria-hidden="true">
       {layer}
     </div>
   );

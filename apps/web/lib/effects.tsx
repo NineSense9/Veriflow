@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_PREFS, readPrefs, writePrefs, type EffectsLevel, type Prefs } from "@/lib/prefs";
+import { resolveEffects } from "@/lib/effect-policy";
+export { effectsAllowBackground, effectsAllowPointer, effectsAllowScan } from "@/lib/effect-policy";
 
 type Ctx = {
   prefs: Prefs;
@@ -11,12 +13,6 @@ type Ctx = {
 };
 
 const EffectsContext = createContext<Ctx | null>(null);
-
-function resolveEffects(stored: EffectsLevel, reduceMotion: boolean): EffectsLevel {
-  if (reduceMotion && stored === "full") return "reduced";
-  if (reduceMotion && stored === "balanced") return "reduced";
-  return stored;
-}
 
 export function EffectsProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefsState] = useState<Prefs>(DEFAULT_PREFS);
@@ -77,16 +73,4 @@ export function useEffects() {
     };
   }
   return ctx;
-}
-
-export function effectsAllowBackground(level: EffectsLevel) {
-  return level === "full" || level === "balanced";
-}
-
-export function effectsAllowPointer(level: EffectsLevel) {
-  return level === "full";
-}
-
-export function effectsAllowScan(level: EffectsLevel) {
-  return level === "full" || level === "balanced";
 }

@@ -3,12 +3,14 @@
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import React, { Children, type HTMLAttributes, type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import "./Stepper.css";
+import { useEffects } from "@/lib/effects";
 
 interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   initialStep?: number;
   currentStep?: number;
   statuses?: string[];
+  labels?: string[];
   glowRunning?: boolean;
   onStepChange?: (step: number) => void;
   onFinalStepCompleted?: () => void;
@@ -25,6 +27,7 @@ export default function Stepper({
   initialStep = 1,
   currentStep: controlled,
   statuses,
+  labels,
   glowRunning = false,
   onStepChange = () => {},
   onFinalStepCompleted = () => {},
@@ -33,6 +36,8 @@ export default function Stepper({
   className = "",
   ...rest
 }: StepperProps) {
+  const { effects } = useEffects();
+  const animate = effects === "full" || effects === "balanced";
   const stepsArray = Children.toArray(children);
   const totalSteps = stepsArray.length;
   const [internal, setInternal] = useState(initialStep);
@@ -49,16 +54,19 @@ export default function Stepper({
   return (
     <div className={`outer-container ${className}`} {...rest}>
       <div className="step-circle-container" style={{ border: "1px solid var(--border, #dfe3e8)" }}>
-        <div className="step-indicator-row">
+        <div className="step-indicator-row" role="group" aria-label="核验流水线">
           {stepsArray.map((_, index) => {
             const stepNumber = index + 1;
             const status = statuses?.[index];
-            const running = glowRunning && status === "RUNNING";
+            const running = animate && glowRunning && status === "RUNNING";
+            const label = labels?.[index] || `Step ${stepNumber}`;
             return (
               <React.Fragment key={stepNumber}>
                 <button
                   type="button"
-                  className={`step-indicator ${currentStep === stepNumber ? "active" : ""} ${currentStep > stepNumber ? "complete" : ""} ${running ? "glow" : ""}`}
+                  className={`step-indicator ${currentStep === stepNumber ? "active" : ""} ${running ? "glow" : ""}`}
+                  data-status={status || "NOT_RUN"}
+                  aria-label={`${label} · ${status || "NOT_RUN"}`}
                   disabled={disableStepIndicators}
                   onClick={() => {
                     setDirection(stepNumber > currentStep ? 1 : -1);
@@ -66,14 +74,16 @@ export default function Stepper({
                   }}
                   aria-current={currentStep === stepNumber ? "step" : undefined}
                 >
-                  {status && status !== "PASS" && status !== "NOT_RUN" ? status.slice(0, 1) : stepNumber}
+                  <span className="step-status-dot" aria-hidden="true">{status === "PASS" ? "✓" : status === "FAIL" ? "!" : stepNumber}</span>
+                  <span className="step-label">{label}</span>
+                  <span className="step-status-text">{status || "NOT_RUN"}</span>
                 </button>
-                {index < totalSteps - 1 ? <div className={`step-connector ${currentStep > stepNumber ? "complete" : ""}`} /> : null}
+                {index < totalSteps - 1 ? <div className="step-connector" aria-hidden="true" /> : null}
               </React.Fragment>
             );
           })}
         </div>
-        <StepContentWrapper isCompleted={isCompleted} currentStep={currentStep} direction={direction}>
+        <StepContentWrapper animate={animate} isCompleted={isCompleted} currentStep={currentStep} direction={direction}>
           {stepsArray[currentStep - 1]}
         </StepContentWrapper>
         {!hideFooter && !isCompleted ? (
@@ -110,17 +120,20 @@ export default function Stepper({
 }
 
 function StepContentWrapper({
+  animate,
   isCompleted,
   currentStep,
   direction,
   children,
 }: {
+  animate: boolean;
   isCompleted: boolean;
   currentStep: number;
   direction: number;
   children: ReactNode;
 }) {
   const [parentHeight, setParentHeight] = useState(0);
+  if (!animate) return <div className="step-content-default">{!isCompleted ? children : null}</div>;
   return (
     <motion.div className="step-content-default" style={{ position: "relative", overflow: "hidden" }} animate={{ height: isCompleted ? 0 : parentHeight }} transition={{ type: "spring", duration: 0.4 }}>
       <AnimatePresence initial={false} mode="sync" custom={direction}>

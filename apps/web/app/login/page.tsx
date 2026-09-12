@@ -6,16 +6,15 @@ import { api, setSession } from "@/lib/api";
 import { readTheme, type Theme } from "@/lib/theme";
 import ThemeToggle from "@/components/ThemeToggle";
 import Brand from "@/components/Brand";
-
+import BrandAmbient from "@/components/BrandAmbient";
+import FadeContent from "@/components/reactbits/FadeContent";
+import styles from "../entry.module.css";
 
 const PIPE = [
-  { id: "req", label: "Requirement", hint: "自然语言题意 / 出题约束" },
-  { id: "spec", label: "WorkflowSpec", hint: "编译成可检查约束" },
-  { id: "ir", label: "Workflow IR", hint: "DAG：工具、守卫、审题门" },
-  { id: "s", label: "Structural", hint: "连通、无环、孤立节点" },
-  { id: "m", label: "Semantic", hint: "必要动作、顺序、触发对齐" },
-  { id: "e", label: "Executable", hint: "Mock runtime · 时序监视" },
-  { id: "fix", label: "Repair / Gate", hint: "受约束 Patch，再验证" },
+  { label: "需求", hint: "用自然语言描述目标与约束" },
+  { label: "工作流", hint: "将需求编译成可检查的图" },
+  { label: "验证", hint: "检查结构、语义与运行过程" },
+  { label: "证据与修复", hint: "定位问题，修复后再次验证" },
 ];
 
 export default function LoginPage() {
@@ -54,38 +53,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-wrap">
-      <div className="theme-dock">
+    <div className={styles.login}>
+      <div className={styles.themeDock}>
         <ThemeToggle theme={theme} onToggle={setTheme} />
       </div>
-      <section className="login-story" aria-label="产品说明">
-        <Brand href={null} />
-        <h1>
-          把 LLM 生成的出题工作流
-          <br />
-          关进可检查的门
-        </h1>
-        <p>
-          VeriFlow 不是打一个分数。它把需求编成规格，用确定性算法做结构、语义与可执行验证，给出 Issue、反例路径和受约束修复。
-        </p>
-        <ol className="login-pipe">
-          {PIPE.map((step) => (
-            <li key={step.id}>
-              <strong>{step.label}</strong>
-              <span>{step.hint}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="login-aside">模型当编译器。沙箱当裁判。判定不来自 LLM。</p>
+      <section className={styles.loginIntro} aria-label="产品介绍">
+        <BrandAmbient variant="rays" className={styles.loginAmbient} />
+        <FadeContent className={styles.loginIntroContent}>
+          <Brand href={null} />
+          <p className={styles.eyebrow}>AI WORKFLOW · RELIABILITY</p>
+          <h1>让 AI 生成的工作流，<br /><span>经得起验证。</span></h1>
+          <p className={styles.introDescription}>从一句需求到一份可追溯的验证证据。<br />让每一次生成，都有清晰的检查与修复路径。</p>
+        </FadeContent>
       </section>
-      <section className="login-panel">
-        <div className="login-card">
-          <div className="login-brand">
-            <Brand href={null} />
-          </div>
-          <h2>登录</h2>
-          <p className="lead">评委与演示请用体验账号。真正的鉴权没有关掉。</p>
-          <form onSubmit={onSubmit}>
+      <section className={styles.loginPanel} aria-labelledby="login-title">
+        <div className={styles.loginCard}>
+          <p className={styles.eyebrow}>进入工作台</p>
+          <h2 id="login-title">欢迎使用 VeriFlow</h2>
+          <p className={styles.loginDescription}>登录后，从验证案例开始探索。</p>
+          <form onSubmit={onSubmit} aria-busy={busy}>
             <div className="field">
               <label htmlFor="user">用户名</label>
               <input
@@ -95,6 +81,8 @@ export default function LoginPage() {
                 autoComplete="username"
                 autoCapitalize="none"
                 spellCheck={false}
+                required
+                disabled={busy}
               />
             </div>
             <div className="field">
@@ -106,6 +94,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
+                  required
+                  disabled={busy}
                 />
                 <button
                   type="button"
@@ -132,16 +122,28 @@ export default function LoginPage() {
               {error || "\u00a0"}
             </div>
             <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
-              {busy ? "登录中…" : "登录"}
+              {busy ? "正在登录…" : "登录工作台"}
             </button>
           </form>
-          <div className="login-demo">
-            <p className="hint">体验账号 demo / demo</p>
+          <div className={styles.loginDemo}>
+            <div><span>体验账号</span><code>demo / demo</code></div>
             <button type="button" className="btn btn-ghost btn-sm" onClick={fillDemo}>
               填入体验账号
             </button>
           </div>
         </div>
+      </section>
+      <section className={styles.loginStory} aria-label="从需求到证据的四个步骤">
+        <ol className={styles.loginPath}>
+          {PIPE.map((step, index) => (
+            <li key={step.label}>
+              <span className={styles.stepNumber}>0{index + 1}</span>
+              <strong>{step.label}</strong>
+              <span>{step.hint}</span>
+            </li>
+          ))}
+        </ol>
+        <p className={styles.loginPrinciple}><span aria-hidden="true">✓</span> 模型生成候选，验证器给出判定。</p>
       </section>
     </div>
   );

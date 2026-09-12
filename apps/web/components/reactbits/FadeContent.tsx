@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { effectsAllowBackground, useEffects } from "@/lib/effects";
 
 export default function FadeContent({
   children,
@@ -13,12 +14,14 @@ export default function FadeContent({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
+  const { effects } = useEffects();
+  const animate = effectsAllowBackground(effects);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) setShown(true);
+        if (entries[0]?.isIntersecting) { setShown(true); io.disconnect(); }
       },
       { threshold: 0.08 },
     );
@@ -30,9 +33,9 @@ export default function FadeContent({
       ref={ref}
       className={className}
       style={{
-        opacity: shown ? 1 : 0,
-        transform: shown ? "none" : "translateY(8px)",
-        transition: `opacity ${duration}ms ease, transform ${duration}ms ease`,
+        opacity: shown || !animate ? 1 : 0,
+        transform: shown || !animate ? "none" : "translateY(8px)",
+        transition: animate ? `opacity ${duration}ms ease, transform ${duration}ms ease` : "none",
       }}
     >
       {children}

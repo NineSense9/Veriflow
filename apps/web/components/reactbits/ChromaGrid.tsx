@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import "./ChromaGrid.css";
+import { effectsAllowPointer, useEffects } from "@/lib/effects";
 
 export interface ChromaItem {
   image?: string;
@@ -39,6 +40,12 @@ export const ChromaGrid: React.FC<ChromaGridProps> = ({
   const pos = useRef({ x: 0, y: 0 });
   const target = useRef({ x: 0, y: 0 });
   const raf = useRef(0);
+  const { effects } = useEffects();
+  const interactive = effectsAllowPointer(effects);
+  useEffect(() => {
+    if (!interactive && raf.current) { cancelAnimationFrame(raf.current); raf.current = 0; }
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); raf.current = 0; };
+  }, [interactive]);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -102,14 +109,19 @@ export const ChromaGrid: React.FC<ChromaGridProps> = ({
           "--rows": rows,
         } as React.CSSProperties
       }
-      onPointerMove={handleMove}
+      onPointerMove={interactive ? handleMove : undefined}
       onPointerLeave={handleLeave}
     >
       {items.map((c, i) => (
         <article
           key={`${c.title}-${i}`}
           className="chroma-card"
-          onMouseMove={handleCardMove}
+          onMouseMove={interactive ? handleCardMove : undefined}
+          tabIndex={c.url ? 0 : undefined}
+          role={c.url ? "link" : undefined}
+          onKeyDown={(event) => {
+            if (c.url && event.key === "Enter") window.open(c.url, "_blank", "noopener,noreferrer");
+          }}
           onClick={() => {
             if (c.url) window.open(c.url, "_blank", "noopener,noreferrer");
           }}
@@ -136,8 +148,7 @@ export const ChromaGrid: React.FC<ChromaGridProps> = ({
           </footer>
         </article>
       ))}
-      <div className="chroma-overlay" />
-      <div ref={fadeRef} className="chroma-fade" />
+      {interactive ? <><div className="chroma-overlay" /><div ref={fadeRef} className="chroma-fade" /></> : null}
     </div>
   );
 };

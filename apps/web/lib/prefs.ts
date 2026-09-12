@@ -49,9 +49,6 @@ export function readPrefs(): Prefs {
 export function writePrefs(prefs: Prefs) {
   window.localStorage.setItem(KEY, JSON.stringify(prefs));
   document.documentElement.dataset.density = prefs.density;
-  document.documentElement.dataset.effects = prefs.effectsLevel;
-  document.documentElement.dataset.motion =
-    prefs.effectsLevel === "full" || prefs.effectsLevel === "balanced" ? "full" : "reduce";
   document.documentElement.style.setProperty("--code-font-size", `${prefs.codeFontPx}px`);
   window.dispatchEvent(new Event("vf-prefs"));
 }
@@ -59,8 +56,5 @@ export function writePrefs(prefs: Prefs) {
 export function applyPrefs(prefs: Prefs) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset.density = prefs.density;
-  document.documentElement.dataset.effects = prefs.effectsLevel;
-  document.documentElement.dataset.motion =
-    prefs.effectsLevel === "full" || prefs.effectsLevel === "balanced" ? "full" : "reduce";
   document.documentElement.style.setProperty("--code-font-size", `${prefs.codeFontPx}px`);
 }

@@ -31,15 +31,14 @@ function ReportBody() {
     <main className="page vf-page">
       <header className="page-head split tight">
         <div>
-          <p className="kicker">Verification session</p>
-          <h1>验证</h1>
-          <p className="lead">Gate · Finding · DAG · Evidence · Repair。同一 session，判定不来自模型。</p>
+          <p className="kicker">VERIFICATION WORKBENCH</p>
+          <h1>核验工作台</h1>
+          <p className="lead">从问题定位到证据与修复，查看每一步的确定性核验结果。</p>
         </div>
       </header>
       <VerificationConsole initialDemo={demo} />
       {train ? (
-        <section className="kv-block">
-          <h2>{TRAIN[0].title}</h2>
+        <details className="vf-disclosure vf-training"><summary>{TRAIN[0].title}</summary><div className="vf-disclosure-body">
           <dl className="kv">
             {TRAIN[0].keys.map(([key, label]) => (
               <div key={key}>
@@ -48,7 +47,7 @@ function ReportBody() {
               </div>
             ))}
           </dl>
-        </section>
+        </div></details>
       ) : null}
     </main>
   );

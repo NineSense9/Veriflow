@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import { effectsAllowPointer, useEffects } from "@/lib/effects";
 import "./SpotlightCard.css";
 
 interface SpotlightCardProps extends React.PropsWithChildren {
@@ -14,6 +15,8 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
   spotlightColor = "rgba(15, 118, 110, 0.22)",
 }) => {
   const divRef = useRef<HTMLDivElement>(null);
+  const { effects } = useEffects();
+  const interactive = effectsAllowPointer(effects);
 
   const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = (e) => {
     if (!divRef.current) return;
@@ -24,7 +27,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
   };
 
   return (
-    <div ref={divRef} onMouseMove={handleMouseMove} className={`card-spotlight ${className}`}>
+    <div ref={divRef} onMouseMove={interactive ? handleMouseMove : undefined} data-spotlight={interactive ? "on" : "off"} className={`card-spotlight ${className}`}>
       {children}
     </div>
   );

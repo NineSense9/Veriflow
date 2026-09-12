@@ -1,4 +1,4 @@
-.card-grid {
+.vf-bento-root .card-grid {
   --hue: 27;
   --sat: 69%;
   --bento-text: var(--fx-fg);
@@ -9,12 +9,12 @@
   --background-dark: var(--fx-surface);
 }
 
-.card-grid {
+.vf-bento-root .card-grid {
   display: grid;
   gap: 0.5em;
   padding: 0.75em;
-  max-width: 54em;
-  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.5rem);
+  max-width: none;
+  font-size: 14px;
 }
 
 .magic-bento-card {
@@ -22,8 +22,7 @@
   flex-direction: column;
   justify-content: space-between;
   position: relative;
-  aspect-ratio: 4/3;
-  min-height: 200px;
+  min-height: 0;
   width: 100%;
   max-width: 100%;
   padding: 1.25em;
@@ -32,7 +31,7 @@
   background: var(--background-dark);
   font-weight: 300;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 
   --glow-x: 50%;
   --glow-y: 50%;
@@ -41,8 +40,7 @@
 }
 
 .magic-bento-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--border-strong);
 }
 
 .magic-bento-card__header,
@@ -143,11 +141,12 @@
 }
 
 /* Border glow effect */
-.magic-bento-card--border-glow::after {
+.magic-bento-card--border-glow::after,
+.card-grid[data-border-glow="true"] .magic-bento-card:not(.card-spotlight)::after {
   content: '';
   position: absolute;
   inset: 0;
-  padding: 6px;
+  padding: 1px;
   background: radial-gradient(
     var(--glow-radius) circle at var(--glow-x) var(--glow-y),
     var(--fx-glow) 0%,
@@ -164,7 +163,7 @@
     linear-gradient(#fff 0 0); /* mask compositing only */
   mask-composite: exclude;
   pointer-events: none;
-  opacity: 1;
+  opacity: var(--glow-intensity, 0);
   transition: opacity 0.3s ease;
   z-index: 1;
 }

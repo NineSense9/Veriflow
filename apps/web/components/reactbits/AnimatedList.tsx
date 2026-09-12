@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { motion, useInView } from "motion/react";
 import "./AnimatedList.css";
+import { effectsAllowBackground, useEffects } from "@/lib/effects";
 
 interface AnimatedItemProps {
   children: ReactNode;
@@ -23,16 +24,18 @@ interface AnimatedItemProps {
 const AnimatedItem: React.FC<AnimatedItemProps> = ({ children, delay = 0, index, onMouseEnter, onClick }) => {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.4, once: true });
+  const { effects } = useEffects();
+  const animate = effectsAllowBackground(effects);
   return (
     <motion.div
       ref={ref}
       data-index={index}
       onMouseEnter={onMouseEnter}
       onClick={onClick}
-      initial={{ scale: 0.92, opacity: 0 }}
-      animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.92, opacity: 0 }}
-      transition={{ duration: 0.2, delay }}
-      style={{ marginBottom: "0.5rem", cursor: "pointer" }}
+      initial={animate ? { y: 4, opacity: 0 } : false}
+      animate={inView || !animate ? { y: 0, opacity: 1 } : { y: 4, opacity: 0 }}
+      transition={{ duration: animate ? 0.18 : 0, delay: animate ? delay : 0 }}
+      style={{ marginBottom: "0.5rem", cursor: onClick ? "pointer" : "default" }}
     >
       {children}
     </motion.div>
@@ -96,8 +99,8 @@ const AnimatedList: React.FC<AnimatedListProps> = ({
             key={index}
             delay={Math.min(index * 0.03, 0.24)}
             index={index}
-            onMouseEnter={() => setSelectedIndex(index)}
-            onClick={() => onItemSelect?.(item, index)}
+            onMouseEnter={onItemSelect ? () => setSelectedIndex(index) : undefined}
+            onClick={onItemSelect ? () => onItemSelect(item, index) : undefined}
           >
             <div className={`item ${selectedIndex === index ? "selected" : ""} ${itemClassName}`}>
               {typeof item === "string" ? <p className="item-text">{item}</p> : item}

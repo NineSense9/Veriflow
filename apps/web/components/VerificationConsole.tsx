@@ -14,15 +14,14 @@ import {
 } from "@/lib/api";
 import { DIM_META, dimLabel, gateWhy } from "@/lib/status";
 import StatusChip from "@/components/StatusChip";
-import AnimatedList from "@/components/reactbits/AnimatedList";
 import Stepper, { Step } from "@/components/reactbits/Stepper";
 import GridScan from "@/components/reactbits/GridScan";
-import CardSwap, { Card } from "@/components/reactbits/CardSwap";
-import WitnessMotion from "@/components/WitnessMotion";
 import RuntimeReplay from "@/components/RuntimeReplay";
 import { effectsAllowScan, useEffects } from "@/lib/effects";
 import { setAmbientActivity } from "@/lib/ambient-activity";
 import ComposeCanvas, { type GraphHandle } from "@/components/ComposeCanvas";
+import { matchingIssueNodes } from "./verification-selection";
+import "./verification-workbench.css";
 const EvidenceGraphView = dynamic(() => import("@/components/EvidenceGraphView"), { ssr: false });
 
 function chip(status: string) {
@@ -77,7 +76,7 @@ export default function VerificationConsole({
   const graphRef = useRef<GraphHandle>(null);
   const [focused, setFocused] = useState("");
   const [scan, setScan] = useState(false);
-  const [fresh, setFresh] = useState(!initialSession);
+  const [candidateId, setCandidateId] = useState("");
   const [repair, setRepair] = useState<{
     improved: boolean;
     patch_operations?: number;
@@ -103,27 +102,25 @@ export default function VerificationConsole({
 
   function focusIssue(issue: VerifyIssue | null, nodeId?: string) {
     setSelected(issue);
-    const ids = issue
-      ? [...(issue.witness_path || []), ...(issue.minimized_nodes || []), ...(issue.affected_nodes || [])]
-      : nodeId
-        ? [nodeId]
-        : [];
-    const unique = [...new Set(ids.filter(Boolean))];
-    if (unique.length) {
-      graphRef.current?.focusPath(unique);
-      setFocused(nodeId || unique[0]);
-    }
+    const ids = issue ? matchingIssueNodes(issue, session?.ir.nodes || []) : nodeId ? [nodeId] : [];
+    setNodeNote(issue && !ids.length ? "当前问题没有匹配的工作流节点；请查看 Expected / Actual 和证据。" : "");
+    setFocused(ids.length ? nodeId || ids[0] : "");
+    if (ids.length) graphRef.current?.focusPath(ids);
+    else graphRef.current?.fitAll();
   }
 
   function apply(next: VerifySession, opts?: { keepOrigin?: boolean }) {
     setSession(next);
-    setSelected(next.static.issues[0] ?? next.runtime_findings?.[0] ?? null);
+    const firstIssue = next.static.issues[0] ?? next.runtime_findings?.[0] ?? null;
+    setSelected(firstIssue);
+    setFocused("");
+    setCandidateId("");
     if (!opts?.keepOrigin) {
       setOrigin(next);
       setRepair(null);
     }
     setCompare(null);
-    setNodeNote("");
+    setNodeNote(firstIssue && !matchingIssueNodes(firstIssue, next.ir.nodes).length ? "当前问题没有匹配的工作流节点；请查看 Expected / Actual 和证据。" : "");
     setPipe(next.pipeline.find((step) => step.status !== "PASS")?.id ?? next.pipeline[0]?.id ?? null);
   }
 
@@ -132,7 +129,6 @@ export default function VerificationConsole({
     setDemoId(id);
     setError("");
     setScan(true);
-    setFresh(true);
     setAmbientActivity("executing");
     try {
       apply(await api.reportSession({ demo: id }));
@@ -198,8 +194,8 @@ export default function VerificationConsole({
     if (!session?.graph || !selected) return [];
     const rootId =
       session.graph.entities.find((item) => item.type === "Issue" && (item.label === selected.code || item.id.endsWith(selected.id)))
-        ?.id || session.graph.entities.find((item) => item.type === "Issue")?.id;
-    if (!rootId) return session.graph.entities.slice(0, 12);
+        ?.id;
+    if (!rootId) return [];
     const keep = new Set([rootId]);
     for (let hop = 0; hop < 2; hop += 1) {
       for (const rel of session.graph.relations) {
@@ -225,20 +221,15 @@ export default function VerificationConsole({
   const mini = selected && session ? session.minimized.find((item) => item.issue_id === selected.id) : undefined;
 
   return (
-    <div className="vf-console">
-      <div className="vf-toolbar">
-        {demos.map((demo) => (
-          <button
-            key={demo.id}
-            type="button"
-            className={demoId === demo.id ? "btn btn-sm btn-primary" : "btn btn-sm"}
-            disabled={Boolean(busy)}
-            data-click-fx="strong"
-            onClick={() => loadDemo(demo.id)}
-          >
-            {demo.title}
-          </button>
-        ))}
+    <div className="vf-console vf-workbench-console">
+      <div className="vf-toolbar vf-session-actions">
+        <label className="vf-case-select">
+          <span>核验案例</span>
+          <select value={demoId} disabled={Boolean(busy)} onChange={(event) => loadDemo(event.target.value)}>
+            {!demos.length ? <option value={demoId}>{demoId}</option> : null}
+            {demos.map((demo) => <option key={demo.id} value={demo.id}>{demo.title}</option>)}
+          </select>
+        </label>
         {session ? (
           <button
             type="button"
@@ -259,7 +250,7 @@ export default function VerificationConsole({
               }
             }}
           >
-            导出 Evidence
+            导出证据
           </button>
         ) : null}
         {session && issues.length ? (
@@ -268,9 +259,9 @@ export default function VerificationConsole({
             className="btn btn-sm btn-primary"
             disabled={Boolean(busy)}
             onClick={async () => {
+              setError("");
               setBusy("repair");
               setScan(true);
-              setFresh(true);
               setAmbientActivity("executing");
               try {
                 const report = await api.verifyRepair(session.ir, nl, prefs.aiRepair);
@@ -308,80 +299,13 @@ export default function VerificationConsole({
               <Link href={`/report/runs/${session.parent_run_id}`}>#{session.parent_run_id}</Link>
             </p>
           ) : null}
-          <section className="vf-req">
-            <div>
-              <h2>Requirement</h2>
-              <p>
-                {selectedTrace?.start != null && selectedTrace.end != null ? (
-                  <>
-                    {nl.slice(0, selectedTrace.start)}
-                    <mark>{nl.slice(selectedTrace.start, selectedTrace.end)}</mark>
-                    {nl.slice(selectedTrace.end)}
-                  </>
-                ) : (
-                  nl || "（本次 session 未带自然语言需求）"
-                )}
-              </p>
+          <section className="vf-verdict" aria-label="最终核验结论">
+            <div className="vf-verdict-heading">
+              <div><span className="kicker">FINAL VERDICT{session.run_id ? ` · RUN #${session.run_id}` : ""}</span><h2>{session.ir.name}</h2></div>
+              <div className="vf-verdict-chips"><span>核验 {chip(session.status)}</span><span>发布门禁 {chip(session.gate.ready)}</span></div>
             </div>
-            <dl className="vf-kv compact">
-              <div>
-                <dt>Intent / Spec</dt>
-                <dd>{goal || "—"}</dd>
-              </div>
-              <div>
-                <dt>Compiler</dt>
-                <dd>
-                  {String((session.spec as { compiler?: string }).compiler || "—")}
-                  {specBasis ? ` · ${specBasis}` : ""}
-                </dd>
-              </div>
-              <div>
-                <dt>Workflow</dt>
-                <dd>
-                  {session.ir.name} · {session.ir.nodes.length} nodes · {session.ir.edges.length} edges
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <Stepper
-            className="vf-rb-stepper"
-            hideFooter
-            glowRunning={Boolean(busy) && effectsAllowScan(effects)}
-            currentStep={Math.max(1, session.pipeline.findIndex((step) => step.id === pipe) + 1)}
-            statuses={session.pipeline.map((step) => (busy && step.id === pipe ? "RUNNING" : step.status))}
-            onStepChange={(n) => setPipe(session.pipeline[n - 1]?.id ?? null)}
-          >
-            {session.pipeline.map((step) => (
-              <Step key={step.id}>
-                <p>
-                  <strong>{step.name}</strong> {chip(step.status)}
-                </p>
-                <p className="caption">
-                  {step.kind} · {step.algorithm_id} · {step.latency_ms.toFixed(1)}ms · cache {step.cache_status}
-                </p>
-              </Step>
-            ))}
-          </Stepper>
-          <AnimatedList
-            showGradients={false}
-            items={[
-              `Spec compiler · Deterministic spec compiler · ${specBasis || "heuristic"}`,
-              `Verifier · static ${session.static.status} · ${issues.length} findings`,
-              `Verifier · runtime ${session.runtime?.status ?? "NOT_RUN"} · ${session.gate.ready}`,
-              ...(repair
-                ? [
-                    `Proposal · ${repair.candidates?.some((c) => c.source === "deepseek") ? "DeepSeek + rules" : "Rules"} · ${repair.selected_candidate_id || repair.final_decision || "n/a"}`,
-                    `Guard · schema / graph / policy / regression · ${repair.final.status}`,
-                  ]
-                : []),
-            ]}
-          />
-          <dl className="vf-strip">
-            <div>
-              <dt>Status</dt>
-              <dd>{chip(session.status)}</dd>
-            </div>
+            <p className="caption">{gateWhy(dimensions.find((item) => item.name === "executable")?.status, session.runtime?.status, session.gate.ready) || "核验结果来自静态验证器与运行时记录。"}</p>
+            <dl className="vf-strip">
             <div>
               <dt>Constraints</dt>
               <dd>
@@ -398,145 +322,60 @@ export default function VerificationConsole({
               <dd>{chip(session.runtime?.status ?? "NOT_RUN")}</dd>
             </div>
             <div>
-              <dt>Gate</dt>
-              <dd>{chip(session.gate.ready)}</dd>
-            </div>
-            <div>
               <dt>Latency</dt>
               <dd>{session.latency_ms.toFixed(1)} ms</dd>
             </div>
           </dl>
-
-          {trace ? (
-            <section>
-              <h2>Requirement Coverage</h2>
-              <p className="caption">
-                COVERED {trace.covered} · FAILED {trace.failed} · AMBIGUOUS {trace.ambiguous} · UNMAPPED {trace.unmapped}
-                。覆盖来自 spec 约束与 verifier，不是 LLM 自评。
-              </p>
-              <div className="vf-table-wrap">
-                <table className="vf-matrix">
-                  <thead>
-                    <tr>
-                      <th>Clause</th>
-                      <th>Status</th>
-                      <th>Nodes</th>
-                      <th>Verifier</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trace.clauses.map((row) => (
-                      <tr key={row.id} className={selected?.constraint_id === row.id || selected?.id === row.id ? "is-selected" : undefined}>
-                        <td>
-                          <button
-                            type="button"
-                            className="vf-cell"
-                            onClick={() => {
-                              const hit = issues.find(
-                                (item) => item.constraint_id === row.id || row.nodes.some((nid) => item.affected_nodes?.includes(nid)),
-                              );
-                              setSelected(hit ?? selected);
-                              setNodeNote(row.nodes.length ? `clause ${row.id} → ${row.nodes.join(", ")}` : row.text);
-                            }}
-                          >
-                            {row.id} · {row.text}
-                          </button>
-                        </td>
-                        <td>{chip(row.status)}</td>
-                        <td>{row.nodes.join(", ") || "—"}</td>
-                        <td>{row.verifier || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ) : null}
-
-          <section>
-            <h2>验证维度</h2>
-            <p className="caption">
-              {gateWhy(
-                dimensions.find((item) => item.name === "executable")?.status,
-                session.runtime?.status,
-                session.gate.ready,
-              ) || "每维是独立判定，不是加权总分。「静态可达」看图结构，「运行时模拟」看 Mock trace。"}
-            </p>
-            <div className="vf-dims">
-              {dimensions.map((dim) => {
-                const meta = DIM_META[dim.name] || { label: dimLabel(dim.name), hint: "" };
-                return (
-                  <article key={dim.name} className={`vf-dim ${dim.status}`}>
-                    <header>
-                      <span>{meta.label}</span>
-                      {chip(dim.status)}
-                    </header>
-                    <p className="vf-dim-count">{dim.issue_count}</p>
-                    <p className="caption">{meta.hint}</p>
-                  </article>
-                );
-              })}
-            </div>
           </section>
-
-          <section>
-            <h2>Pipeline</h2>
-            <div className="vf-pipe">
-              {session.pipeline.map((step, index) => (
-                <button
-                  type="button"
-                  key={step.id}
-                  className={pipe === step.id ? "on" : undefined}
-                  onClick={() => setPipe(step.id)}
-                >
-                  {chip(step.status)} {step.name}
-                  <span className="ghost"> {step.latency_ms.toFixed(1)}ms</span>
-                  {index < session.pipeline.length - 1 ? " →" : ""}
-                </button>
-              ))}
-            </div>
-            {pipe
-              ? session.pipeline
-                  .filter((step) => step.id === pipe)
-                  .map((step) => (
-                    <p className="caption" key={step.id}>
-                      {step.kind} · {step.algorithm_id} · cache {step.cache_status} · checks {step.checks_executed}
-                      {step.output_summary ? ` · ${step.output_summary}` : ""}
-                    </p>
-                  ))
-              : null}
-          </section>
-
-          <p className="caption">
-            {session.cross.pattern} · {session.cross.story} · hash {session.workflow_hash}
-            {session.node_coverage.unknown.length ? ` · unknown nodes ${session.node_coverage.unknown.length}` : ""}
-          </p>
+          <Stepper
+            labels={session.pipeline.map((step) => step.name)}
+            className="vf-rb-stepper"
+            hideFooter
+            glowRunning={Boolean(busy) && effectsAllowScan(effects)}
+            currentStep={Math.max(1, session.pipeline.findIndex((step) => step.id === pipe) + 1)}
+            statuses={session.pipeline.map((step) => step.status)}
+            onStepChange={(n) => setPipe(session.pipeline[n - 1]?.id ?? null)}
+          >
+            {session.pipeline.map((step) => (
+              <Step key={step.id}>
+                <p>
+                  <strong>{step.name}</strong> · {step.output_summary || "查看本步骤的核验记录"}
+                </p>
+                <p className="caption">
+                  {step.kind} · {step.algorithm_id} · {step.latency_ms.toFixed(1)}ms · cache {step.cache_status} · checks {step.checks_executed}
+                  {step.output_summary ? ` · ${step.output_summary}` : ""}
+                </p>
+              </Step>
+            ))}
+          </Stepper>
           <div className="vf-12">
             <section className="vf-viz">
-              <div className="vf-toolbar">
+              <div className="vf-toolbar vf-graph-toolbar">
+                <h2>工作流 DAG</h2>
                 <button
                   type="button"
                   className={graphMode === "workflow" ? "btn btn-sm btn-primary" : "btn btn-sm"}
                   onClick={() => setGraphMode("workflow")}
                 >
-                  Workflow
+                  工作流
                 </button>
                 <button
                   type="button"
                   className={graphMode === "evidence" ? "btn btn-sm btn-primary" : "btn btn-sm"}
                   onClick={() => setGraphMode("evidence")}
                 >
-                  Evidence
+                  证据图
                 </button>
                 <button
                   type="button"
                   className="btn btn-sm"
+                  disabled={graphMode !== "workflow"}
                   onClick={() => {
                     graphRef.current?.fitAll();
                     setFocused("");
                   }}
                 >
-                  Fit All
+                  适应画布
                 </button>
                 {focused ? <span className="caption">Focused: {focused}</span> : null}
               </div>
@@ -574,7 +413,7 @@ export default function VerificationConsole({
                       focusId={
                         session.graph.entities.find(
                           (item) =>
-                            item.type === "Issue" && (item.label === selected?.code || item.id.endsWith(selected?.id || "")),
+                            selected && item.type === "Issue" && (item.label === selected.code || item.id.endsWith(selected.id)),
                         )?.id
                       }
                     />
@@ -583,73 +422,31 @@ export default function VerificationConsole({
               </div>
             </section>
             <aside className="vf-findings">
-              <h2>Issues</h2>
+              <div className="vf-issues-heading"><h2>问题定位</h2><span className="vf-count">{issues.length}</span></div>
               <p className="caption">
                 Total {issues.length} · Static {session.static.issues.length} · Runtime {(session.runtime_findings ?? []).length}
               </p>
               {nodeNote ? <p className="caption">{nodeNote}</p> : null}
               {issues.length === 0 ? <p className="ghost">无 Issue。静态与运行时均未给出 FAIL。</p> : null}
-              <div className="vf-table-wrap">
-                <table className="vf-matrix">
-                  <thead>
-                    <tr>
-                      <th>Sev</th>
-                      <th>Cat</th>
-                      <th>Node</th>
-                      <th>Why</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {issues.map((issue) => (
-                      <tr key={issue.id} className={selected?.id === issue.id ? "is-selected" : undefined}>
-                        <td>
-                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
-                            {chip(issue.severity === "HIGH" || issue.severity === "CRITICAL" ? "FAIL" : issue.severity)}
-                          </button>
-                        </td>
-                        <td>
-                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
-                            {issue.category}
-                          </button>
-                        </td>
-                        <td>
-                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
-                            {nodeOf(issue)}
-                          </button>
-                        </td>
-                        <td>
-                          <button type="button" className="vf-cell" onClick={() => focusIssue(issue)}>
-                            {issue.code}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="vf-issue-list" role="group" aria-label="选择核验问题">
+                {issues.map((issue) => (
+                  <button key={issue.id} type="button" className="vf-issue-option" aria-pressed={selected?.id === issue.id} onClick={() => focusIssue(issue)}>
+                    {chip(issue.severity === "HIGH" || issue.severity === "CRITICAL" ? "FAIL" : issue.severity)}
+                    <span><strong>{issue.title || issue.code}</strong><small>{issue.category} · {nodeOf(issue)}</small></span>
+                    <span aria-hidden="true">↗</span>
+                  </button>
+                ))}
               </div>
               {selected ? (
-                <dl className="vf-kv">
-                  <div>
-                    <dt>Reason</dt>
-                    <dd>{selected.title || selected.description || selected.code}</dd>
-                  </div>
-                  <div>
-                    <dt>Root cause</dt>
-                    <dd>{root?.summary ?? selected.root_cause_id ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Expected</dt>
-                    <dd>{selected.expected ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Actual</dt>
-                    <dd>{selected.actual ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Witness</dt>
-                    <dd>{(highlight?.path ?? selected.witness_path).join(" → ") || "—"}</dd>
-                  </div>
-                  <WitnessMotion path={highlight?.path ?? selected.witness_path ?? []} play={fresh && Boolean(busy === "")} />
+                <div className="vf-current-issue" aria-label="当前问题证据">
+                  <dl className="vf-kv vf-primary-evidence">
+                    <div><dt>Reason</dt><dd>{selected.title || selected.description || selected.code}</dd></div>
+                    <div><dt>Expected</dt><dd>{selected.expected ?? "未提供预期值"}</dd></div>
+                    <div><dt>Actual</dt><dd>{selected.actual ?? "未提供实际值"}</dd></div>
+                    <div><dt>Witness</dt><dd className="mono">{(highlight?.path ?? selected.witness_path ?? []).join(" → ") || "无已记录见证路径"}</dd></div>
+                  </dl>
+                  <details className="vf-evidence-details"><summary>查看根因与完整证据</summary><dl className="vf-kv">
+                    <div><dt>Root cause</dt><dd>{root?.summary ?? selected.root_cause_id ?? "—"}</dd></div>
                   <div>
                     <dt>Minimal counterexample</dt>
                     <dd>
@@ -692,7 +489,8 @@ export default function VerificationConsole({
                       ))}
                     </dd>
                   </div>
-                </dl>
+                  </dl></details>
+                </div>
               ) : null}
               {session.ambiguity && session.ambiguity.status !== "CLEAR" ? (
                 <p className="caption">
@@ -702,38 +500,146 @@ export default function VerificationConsole({
               ) : null}
             </aside>
           </div>
+          <details className="vf-disclosure"><summary>需求与编译依据 <span>Requirement / Spec</span></summary><div className="vf-disclosure-body">
+          <section className="vf-req">
+            <div>
+              <h2>Requirement</h2>
+              <p>
+                {selectedTrace?.start != null && selectedTrace.end != null ? (
+                  <>
+                    {nl.slice(0, selectedTrace.start)}
+                    <mark>{nl.slice(selectedTrace.start, selectedTrace.end)}</mark>
+                    {nl.slice(selectedTrace.end)}
+                  </>
+                ) : (
+                  nl || "（本次 session 未带自然语言需求）"
+                )}
+              </p>
+            </div>
+            <dl className="vf-kv compact">
+              <div>
+                <dt>Intent / Spec</dt>
+                <dd>{goal || "—"}</dd>
+              </div>
+              <div>
+                <dt>Compiler</dt>
+                <dd>
+                  {String((session.spec as { compiler?: string }).compiler || "—")}
+                  {specBasis ? ` · ${specBasis}` : ""}
+                </dd>
+              </div>
+              <div>
+                <dt>Workflow</dt>
+                <dd>
+                  {session.ir.name} · {session.ir.nodes.length} nodes · {session.ir.edges.length} edges
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <p className="caption">
+            {session.cross.pattern} · {session.cross.story} · hash {session.workflow_hash}
+            {session.node_coverage.unknown.length ? ` · unknown nodes ${session.node_coverage.unknown.length}` : ""}
+          </p>
+          </div></details>
+          {trace ? (
+            <details className="vf-disclosure"><summary>需求覆盖 <span>Requirement Coverage</span></summary><div className="vf-disclosure-body">
+              <p className="caption">
+                COVERED {trace.covered} · FAILED {trace.failed} · AMBIGUOUS {trace.ambiguous} · UNMAPPED {trace.unmapped}
+                。覆盖来自 spec 约束与 verifier，不是 LLM 自评。
+              </p>
+              <div className="vf-table-wrap">
+                <table className="vf-matrix">
+                  <thead>
+                    <tr>
+                      <th>Clause</th>
+                      <th>Status</th>
+                      <th>Nodes</th>
+                      <th>Verifier</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trace.clauses.map((row) => (
+                      <tr key={row.id} className={selected?.constraint_id === row.id || selected?.id === row.id ? "is-selected" : undefined}>
+                        <td>
+                          <button
+                            type="button"
+                            className="vf-cell"
+                            onClick={() => {
+                              const hit = issues.find(
+                                (item) => item.constraint_id === row.id || row.nodes.some((nid) => item.affected_nodes?.includes(nid)),
+                              );
+                              focusIssue(hit ?? null, row.nodes[0]);
+                              if (!hit) setNodeNote(row.nodes.length ? `clause ${row.id} → ${row.nodes.join(", ")}` : row.text);
+                            }}
+                          >
+                            {row.id} · {row.text}
+                          </button>
+                        </td>
+                        <td>{chip(row.status)}</td>
+                        <td>{row.nodes.join(", ") || "—"}</td>
+                        <td>{row.verifier || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div></details>
+          ) : null}
+
+          <details className="vf-disclosure"><summary>验证维度 <span>独立判定与问题计数</span></summary><div className="vf-disclosure-body">
+            <p className="caption">
+              {gateWhy(
+                dimensions.find((item) => item.name === "executable")?.status,
+                session.runtime?.status,
+                session.gate.ready,
+              ) || "每维是独立判定，不是加权总分。「静态可达」看图结构，「运行时模拟」看 Mock trace。"}
+            </p>
+            <div className="vf-dims">
+              {dimensions.map((dim) => {
+                const meta = DIM_META[dim.name] || { label: dimLabel(dim.name), hint: "" };
+                return (
+                  <article key={dim.name} className={`vf-dim ${dim.status}`}>
+                    <header>
+                      <span>{meta.label}</span>
+                      {chip(dim.status)}
+                    </header>
+                    <p className="vf-dim-count">{dim.issue_count}</p>
+                    <p className="caption">{meta.hint}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </div></details>
+
+          <div className="vf-activity" role="status">
+            <span className={busy ? "vf-activity-dot is-busy" : "vf-activity-dot"} aria-hidden="true" />
+            <strong>{busy ? "请求处理中" : initialSession ? "历史核验记录" : "核验记录已就绪"}</strong>
+            <span>编译 {specBasis || "heuristic"} · 静态 {session.static.status} · 运行时 {session.runtime?.status ?? "NOT_RUN"}</span>
+          </div>
           {session.trace?.events?.length ? (
-            <RuntimeReplay events={session.trace.events} play={fresh && !initialSession && !scan} />
+            <details className="vf-disclosure"><summary>已记录的运行回放 <span>{session.trace.events.length} events · 非重新执行</span></summary><div className="vf-disclosure-body"><RuntimeReplay events={session.trace.events} play={false} /></div></details>
           ) : null}
           {repair && origin ? (
-            <section className="vf-repair committed-verdict">
-              <h2>Repair → Guard → Re-Verify</h2>
+            <details className="vf-disclosure vf-repair"><summary>受约束修复记录 <span>Repair → Guard → Re-Verify</span></summary><div className="vf-disclosure-body">
+              <p className="vf-repair-decision"><strong>最终决策：{repair.final_decision || "—"}</strong> · {chip(repair.final.status)}</p>
               <p className="caption">
                 Problem / Proposal / Guard playback / Outcome. selected_candidate_id 与 final_decision 分离。source 来自 API，不在前端猜。
                 {origin.run_id ? ` Before #${origin.run_id}` : ""}
                 {session.run_id ? ` · After #${session.run_id}` : ""}.
               </p>
-              {repair.candidates && repair.candidates.length >= 2 && effects !== "reduced" && effects !== "off" ? (
-                <div className="repair-swap">
-                  <CardSwap width={360} height={200} delay={3600}>
-                    {repair.candidates.map((cand) => (
-                      <Card key={cand.id}>
-                        <strong>{cand.id}</strong>
-                        <p>source={cand.source}</p>
-                        <p>{cand.rationale || cand.patches.map((p) => p.operation).join(", ")}</p>
-                      </Card>
-                    ))}
-                  </CardSwap>
+              {repair.candidates?.length ? (
+                <div className="vf-candidates">
+                  <div className="vf-candidate-options" role="group" aria-label="查看修复候选">
+                    {repair.candidates.map((cand) => <button type="button" key={cand.id} className="vf-candidate-option" aria-pressed={(candidateId || repair.selected_candidate_id || repair.candidates?.[0]?.id) === cand.id} onClick={() => setCandidateId(cand.id)}>
+                      <strong>{cand.id}</strong><span>{cand.source}{repair.selected_candidate_id === cand.id ? " · 服务端选中" : ""}</span>
+                    </button>)}
+                  </div>
+                  {repair.candidates.filter((cand) => cand.id === (candidateId || repair.selected_candidate_id || repair.candidates?.[0]?.id)).map((cand) => <article className="vf-candidate-detail" key={cand.id}>
+                    <h3>{cand.id} · 修复提案</h3><p>{cand.rationale || "未提供提案说明"}</p>
+                    <ul>{cand.patches.map((patch, index) => <li key={index}><code>{patch.operation}</code> · {[patch.node_id, patch.source, patch.target].filter(Boolean).join(" → ") || "—"}{patch.reason ? ` · ${patch.reason}` : ""}</li>)}</ul>
+                  </article>)}
                 </div>
-              ) : repair.candidates?.length ? (
-                <ul className="action-list">
-                  {repair.candidates.map((cand) => (
-                    <li key={cand.id}>
-                      {cand.id} · source={cand.source}
-                      {repair.selected_candidate_id === cand.id ? " · selected" : ""}
-                    </li>
-                  ))}
-                </ul>
               ) : null}
               {repair.evaluations?.map((ev) => (
                 <p key={ev.candidate_id} className="caption">
@@ -821,10 +727,9 @@ export default function VerificationConsole({
                   <a href={`/report/runs/${session.run_id}`}>Re-verified #{session.run_id}</a>
                 </p>
               ) : null}
-            </section>
+            </div></details>
           ) : null}
-          <section>
-            <h2>Verification Matrix</h2>
+          <details className="vf-disclosure"><summary>核验矩阵 <span>Verification Matrix</span></summary><div className="vf-disclosure-body">
             <div className="vf-table-wrap">
               <table className="vf-matrix">
                 <thead>
@@ -846,9 +751,10 @@ export default function VerificationConsole({
                             <button
                               type="button"
                               className="vf-cell"
-                              onClick={() =>
-                                setMatrixCell(`${row.constraint_id}:${col}:${cell?.evidence || ""}:${cell?.algorithm_id || ""}`)
-                              }
+                              onClick={() => {
+                                setMatrixCell(`${row.constraint_id}:${col}:${cell?.evidence || ""}:${cell?.algorithm_id || ""}`);
+                                focusIssue(issues.find((issue) => issue.constraint_id === row.constraint_id) ?? null);
+                              }}
                             >
                               {chip(cell?.status ?? "NOT_APPLICABLE")}
                             </button>
@@ -861,9 +767,8 @@ export default function VerificationConsole({
               </table>
             </div>
             {matrixCell ? <p className="caption">{matrixCell}</p> : null}
-          </section>
-          <section>
-            <h2>Runtime Alignment</h2>
+          </div></details>
+          <details className="vf-disclosure"><summary>运行时对齐 <span>Runtime Alignment</span></summary><div className="vf-disclosure-body">
             <p className="caption">
               cost {session.alignment.alignment_cost} · deviations {session.alignment.deviation_count} · DP edit{" "}
               {session.alignment.sequential_edit_distance} · {session.alignment.limitations}
@@ -888,10 +793,9 @@ export default function VerificationConsole({
                 </tbody>
               </table>
             </div>
-          </section>
-          <section>
+          </div></details>
+          <details className="vf-disclosure"><summary>近期核验记录 <span>Recent runs</span></summary><div className="vf-disclosure-body">
             <div className="section-row">
-              <h2>Recent runs</h2>
               <Link className="btn btn-ghost btn-sm" href="/history">
                 打开历史
               </Link>
@@ -945,7 +849,7 @@ export default function VerificationConsole({
                 {compare.unchanged.join(", ") || "—"} · gate {compare.left_gate} → {compare.right_gate}
               </p>
             ) : null}
-          </section>
+          </div></details>
         </>
       ) : (
         <div aria-busy="true">

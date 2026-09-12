@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
+import { effectsAllowPointer, useEffects } from "@/lib/effects";
 import "./MagicBento.css";
 
 export interface BentoCardProps {
@@ -21,6 +22,7 @@ export interface BentoProps {
   spotlightRadius?: number;
   glowColor?: string;
   className?: string;
+  gridClassName?: string;
 }
 
 const DEFAULT_SPOTLIGHT_RADIUS = 280;
@@ -35,13 +37,16 @@ const MagicBento: React.FC<BentoProps> = ({
   spotlightRadius = DEFAULT_SPOTLIGHT_RADIUS,
   glowColor = DEFAULT_GLOW_COLOR,
   className = "",
+  gridClassName = "",
 }) => {
+  const { effects } = useEffects();
+  const interactive = !disableAnimations && effectsAllowPointer(effects);
   const gridRef = useRef<HTMLDivElement>(null);
   const spotRef = useRef<HTMLDivElement>(null);
 
   const onMove = useCallback(
     (e: React.PointerEvent) => {
-      if (disableAnimations || !gridRef.current) return;
+      if (!interactive || !gridRef.current || e.pointerType === "touch") return;
       const root = gridRef.current;
       const rect = root.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -50,6 +55,7 @@ const MagicBento: React.FC<BentoProps> = ({
         spotRef.current.style.background = `radial-gradient(circle ${spotlightRadius}px at ${x}px ${y}px, rgba(${glowColor}, 0.16), transparent 70%)`;
       }
       root.querySelectorAll<HTMLElement>(".magic-bento-card").forEach((card) => {
+        if (card.classList.contains("card-spotlight")) return;
         const cr = card.getBoundingClientRect();
         const cx = ((e.clientX - cr.left) / cr.width) * 100;
         const cy = ((e.clientY - cr.top) / cr.height) * 100;
@@ -61,12 +67,9 @@ const MagicBento: React.FC<BentoProps> = ({
         card.style.setProperty("--glow-y", `${cy}%`);
         card.style.setProperty("--glow-intensity", glow.toFixed(3));
         card.style.setProperty("--glow-radius", `${spotlightRadius}px`);
-        if (!disableAnimations) {
-          card.style.transform = `translate(${dx * 0.012}px, ${dy * 0.012}px)`;
-        }
       });
     },
-    [disableAnimations, glowColor, spotlightRadius],
+    [interactive, glowColor, spotlightRadius],
   );
 
   const onLeave = () => {
@@ -77,15 +80,17 @@ const MagicBento: React.FC<BentoProps> = ({
     if (spotRef.current) spotRef.current.style.background = "transparent";
   };
 
+  useEffect(() => { if (!interactive) onLeave(); }, [interactive]);
+
   return (
     <div
       ref={gridRef}
       className={`vf-bento-root ${className}`}
       style={{ position: "relative" }}
-      onPointerMove={onMove}
+      onPointerMove={interactive ? onMove : undefined}
       onPointerLeave={onLeave}
     >
-      {enableSpotlight ? (
+      {enableSpotlight && interactive ? (
         <div
           ref={spotRef}
           aria-hidden="true"
@@ -93,7 +98,7 @@ const MagicBento: React.FC<BentoProps> = ({
           style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}
         />
       ) : null}
-      <div className={`card-grid ${className}`}>
+      <div className={`card-grid ${gridClassName}`} data-border-glow={enableBorderGlow && interactive ? "true" : undefined}>
       {children
         ? children
         : (cards || []).map((card) => {
