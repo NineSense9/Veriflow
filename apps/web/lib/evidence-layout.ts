@@ -13,6 +13,8 @@ export function selectEvidenceSubgraph(entities: EvidenceEntity[], relations: Ev
     for (const relation of relations) {
       for (const [source, target] of [[relation.source_id, relation.target_id], [relation.target_id, relation.source_id]]) {
         if (!frontier.has(source) || !byId.has(target) || keep.has(target)) continue;
+        if (["VerificationRun", "WorkflowEdge"].includes(byId.get(target)!.type)) continue;
+        if (byId.get(source)!.type === "WorkflowNode" && !["RuntimeEvent", "Algorithm"].includes(byId.get(target)!.type)) continue;
         // These hubs describe the entire run; traversing them introduces unrelated issues.
         if (["VerificationRun", "Requirement", "Algorithm"].includes(byId.get(source)!.type)) continue;
         if (byId.get(target)!.type === "Issue" && target !== focusId) continue;

@@ -29,7 +29,7 @@
 .vf-workbench-console .step-default { padding: 6px 16px 10px; border-top: 1px solid var(--border-subtle); min-height: 38px; }
 .vf-workbench-console .step-default > p:first-child { display: none; }
 .vf-workbench-console .step-default .caption { color: var(--text-2); }
-.vf-workbench-console .vf-bento-root .card-grid.vf-evidence-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; padding: 0; margin: 0; width: 100%; align-items: start; }
+.vf-workbench-console .vf-bento-root .card-grid.vf-evidence-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 0; margin: 0; width: 100%; align-items: start; }
 .vf-workbench-console .vf-bento-root { width: 100%; }
 .vf-workbench-console .vf-viz { grid-column: auto; background: transparent; border: 0; border-radius: 0; padding: 0; gap: 12px; scroll-margin-top: 70px; }
 .vf-graph-toolbar { align-items: center; }
@@ -39,7 +39,9 @@
 .vf-workbench-console .vf-graph-toolbar .btn-primary { background: var(--accent-soft); border-color: var(--border); color: var(--accent); }
 .vf-workbench-console .vf-dag { border-radius: 8px; overflow: visible; min-height: 260px; background: var(--surface); border: 1px solid var(--border); }
 .vf-dag .react-flow__edge-path { transition: stroke 200ms ease, opacity 200ms ease; }
-.vf-workbench-console .vf-findings { grid-column: auto; position: static; max-height: none; overflow: visible; padding: 0 0 0 24px; border: 0; border-left: 1px solid var(--border); background: transparent; min-width: 0; scroll-margin-top: 70px; }
+.vf-workbench-console .vf-findings { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); column-gap:24px; grid-column: auto; position: static; max-height: none; overflow: visible; padding: 0; border: 0; background: transparent; min-width: 0; scroll-margin-top: 70px; }
+.vf-findings > * { grid-column:1; }
+.vf-findings > .vf-current-issue { grid-column:2; grid-row:1 / span 5; margin-top:0; }
 .vf-issues-heading { display: flex; align-items: center; gap: 8px; min-height: 30px; }
 .vf-workbench-console .vf-issues-heading h2 { margin: 0; font-size: 14px; }
 .vf-count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 22px; border-radius: 5px; background: var(--wa-soft); font: 11px var(--font-mono), monospace; color: var(--error); }
@@ -121,6 +123,8 @@ html[data-effects="off"] .vf-workbench-console *, html[data-effects="reduced"] .
 @media (max-width: 900px) {
   .vf-workbench-console .vf-bento-root .card-grid.vf-evidence-grid { grid-template-columns: minmax(0,1fr); }
   .vf-workbench-console .vf-findings { grid-row: 1; border: 0; padding: 0; }
+  .vf-workbench-console .vf-findings { display:block; }
+  .vf-findings > .vf-current-issue { margin-top:14px; }
   .vf-workbench-console .vf-viz { grid-row: 2; }
   .vf-workbench-console .vf-dims { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .vf-workbench-console .vf-verdict-heading h2 { font-size: 20px; }

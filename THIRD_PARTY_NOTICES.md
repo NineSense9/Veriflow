@@ -1,5 +1,11 @@
 # Third-party notices
 
+Readability revision (2026-09-13): ChromaGrid keeps pointer lighting behind readable
+content, removes grayscale/brightness overlays and uses Next.js links. GraphSurface
+uses React Flow's viewport calculation without selection-triggered zoom. The system
+map groups the existing repository modules and reveals recorded direct relations.
+Lucide React supplies interface icons (ISC license).
+
 VeriFlow vendors adapted copies of free React Bits components (https://github.com/DavidHDev/react-bits).
 
 Upstream license: **MIT + Commons Clause**. This is not MIT-only. Pro sources were not copied.

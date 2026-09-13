@@ -4,6 +4,7 @@ import path from "path";
 const apiOrigin = process.env.VERIFLOW_API_ORIGIN ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
+  experimental: { cpus: 1 },
   outputFileTracingRoot: path.join(__dirname),
   transpilePackages: ["monaco-editor", "@monaco-editor/react", "@xyflow/react", "ogl"],
   webpack(config, { isServer }) {

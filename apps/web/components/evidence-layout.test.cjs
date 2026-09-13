@@ -27,9 +27,9 @@ test('evidence graph module exposes a local graph selector', () => {
     { source_id: 'unrelated', target_id: 'run', relation_type: 'VERIFIED_BY' },
   ];
   const graph = selectEvidenceSubgraph(entities, relations, 'issue');
-  assert.deepEqual(Array.from(graph.entities, (item) => item.id), ['issue', 'constraint', 'pub', 'run']);
-  assert.equal(graph.relations.length, 3);
-  assert.deepEqual(Array.from(selectEvidenceSubgraph(entities, [...relations].reverse(), 'issue').entities, (item) => item.id), ['issue', 'constraint', 'pub', 'run']);
+  assert.deepEqual(Array.from(graph.entities, (item) => item.id), ['issue', 'constraint', 'pub']);
+  assert.equal(graph.relations.length, 2);
+  assert.deepEqual(Array.from(selectEvidenceSubgraph(entities, [...relations].reverse(), 'issue').entities, (item) => item.id), ['issue', 'constraint', 'pub']);
 });
 
 test('unknown or absent focus has an honest empty state', () => {

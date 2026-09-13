@@ -51,7 +51,6 @@ for (const name of ["case1_order", "case2_dataflow", "case3_safety", "case4_runt
     const viewport = page.locator(".graph-surface .react-flow__viewport");
     const original = await viewport.getAttribute("style");
     for (const node of cases[name].ir.nodes) {
-      await page.locator('.graph-surface .react-flow__node').filter({ has: page.locator(`[title]`) }).locator(`:scope`).count();
       await page.locator(`.graph-surface .react-flow__node[data-id="${node.id}"]`).click();
       expect(await viewport.getAttribute("style")).toBe(original);
       expect((await bounds(page, 0)).overlap).toBe(false);
@@ -60,7 +59,8 @@ for (const name of ["case1_order", "case2_dataflow", "case3_safety", "case4_runt
     await page.getByRole("button", { name: "证据图", exact: true }).click();
     const graph = page.getByRole("region", { name: "当前问题局部证据链" });
     await expect(graph).toBeVisible();
-    expect((await bounds(page, 1)).overlap).toBe(false);
+    await expect.poll(async () => (await bounds(page)).contained).toBe(true);
+    expect((await bounds(page)).overlap).toBe(false);
     const ids = await graph.locator(".react-flow__node").evaluateAll(nodes => nodes.map(node => node.getAttribute("data-id")));
     expect(ids.filter(id => id?.startsWith("issue:"))).toHaveLength(1);
     expect(ids.length).toBeLessThan(cases[name].graph.entities.length);

@@ -1,0 +1,29 @@
+.architecture-page { position: relative; }
+.architecture-nav { display:flex; gap:6px; flex-wrap:wrap; padding-bottom:20px; border-bottom:1px solid var(--border); }
+.architecture-nav button { padding:8px 14px; border:1px solid transparent; background:transparent; color:var(--text-2); border-radius:6px; cursor:pointer; font:inherit; font-size:13px; }
+.architecture-nav button[aria-pressed="true"] { color:var(--accent); background:var(--accent-soft); border-color:var(--border); }
+.architecture-band { border-bottom:1px solid var(--border); padding:24px 0; }
+.architecture-band > header { display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; }
+.architecture-number { font:12px var(--font-mono),monospace; color:var(--accent); padding-top:4px; }
+.architecture-band h2 { margin:0; font-size:17px; }
+.architecture-band header p { font-size:12px; color:var(--text-2); margin:6px 0 0; }
+.architecture-modules { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
+.architecture-module { position:relative; min-width:0; text-align:left; display:flex; flex-direction:column; gap:9px; border:1px solid var(--border); border-radius:8px; padding:16px; background:var(--surface); color:var(--text); cursor:pointer; transition:background 160ms ease,border-color 160ms ease; }
+.architecture-module:hover,.architecture-module[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-soft); }
+.architecture-module-kind { color:var(--text-2); font-size:10px; }
+.architecture-module strong { font-size:14px; line-height:1.5; padding-right:10px; }
+.architecture-algorithm { font:10px/1.5 var(--font-mono),monospace; overflow-wrap:anywhere; color:var(--text-2); }
+.architecture-module > svg { position:absolute; right:12px; top:16px; color:var(--accent); }
+.architecture-details { margin-top:16px; border-left:3px solid var(--accent); padding:16px 20px; background:var(--surface); }
+.architecture-details > header { display:flex; align-items:center; justify-content:space-between; }
+.architecture-details h3 { display:flex; gap:8px; align-items:center; margin:0; font-size:15px; }
+.architecture-details p,.architecture-details dl { color:var(--text-2); font-size:13px; line-height:1.7; }
+.architecture-details dl > div { display:grid; grid-template-columns:100px minmax(0,1fr); gap:12px; margin:6px 0; }
+.architecture-details dd { margin:0; overflow-wrap:anywhere; }
+.architecture-details h4 { font-size:12px; margin:20px 0 8px; }
+.architecture-relations { list-style:none; padding:0; margin:0 0 16px; }
+.architecture-relations li { display:grid; grid-template-columns:minmax(0,1fr) minmax(100px,.65fr) minmax(0,1fr); gap:12px; padding:10px 0; border-bottom:1px solid var(--border-subtle); align-items:center; }
+.architecture-relations button { border:0; padding:0; background:transparent; text-align:left; font:inherit; font-size:12px; color:var(--accent); cursor:pointer; }
+.architecture-relations span { display:flex; gap:8px; color:var(--muted); font-size:11px; align-items:center; }
+.architecture-sources { padding-left:16px; font-size:11px; overflow-wrap:anywhere; color:var(--text-2); }
+@media(max-width:600px) { .architecture-modules { grid-template-columns:1fr; } .architecture-details { padding:12px; } .architecture-relations li { grid-template-columns:1fr; gap:6px; } }

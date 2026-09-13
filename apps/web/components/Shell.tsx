@@ -196,8 +196,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         onClose={() => setNavOpen(false)}
         items={[
           ...CORE.map((item) => ({ label: item.label, link: item.href })),
-          { label: "评估", link: "/history" },
-          { label: "实验室", link: "/problems" },
+          ...EVAL_LINKS.map((item) => ({ label: item.label, link: item.href })),
+          ...LAB_LINKS.map((item) => ({ label: item.label, link: item.href })),
           { label: "设置", link: "/settings" },
         ]}
       />
@@ -208,7 +208,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           type="button"
           className="icon-btn nav-toggle"
           aria-expanded={navOpen}
-          aria-controls="site-nav"
+          aria-controls="mobile-site-nav"
           aria-label={navOpen ? "收起导航" : "打开导航"}
           onClick={() => setNavOpen((open) => !open)}
         >

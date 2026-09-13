@@ -1,9 +1,8 @@
 "use client";
 
-import { ReactFlow, ReactFlowProvider, useNodesInitialized, useReactFlow, type Node, type Edge, type NodeTypes } from "@xyflow/react";
+import { ReactFlow, ReactFlowProvider, getViewportForBounds, type Viewport, type Node, type Edge, type NodeTypes } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { useEffects, effectsAllowScan } from "@/lib/effects";
 import { dagFrameHeight } from "@/lib/ir-flow";
 import "./graph-surface.css";
 
@@ -11,26 +10,32 @@ export type GraphHandle = { fitAll: () => void; focusNodes: (ids: string[]) => v
 type Props = { nodes: Node[]; edges: Edge[]; nodeTypes: NodeTypes; layoutKey: string; label: string; onSelectNode?: (id: string) => void; height?: number; };
 
 const View = forwardRef<GraphHandle, Props & { width: number; frameHeight: number }>(function View({ nodes, edges, nodeTypes, layoutKey, onSelectNode, width, frameHeight }, ref) {
-  const { fitView } = useReactFlow();
-  const ready = useNodesInitialized();
-  const { effects } = useEffects();
   const [focused, setFocused] = useState<string[]>([]);
   const mode = useRef<"all" | "focus">("all");
-  const fit = useCallback((duration = 0) => { void fitView({ padding: 0.07, minZoom: 0.01, maxZoom: 1.15, duration }); }, [fitView]);
+  const fitted = useMemo(() => {
+    const left = Math.min(0, ...nodes.map(node => node.position.x));
+    const top = Math.min(0, ...nodes.map(node => node.position.y));
+    const right = Math.max(176, ...nodes.map(node => node.position.x + 176));
+    const bottom = Math.max(100, ...nodes.map(node => node.position.y + 100));
+    return getViewportForBounds({ x: left, y: top, width: right-left, height: bottom-top }, width, frameHeight, .01, 1.15, .08);
+    // Geometry is fixed within a layout, including when selection changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutKey, width, frameHeight]);
+  const [manualViewport, setManualViewport] = useState<Viewport | null>(null);
+  const fit = useCallback(() => setManualViewport(null), []);
   useImperativeHandle(ref, () => ({
-    fitAll() { mode.current = "all"; setFocused([]); fit(effectsAllowScan(effects) ? 180 : 0); },
+    fitAll() { mode.current = "all"; setFocused([]); fit(); },
     focusNodes(ids) { mode.current = "focus"; setFocused(ids); },
     focusPath(ids) { mode.current = "focus"; setFocused(ids); },
     mode: () => mode.current,
-  }), [effects, fit]);
+  }), [fit]);
   useEffect(() => { setFocused([]); mode.current = "all"; }, [layoutKey]);
   useEffect(() => {
-    if (!ready) return;
-    const frame = requestAnimationFrame(() => fit());
-    return () => cancelAnimationFrame(frame);
-  }, [ready, layoutKey, width, frameHeight, fit]);
+    setManualViewport(null);
+  }, [layoutKey, width, frameHeight]);
   const shown = useMemo(() => nodes.map((node) => focused.length ? { ...node, data: { ...node.data, selected: focused.includes(node.id) || node.data.selected, dim: !focused.includes(node.id) && !node.data.selected } } : node), [nodes, focused]);
   return <ReactFlow nodes={shown} edges={edges} nodeTypes={nodeTypes}
+    viewport={manualViewport ?? fitted} onViewportChange={setManualViewport}
     minZoom={0.01} maxZoom={1.6} panOnDrag zoomOnPinch zoomOnScroll={false} zoomOnDoubleClick={false}
     preventScrolling={false} nodesDraggable={false} nodesConnectable={false} elementsSelectable
     proOptions={{ hideAttribution: true }} onNodeClick={(_, node) => onSelectNode?.(node.id)} />;

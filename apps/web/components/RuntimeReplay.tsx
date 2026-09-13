@@ -29,12 +29,7 @@ export default function RuntimeReplay({
   const [index, setIndex] = useState(play ? 0 : events.length);
   const [playing, setPlaying] = useState(play);
   const { ref, visible } = useVisibleMotion();
-  useEffect(() => {
-    if (!selectionKey) return;
-    const selected = events.findIndex((event) => selectedEventIndices.includes(event.event_index));
-    setIndex(selected < 0 ? events.length : selected);
-    setPlaying(false);
-  }, [selectionKey, events, selectedEventIndices]);
+  const relatedKey = selectedEventIndices.join(",");
 
   useEffect(() => {
     if (!play || !effectsAllowScan(effects)) {
@@ -45,6 +40,14 @@ export default function RuntimeReplay({
     setIndex(0);
     setPlaying(true);
   }, [effects, events, play]);
+
+  useEffect(() => {
+    if (!selectionKey) return;
+    const related = new Set(relatedKey.split(",").filter(Boolean).map(Number));
+    const selected = events.findIndex((event) => related.has(event.event_index));
+    setIndex(selected < 0 ? events.length : selected);
+    setPlaying(false);
+  }, [selectionKey, events, relatedKey]);
 
   useEffect(() => {
     if (!playing || !events.length || !visible || !effectsAllowScan(effects)) return;
