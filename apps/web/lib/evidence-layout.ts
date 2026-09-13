@@ -24,6 +24,11 @@ export const EVIDENCE_REL_ZH: Record<string, string> = {
   HAS_EVENT: "轨迹",
   ON_NODE: "落在",
   PRODUCED_BY: "产生自",
+  DERIVED_FROM: "派生自",
+  CHECKS: "检查",
+  CAUSED_BY: "起因",
+  WITNESSES: "见证",
+  MINIMIZES: "最小化",
 };
 
 export function evidenceKindLabel(type: string) {
