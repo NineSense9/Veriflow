@@ -61,7 +61,7 @@ export default function LoginPage() {
         <BrandAmbient variant="rays" className={styles.loginAmbient} />
         <FadeContent className={styles.loginIntroContent}>
           <Brand href={null} />
-          <p className={styles.eyebrow}>AI WORKFLOW · RELIABILITY</p>
+          <p className={styles.eyebrow}>可验证工作流</p>
           <h1>让 AI 生成的工作流，<br /><span>经得起验证。</span></h1>
           <p className={styles.introDescription}>从一句需求到一份可追溯的验证证据。<br />让每一次生成，都有清晰的检查与修复路径。</p>
         </FadeContent>

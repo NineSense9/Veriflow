@@ -8,21 +8,21 @@ export function DualPlane({
   return (
     <div className="dual-plane">
       <article className="ai-proposal">
-        <p className="kicker">AI layer</p>
-        <h2>{ai.configured ? ai.model || "DeepSeek" : "AI not configured"}</h2>
+        <p className="kicker">AI 层</p>
+        <h2>{ai.configured ? ai.model || "DeepSeek" : "未配置模型"}</h2>
         <p>
-          {ai.configured ? "Connected" : "Not configured"} · interpret / propose
-          {ai.fallback ? " · fallback heuristic" : ""}
+          {ai.configured ? "已连接" : "未配置"} · 解释 / 提案
+          {ai.fallback ? " · 回退启发式" : ""}
         </p>
-        <p className="caption">Does not decide PASS / FAIL.</p>
+        <p className="caption">不决定通过或失败。</p>
       </article>
       <article className="committed-verdict">
-        <p className="kicker">Proof layer</p>
-        <h2>Deterministic verifier</h2>
+        <p className="kicker">判定层</p>
+        <h2>确定性验证器</h2>
         <p>
-          Sandbox {proof.sandbox || "—"} · Gate {proof.gate || "—"} · Run {proof.status || "—"}
+          沙箱 {proof.sandbox || "—"} · 门禁 {proof.gate || "—"} · 运行 {proof.status || "—"}
         </p>
-        <p className="caption">Final verdict authority.</p>
+        <p className="caption">最终判定权在验证器。</p>
       </article>
     </div>
   );

@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s · VeriFlow",
   },
   applicationName: "VeriFlow",
-  description: "Specification-guided verification for LLM-generated workflows. AI proposes. VeriFlow proves.",
+  description: "面向大模型生成工作流的规格化验证。AI 提出候选，验流给出判定。",
   icons: {
     icon: [{ url: "/icon", type: "image/png" }],
   },

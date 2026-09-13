@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, Layers, X } from "lucide-react";
 import Shell from "@/components/Shell";
 import map from "@/data/architecture.json";
 import { api } from "@/lib/api";
+import { ARCH_TITLE_ZH } from "@/lib/ui-zh";
 import "./architecture.css";
 
 type ArchNode = (typeof map.nodes)[number];
@@ -25,7 +26,7 @@ export default function ArchitecturePage() {
   const groups = GROUPS.filter(item => group === "overview" || item.id === group);
   const edges = selected ? map.edges.filter(edge => edge.from === selected.id || edge.to === selected.id) : [];
   return <Shell><main className="page vf-page architecture-page">
-    <header className="page-head tight"><p className="kicker">ARCHITECTURE / VERIFLOW</p><h1>系统地图</h1><p className="lead">从需求编译到证据与发布，查看各模块的职责与调用关系。</p></header>
+    <header className="page-head tight"><p className="kicker">架构 / 验流</p><h1>系统地图</h1><p className="lead">从需求编译到证据与发布，查看各模块的职责与调用关系。</p></header>
     <nav className="architecture-nav" aria-label="架构分区">
       {[{ id: "overview", name: "总览" }, ...GROUPS].map(item => <button key={item.id} aria-pressed={group === item.id} onClick={() => { setGroup(item.id); setSelected(null); }}>{item.name}</button>)}
     </nav>
@@ -35,17 +36,17 @@ export default function ArchitecturePage() {
         <div className="architecture-modules">
           {item.ids.map(id => map.nodes.find(node => node.id === id)!).map(node => <button key={node.id} className="architecture-module" aria-pressed={selected?.id === node.id} onClick={() => setSelected(node)}>
             <span className="architecture-module-kind">{node.kind === "ai" ? "AI 提案" : node.kind === "store" ? "持久化" : "系统模块"}</span>
-            <strong>{node.title}</strong><span className="architecture-algorithm">{node.algorithm || node.layer}</span><ArrowUpRight size={14} />
+            <strong>{ARCH_TITLE_ZH[node.id] || node.title}</strong><span className="architecture-algorithm">{node.algorithm || node.layer}</span><ArrowUpRight size={14} />
           </button>)}
         </div>
         {selected && item.ids.includes(selected.id) ? <div className="architecture-details" role="region" aria-label="模块详情">
-          <header><h3><Layers size={16} />{selected.title}</h3><button className="icon-btn" title="关闭详情" aria-label="关闭详情" onClick={() => setSelected(null)}><X size={16} /></button></header>
+          <header><h3><Layers size={16} />{ARCH_TITLE_ZH[selected.id] || selected.title}</h3><button className="icon-btn" title="关闭详情" aria-label="关闭详情" onClick={() => setSelected(null)}><X size={16} /></button></header>
           <p>{selected.description}</p>
           <dl><div><dt>AI 职责</dt><dd>{selected.aiRole}</dd></div><div><dt>验证器职责</dt><dd>{selected.verifierRole}</dd></div><div><dt>复杂度</dt><dd>{selected.complexity}</dd></div></dl>
           <h4>直接关联</h4>
           {edges.length ? <ul className="architecture-relations">{edges.map(edge => <li key={`${edge.from}-${edge.to}`}>
-            <button onClick={() => { setSelected(map.nodes.find(node => node.id === edge.from)!); setGroup("overview"); }}>{map.nodes.find(node => node.id === edge.from)?.title}</button><span><ArrowRight size={14} />{edge.label}</span>
-            <button onClick={() => { const target = map.nodes.find(node => node.id === edge.to)!; setSelected(target); setGroup("overview"); }}>{map.nodes.find(node => node.id === edge.to)?.title}</button>
+            <button onClick={() => { setSelected(map.nodes.find(node => node.id === edge.from)!); setGroup("overview"); }}>{ARCH_TITLE_ZH[edge.from] || map.nodes.find(node => node.id === edge.from)?.title}</button><span><ArrowRight size={14} />{edge.label}</span>
+            <button onClick={() => { const target = map.nodes.find(node => node.id === edge.to)!; setSelected(target); setGroup("overview"); }}>{ARCH_TITLE_ZH[edge.to] || map.nodes.find(node => node.id === edge.to)?.title}</button>
           </li>)}</ul> : <p>当前架构记录没有直接关联。</p>}
           {selected.algorithm ? <Link href={`/algorithms/${selected.algorithm}`} className="btn btn-sm">算法详情<ArrowUpRight size={14} /></Link> : null}
           <ul className="architecture-sources">{selected.sourcePaths.map(source => <li key={source}>{commit ? <a href={`https://github.com/NineSense9/Veriflow/blob/${commit}/${source}`} target="_blank" rel="noreferrer">{source}</a> : <code>{source}</code>}</li>)}</ul>

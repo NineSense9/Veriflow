@@ -20,17 +20,17 @@ const CORE = [
 ];
 
 const EVAL_LINKS = [
-  { href: "/history", label: "历史", description: "Run records" },
-  { href: "/benchmark", label: "基准", description: "Evaluation lab" },
-  { href: "/algorithms", label: "算法中心", description: "Verifier registry" },
-  { href: "/architecture", label: "系统地图", description: "Repository-backed map" },
+  { href: "/history", label: "历史", description: "运行记录" },
+  { href: "/benchmark", label: "基准", description: "评测实验室" },
+  { href: "/algorithms", label: "算法中心", description: "验证器注册表" },
+  { href: "/architecture", label: "系统地图", description: "仓库内架构图" },
 ];
 
 const LAB_LINKS = [
-  { href: "/problems", label: "题库", description: "Training problems" },
-  { href: "/sets", label: "题单", description: "Problem sets" },
-  { href: "/status", label: "提交记录", description: "Judge history" },
-  { href: "/stress", label: "对拍", description: "Stress compare" },
+  { href: "/problems", label: "题库", description: "训练题目" },
+  { href: "/sets", label: "题单", description: "题目分组" },
+  { href: "/status", label: "提交记录", description: "评测历史" },
+  { href: "/stress", label: "对拍", description: "压力对拍" },
 ];
 
 const EVAL_ITEMS = EVAL_LINKS;
@@ -250,7 +250,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </header>
       <div id="main">{children}</div>
       <footer className="footer">
-        <span>AI proposes. VeriFlow proves. 判定不来自模型。</span>
+        <span>AI 提出候选，验流给出判定。判定不来自模型。</span>
         <span>C++17 / Python3</span>
       </footer>
     </div>

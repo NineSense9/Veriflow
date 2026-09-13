@@ -24,6 +24,7 @@ async function openCase(page: Page, name: string, theme = "light") {
     else if (url.pathname === "/api/health") json = { ok: true, sandbox: "process" };
     else if (url.pathname === "/api/report/history") json = { runs: [{ id: session.run_id, workflow_name: name, status: session.status }] };
     else if (url.pathname.startsWith("/api/report/runs/")) json = session;
+    else if (url.pathname === "/api/report/session") json = session;
     else if (url.pathname === "/api/demos") json = { demos: Object.keys(cases).map(id => ({ id, title: id, kind: "test" })) };
     await route.fulfill({ json });
   });

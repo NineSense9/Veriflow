@@ -8,13 +8,13 @@ import { AlgorithmRecord, api } from "@/lib/api";
 import { useEffects } from "@/lib/effects";
 
 const PIPE = [
-  "AI interprets",
-  "verifier checks",
-  "counterexample.minimize",
-  "repair.selection",
-  "repair.guard",
-  "incremental.impact",
-  "gate",
+  "AI 解释",
+  "验证器检查",
+  "反例最小化",
+  "修复选择",
+  "补丁守卫",
+  "增量影响",
+  "发布门禁",
 ];
 
 function chromaItem(algo: AlgorithmRecord): ChromaItem {
@@ -56,8 +56,7 @@ export default function AlgorithmsPage() {
         <header className="page-head tight">
           <h1>算法中心</h1>
           <p className="lead">
-            AI interprets → verifier checks → counterexample.minimize → repair.selection → repair.guard →
-            incremental.impact → gate。注册表与 verifier 共用。
+            AI 解释 → 验证器检查 → 反例最小化 → 修复选择 → 补丁守卫 → 增量影响 → 发布门禁。注册表与验证器共用。
           </p>
         </header>
         <ol className="algo-pipe">
@@ -70,23 +69,23 @@ export default function AlgorithmsPage() {
           <>
             <dl className="vf-strip">
               <div>
-                <dt>Algorithms</dt>
+                <dt>算法</dt>
                 <dd>{data.count}</dd>
               </div>
               <div>
-                <dt>Deterministic</dt>
+                <dt>确定性</dt>
                 <dd>{data.deterministic}</dd>
               </div>
               <div>
-                <dt>AI-assisted</dt>
+                <dt>AI 辅助</dt>
                 <dd>{data.ai_assisted}</dd>
               </div>
               <div>
-                <dt>Tests</dt>
+                <dt>测试</dt>
                 <dd>pytest</dd>
               </div>
               <div>
-                <dt>Benchmark</dt>
+                <dt>基准</dt>
                 <dd>{data.benchmark_version ? data.benchmark_version.slice(0, 19) : "NOT RUN"}</dd>
               </div>
             </dl>

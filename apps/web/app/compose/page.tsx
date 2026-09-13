@@ -16,7 +16,7 @@ const EXAMPLES = [
 ];
 
 function DraftStatus({ value }: { value: string }) {
-  const labels: Record<string, string> = { blocked: "已阻断", published: "已入库", gated: "审题通过", ready: "待审题", draft: "草稿", pending: "待审题", approved: "已通过", rejected: "已驳回" };
+  const labels: Record<string, string> = { blocked: "已阻断", published: "已入库", gated: "审题通过", ready: "待审题", draft: "草稿", pending: "待审题", approved: "已通过", rejected: "已驳回", checked: "已检查" };
   const statusTone = ["published", "gated", "approved"].includes(value) ? "AC" : ["blocked", "rejected"].includes(value) ? "WA" : "TLE";
   return <span className={`verdict ${statusTone}`} title={value}><i className="status-dot" aria-hidden="true" />{labels[value] || value}</span>;
 }

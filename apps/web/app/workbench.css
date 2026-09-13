@@ -1,10 +1,14 @@
 .page.evidence-home { width: 100%; max-width: 1440px; padding: 24px 40px 32px; margin: 0 auto; }
-.evidence-home-heading { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0 24px; overflow: hidden; }
+.evidence-home-heading { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 2px 0 8px; overflow: hidden; }
 .evidence-home-heading .brand-ambient { z-index: -1; opacity: .65; }
 .workspace-eyebrow { display: flex; gap: 8px; align-items: center; font: 11px var(--font-mono), monospace; color: var(--accent); }
-.evidence-home-title h1 { font-size: 28px; line-height: 1.4; margin: 12px 0 6px; }
-.evidence-home-title h1 span { color: var(--muted); font-weight: 400; font-size: 16px; margin-left: 20px; }
-.evidence-home-title p { color: var(--text-2); margin: 0; font-size: 13px; }
+.evidence-home-title h1 { font-size: 22px; line-height: 1.3; margin: 4px 0 2px; }
+.evidence-home-title h1 span { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 12px; }
+.evidence-home-title p { color: var(--text-2); margin: 0; font-size: 12px; }
+.page.evidence-home .vf-story-nav { padding: 6px 0; }
+.page.evidence-home .vf-workbench-console .vf-verdict-heading h2 { font-size: 20px; margin: 4px 0; }
+.page.evidence-home .vf-workbench-console .step-default { display: none; }
+.page.evidence-home .vf-workbench-console .step-indicator-row { padding: 6px 10px; }
 .workspace-primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .workspace-primary:hover { filter: brightness(.95); background: var(--accent); color: var(--accent-fg); }
 .workspace-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }

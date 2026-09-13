@@ -57,7 +57,7 @@ export default function HistoryPage() {
       <main className="page vf-page">
         <header className="page-head tight">
           <h1>验证历史</h1>
-          <p className="lead">Issue 数从 payload 派生（静态 + 运行时），与 Report 一致。点行打开完整 session。</p>
+          <p className="lead">问题数来自静态与运行时记录，与验证页一致。点行打开完整会话。</p>
         </header>
         {error ? <p className="err">{error}</p> : null}
         <div className="filter-bar">
@@ -65,16 +65,16 @@ export default function HistoryPage() {
             className="input"
             value={q}
             onChange={(event) => setQ(event.target.value)}
-            placeholder="搜索 id / workflow"
+            placeholder="搜索编号 / 工作流"
             aria-label="搜索历史"
           />
           <div className="seg" role="group" aria-label="快捷筛选">
             {(
               [
                 ["all", "全部"],
-                ["failed", "Failed"],
-                ["blocked", "Blocked"],
-                ["runtime", "Runtime FAIL"],
+                ["failed", "失败"],
+                ["blocked", "已拦截"],
+                ["runtime", "运行失败"],
               ] as const
             ).map(([id, label]) => (
               <button key={id} type="button" className={quick === id ? "on" : ""} aria-pressed={quick === id} onClick={() => setQuick(id)}>

@@ -14,7 +14,7 @@ export default function HomePage() {
         <header className="evidence-home-heading">
           <BrandAmbient variant="lines" />
           <div className="evidence-home-title">
-            <span className="workspace-eyebrow"><GitBranch size={14} /> VERIFLOW / WORKSPACE</span>
+            <span className="workspace-eyebrow"><GitBranch size={14} /> 验流 / 工作台</span>
             <h1>验证工作台<span>从生成，到可信。</span></h1>
             <p>每一个判定，都有一条可追溯的证据链。</p>
           </div>

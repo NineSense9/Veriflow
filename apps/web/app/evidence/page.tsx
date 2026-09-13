@@ -42,9 +42,9 @@ export default function EvidencePage() {
     <Shell>
       <main className="page vf-page">
         <header className="page-head tight evidence-cert">
-          <p className="kicker">Evidence Certificate</p>
+          <p className="kicker">证据证书</p>
           <h1>证据证书</h1>
-          <p className="lead">Proposal source and decision authority are recorded separately. 模型没有最终判定权。</p>
+          <p className="lead">提案来源与判定权分开记录。模型没有最终判定权。</p>
         </header>
         {error ? <p className="err">{error}</p> : null}
         {!session ? (
@@ -52,37 +52,37 @@ export default function EvidencePage() {
         ) : (
           <>
             <section>
-              <h2>Proposal vs Decision</h2>
-              <p className="caption">左边是提案来源，右边是 verifier 裁决。</p>
+              <h2>提案与判定</h2>
+              <p className="caption">左边是提案来源，右边是验证器裁决。</p>
               <div className="table-wrap">
                 <table className="table tight">
                   <thead>
                     <tr>
-                      <th>Stage</th>
-                      <th>Proposal</th>
-                      <th>Decision</th>
+                      <th>阶段</th>
+                      <th>提案</th>
+                      <th>判定</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>NL → IR</td>
-                      <td>DeepSeek or heuristic (WorkflowIR proposal)</td>
-                      <td>not a verdict</td>
+                      <td>自然语言 → 中间表示</td>
+                      <td>DeepSeek 或启发式（工作流提案）</td>
+                      <td>不是裁决</td>
                     </tr>
                     <tr>
-                      <td>Spec</td>
-                      <td>compile_spec heuristic</td>
-                      <td>constraints only</td>
+                      <td>规格</td>
+                      <td>compile_spec 启发式</td>
+                      <td>仅约束</td>
                     </tr>
                     <tr>
-                      <td>Verify</td>
+                      <td>验证</td>
                       <td>—</td>
-                      <td>{session.status} · gate {session.gate.ready}</td>
+                      <td>{session.status} · 门禁 {session.gate.ready}</td>
                     </tr>
                     <tr>
-                      <td>Repair</td>
-                      <td>rule / deepseek candidates</td>
-                      <td>Guard + lex selection</td>
+                      <td>修复</td>
+                      <td>规则 / DeepSeek 候选</td>
+                      <td>守卫 + 字典序选择</td>
                     </tr>
                   </tbody>
                 </table>
@@ -90,13 +90,13 @@ export default function EvidencePage() {
             </section>
             <dl className="vf-strip">
               <div>
-                <dt>Run</dt>
+                <dt>运行</dt>
                 <dd>
                   <StatusChip value={session.status} />
                 </dd>
               </div>
               <div>
-                <dt>Gate</dt>
+                <dt>门禁</dt>
                 <dd>
                   <StatusChip value={session.gate.ready} />
                 </dd>
@@ -106,8 +106,8 @@ export default function EvidencePage() {
                 <dd>{session.workflow_hash.slice(0, 12)}</dd>
               </div>
               <div>
-                <dt>Authority</dt>
-                <dd>verifier</dd>
+                <dt>判定权</dt>
+                <dd>验证器</dd>
               </div>
             </dl>
             <p className="caption">
@@ -116,11 +116,11 @@ export default function EvidencePage() {
               {session.parent_run_id ? ` · parent #${session.parent_run_id}` : ""}
             </p>
             <section>
-              <h2>维度（verifier 裁决）</h2>
+              <h2>维度（验证器裁决）</h2>
               <ul className="action-list">
                 {dims.map((dim) => (
                   <li key={dim.name}>
-                    <StatusChip value={dim.status} /> {dimLabel(dim.name)} · issues {dim.issue_count}
+                    <StatusChip value={dim.status} /> {dimLabel(dim.name)} · 问题 {dim.issue_count}
                   </li>
                 ))}
                 <li>
@@ -129,17 +129,17 @@ export default function EvidencePage() {
               </ul>
             </section>
             <section>
-              <h2>Requirement Coverage</h2>
+              <h2>需求覆盖</h2>
               {clauses.length ? (
                 <div className="table-wrap">
                   <table className="table tight">
                     <thead>
                       <tr>
-                        <th>Clause</th>
-                        <th>Kind</th>
-                        <th>Status</th>
-                        <th>Nodes</th>
-                        <th>Verifier</th>
+                        <th>条款</th>
+                        <th>种类</th>
+                        <th>状态</th>
+                        <th>节点</th>
+                        <th>验证器</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -60,7 +60,7 @@ export default function BenchmarkPage() {
     <Shell>
       <main className="page vf-page">
         <header className="page-head tight">
-          <h1>Benchmark</h1>
+          <h1>基准评测</h1>
           <p className="lead">
             仓库内 gold IR 的故障注入，不是外部竞赛榜。n 小的时候禁止写成 SOTA。
           </p>
@@ -70,11 +70,11 @@ export default function BenchmarkPage() {
           <>
             <dl className="vf-strip">
               <div>
-                <dt>Suite</dt>
+                <dt>套件</dt>
                 <dd>{String(data.suite ?? "—")}</dd>
               </div>
               <div>
-                <dt>n (faults)</dt>
+                <dt>故障数</dt>
                 <dd>{fmt(data.n, 0)}</dd>
               </div>
               <div>
@@ -88,11 +88,11 @@ export default function BenchmarkPage() {
                 <dd>{fmt(data.detection_f1)}</dd>
               </div>
               <div>
-                <dt>Repair</dt>
+                <dt>修复率</dt>
                 <dd>{fmt(data.repair_success_rate)}</dd>
               </div>
               <div>
-                <dt>Loc</dt>
+                <dt>定位</dt>
                 <dd>{fmt(data.fault_localization_accuracy)}</dd>
               </div>
             </dl>
@@ -102,17 +102,17 @@ export default function BenchmarkPage() {
             </p>
             {data.baselines && typeof data.baselines === "object" ? (
               <section>
-                <h2>Baselines</h2>
+                <h2>对照</h2>
                 <p className="caption">对照来自同一套 gold IR。LLM-as-judge 未跑时保持 NOT RUN，不填假分。</p>
                 <div className="table-wrap">
                   <table className="table tight">
                     <thead>
                       <tr>
-                        <th>Baseline</th>
-                        <th>Status</th>
-                        <th>F1 / Recall</th>
-                        <th>Repair</th>
-                        <th>Note</th>
+                        <th>对照</th>
+                        <th>状态</th>
+                        <th>F1 / 召回</th>
+                        <th>修复率</th>
+                        <th>说明</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -134,7 +134,7 @@ export default function BenchmarkPage() {
             ) : null}
             {failures.length ? (
               <section>
-                <h2>Repair failures</h2>
+                <h2>修复失败</h2>
                 <div className="table-wrap">
                   <table className="table tight">
                     <thead>
@@ -160,7 +160,7 @@ export default function BenchmarkPage() {
               <p className="caption">当前 metrics 未列出 repair_failures，或本套件修复全部接受。</p>
             )}
             <section>
-              <h2>Cases</h2>
+              <h2>用例</h2>
               <div className="filter-bar">
                 <input
                   className="input"

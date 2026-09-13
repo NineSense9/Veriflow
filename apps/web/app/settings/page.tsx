@@ -10,10 +10,10 @@ import { useEffects } from "@/lib/effects";
 import ElasticSlider from "@/components/reactbits/ElasticSlider";
 
 const LEVELS: { id: EffectsLevel; label: string; hint: string }[] = [
-  { id: "full", label: "Full", hint: "backgrounds + pointer + scan + witness" },
-  { id: "balanced", label: "Balanced", hint: "backgrounds dim; keep pipeline/witness" },
-  { id: "reduced", label: "Reduced", hint: "no looping backgrounds; 150–180ms fades" },
-  { id: "off", label: "Off", hint: "optional motion off; keep loading/focus/modal" },
+  { id: "full", label: "完整", hint: "背景、指针跟随、扫描与见证路径" },
+  { id: "balanced", label: "平衡", hint: "背景减弱，保留流水线与见证" },
+  { id: "reduced", label: "减弱", hint: "无循环背景；短渐变" },
+  { id: "off", label: "关闭", hint: "可选动效关闭；保留加载、焦点与对话框" },
 ];
 
 export default function SettingsPage() {
@@ -47,7 +47,7 @@ export default function SettingsPage() {
     <Shell>
       <main className="page">
         <header className="page-head">
-          <p className="kicker">Control center</p>
+          <p className="kicker">控制中心</p>
           <h1>设置</h1>
           <p className="lead">外观与 AI 协助存在本机。判定与沙箱始终在服务器。API Key 不会下发到浏览器。</p>
         </header>
@@ -104,10 +104,10 @@ export default function SettingsPage() {
         <section className="setting-list" id="settings-effects">
           <div className="setting-row">
             <div>
-              <h2>Effects Level</h2>
-              <p className="ghost">replaces reduced-motion boolean. prefers-reduced-motion still forces Reduced.</p>
+              <h2>动效等级</h2>
+              <p className="ghost">系统「减少动态效果」仍会强制降到减弱。</p>
             </div>
-            <div className="seg" role="group" aria-label="Effects level">
+            <div className="seg" role="group" aria-label="动效等级">
               {LEVELS.map((item) => (
                 <button key={item.id} type="button" className={prefs.effectsLevel === item.id ? "on" : ""} onClick={() => patch({ effectsLevel: item.id, reducedMotion: item.id === "reduced" || item.id === "off" })}>
                   {item.label}
@@ -118,8 +118,8 @@ export default function SettingsPage() {
           <p className="caption">{LEVELS.find((item) => item.id === prefs.effectsLevel)?.hint}</p>
           <div className="setting-row">
             <div>
-              <h2>Code font size</h2>
-              <p className="ghost">ElasticSlider (vendored React Bits). Off still keeps this control.</p>
+              <h2>代码字号</h2>
+              <p className="ghost">关闭动效时仍可调节。</p>
             </div>
             <ElasticSlider
               defaultValue={prefs.codeFontPx}
@@ -134,13 +134,13 @@ export default function SettingsPage() {
           </div>
           <div className="setting-row">
             <div>
-              <h2>Presets</h2>
-              <p className="ghost">UX only. Does not change verifier semantics.</p>
+              <h2>预设</h2>
+              <p className="ghost">只改界面，不改验证器语义。</p>
             </div>
             <div className="seg" id="settings-lab">
               {(["demo", "developer", "minimal"] as const).map((name) => (
                 <button key={name} type="button" className={prefs.preset === name ? "on" : ""} onClick={() => applyPreset(name)}>
-                  {name}
+                  {name === "demo" ? "演示" : name === "developer" ? "开发" : "最小"}
                 </button>
               ))}
             </div>
@@ -159,20 +159,20 @@ export default function SettingsPage() {
           </div>
           <div className="setting-row">
             <div>
-              <h2>AI Requirement Interpretation</h2>
-              <p className="ghost">关闭后需求编译走 heuristic，不调用模型。模型仍不裁决 PASS/FAIL。请求带 allow_ai。</p>
+              <h2>AI 需求解释</h2>
+              <p className="ghost">关闭后需求编译走启发式，不调用模型。模型仍不裁决通过或失败。</p>
             </div>
             <button type="button" className={`btn ${prefs.aiInterpret ? "btn-primary" : ""}`} onClick={() => patch({ aiInterpret: !prefs.aiInterpret })}>
-              {prefs.aiInterpret ? "ON" : "OFF"}
+              {prefs.aiInterpret ? "开" : "关"}
             </button>
           </div>
           <div className="setting-row">
             <div>
-              <h2>AI Repair Proposal</h2>
-              <p className="ghost">关闭后只使用规则候选。Guard 仍是确定性的。</p>
+              <h2>AI 修复提案</h2>
+              <p className="ghost">关闭后只使用规则候选。守卫仍是确定性的。</p>
             </div>
             <button type="button" className={`btn ${prefs.aiRepair ? "btn-primary" : ""}`} onClick={() => patch({ aiRepair: !prefs.aiRepair })}>
-              {prefs.aiRepair ? "ON" : "OFF"}
+              {prefs.aiRepair ? "开" : "关"}
             </button>
           </div>
           <div className="setting-row">

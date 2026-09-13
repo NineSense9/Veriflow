@@ -72,10 +72,10 @@ export default function ComposeProjectPage() {
       <div className="compose-desk">
         <div className="arena-top">
           <Link href="/compose" className="btn btn-ghost btn-sm">
-            出题
+            返回草稿
           </Link>
           <span className="pid">#{project.id}</span>
-          <h1>Verification Studio</h1>
+          <h1>验证工坊</h1>
           <span className={`verdict ${status === "PASS" ? "AC" : status === "WARNING" ? "TLE" : "WA"}`}>
             {status}
           </span>
@@ -86,7 +86,7 @@ export default function ComposeProjectPage() {
           >
             {project.gate?.ready ?? "GATE"}
           </span>
-          <span className="ghost">{verification ? `risk ${verification.risk_level}` : project.compiler}</span>
+          <span className="ghost">{verification ? `风险 ${verification.risk_level}` : project.compiler}</span>
           <button
             type="button"
             disabled={Boolean(busy)}

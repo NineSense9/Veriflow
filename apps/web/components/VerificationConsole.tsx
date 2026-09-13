@@ -25,6 +25,7 @@ import { effectsAllowScan, useEffects } from "@/lib/effects";
 import { setAmbientActivity } from "@/lib/ambient-activity";
 import ComposeCanvas, { type GraphHandle } from "@/components/ComposeCanvas";
 import { matchingIssueNodes } from "./verification-selection";
+import { demoTitle, pipelineLabel } from "@/lib/ui-zh";
 import { evidenceEntityAction } from "./evidence-interaction";
 import "./verification-workbench.css";
 const EvidenceGraphView = dynamic(() => import("@/components/EvidenceGraphView"), { ssr: false });
@@ -120,7 +121,7 @@ export default function VerificationConsole({
   function focusIssue(issue: VerifyIssue | null, nodeId?: string) {
     setSelected(issue);
     const ids = issue ? matchingIssueNodes(issue, session?.ir.nodes || []) : nodeId ? [nodeId] : [];
-    setNodeNote(issue && !ids.length ? "当前问题没有匹配的工作流节点；请查看 Expected / Actual 和证据。" : "");
+    setNodeNote(issue && !ids.length ? "当前问题没有匹配的工作流节点；请查看预期、实际和证据。" : "");
     setFocused(ids.length ? nodeId || ids[0] : "");
     if (ids.length) graphRef.current?.focusPath(ids);
     else graphRef.current?.fitAll();
@@ -137,7 +138,7 @@ export default function VerificationConsole({
       setRepair(null);
     }
     setCompare(null);
-    setNodeNote(firstIssue && !matchingIssueNodes(firstIssue, next.ir.nodes).length ? "当前问题没有匹配的工作流节点；请查看 Expected / Actual 和证据。" : "");
+    setNodeNote(firstIssue && !matchingIssueNodes(firstIssue, next.ir.nodes).length ? "当前问题没有匹配的工作流节点；请查看预期、实际和证据。" : "");
     setPipe(next.pipeline.find((step) => step.status !== "PASS")?.id ?? next.pipeline[0]?.id ?? null);
   }
 
@@ -180,10 +181,19 @@ export default function VerificationConsole({
       api.reportHistory(20).then(async (hist) => {
         if (cancelled) return;
         setHistory(hist.runs);
-        if (hist.runs[0]) {
-          const latest = await api.reportRun(hist.runs[0].id);
-          if (!cancelled) { apply(latest); }
+        const latestId = hist.runs[0]?.id;
+        if (!latestId) {
+          await loadDemo(initialDemo);
+          return;
         }
+        const latest = await api.reportRun(latestId);
+        if (cancelled) return;
+        if (latest.status === "PASS" && latest.parent_run_id) {
+          await loadDemo(initialDemo);
+          return;
+        }
+        apply(latest);
+        if (latest.ir?.name) setDemoId(latest.ir.name);
       }).catch((err: Error) => { if (!cancelled) setError(err.message); })
         .finally(() => { if (!cancelled) setInitialLoading(false); });
     } else {
@@ -305,7 +315,7 @@ export default function VerificationConsole({
           <span>核验案例</span>
           <select value={demoId} disabled={Boolean(busy) || initialLoading} onChange={(event) => setDemoId(event.target.value)}>
             {!demos.some((demo) => demo.id === demoId) ? <option value={demoId}>{demoId}</option> : null}
-            {demos.map((demo) => <option key={demo.id} value={demo.id}>{demo.title}</option>)}
+            {demos.map((demo) => <option key={demo.id} value={demo.id}>{demoTitle(demo.id, demo.title)}</option>)}
           </select>
         </label>
         <button type="button" className="btn btn-sm" disabled={Boolean(busy) || initialLoading || !demos.some((demo) => demo.id === demoId)} onClick={() => loadDemo(demoId)}><Play size={14} />{busy && busy !== "repair" ? "验证中…" : "运行案例"}</button>
@@ -389,7 +399,7 @@ export default function VerificationConsole({
             <p className="caption">{gateWhy(dimensions.find((item) => item.name === "executable")?.status, session.runtime?.status, session.gate.ready) || "核验结果来自静态验证器与运行时记录。"}</p>
           </section>
           <Stepper
-            labels={session.pipeline.map((step) => step.name)}
+            labels={session.pipeline.map((step) => pipelineLabel(step.id, step.name))}
             className="vf-rb-stepper"
             hideFooter
             glowRunning={Boolean(busy) && effectsAllowScan(effects)}
@@ -400,7 +410,7 @@ export default function VerificationConsole({
             {session.pipeline.map((step) => (
               <Step key={step.id}>
                 <p>
-                  <strong>{step.name}</strong> · {step.output_summary || "查看本步骤的核验记录"}
+                  <strong>{pipelineLabel(step.id, step.name)}</strong> · {step.output_summary || "查看本步骤的核验记录"}
                 </p>
                 <p className="caption">
                   {step.kind} · {step.algorithm_id} · {step.latency_ms.toFixed(1)}ms · cache {step.cache_status} · checks {step.checks_executed}
@@ -488,7 +498,7 @@ export default function VerificationConsole({
             <aside className="vf-findings" ref={findingsSection} tabIndex={-1} aria-label="问题与证据">
               <div className="vf-issues-heading"><h2>问题定位</h2><span className="vf-count">{issues.length}</span></div>
               <p className="caption">
-                Total {issues.length} · Static {session.static.issues.length} · Runtime {(session.runtime_findings ?? []).length}
+                共 {issues.length} · 静态 {session.static.issues.length} · 运行 {(session.runtime_findings ?? []).length}
               </p>
               {nodeNote ? <p className="caption">{nodeNote}</p> : null}
               {issues.length === 0 ? <p className="ghost">无 Issue。静态与运行时均未给出 FAIL。</p> : null}
@@ -504,18 +514,18 @@ export default function VerificationConsole({
               {selected ? (
                 <section className="vf-current-issue" aria-label="当前问题证据" data-issue-id={selected.id}>
                   <SpotlightCard className="vf-evidence-spotlight">
-                  <div className="vf-evidence-heading"><span>Evidence</span><span>{selected.detected_by || selected.category}</span></div>
+                  <div className="vf-evidence-heading"><span>证据</span><span>{selected.detected_by || selected.category}</span></div>
                   <dl className="vf-kv vf-primary-evidence">
-                    <div><dt>Reason</dt><dd>{selected.title || selected.description || selected.code}</dd></div>
-                    <div><dt>Expected</dt><dd>{selected.expected ?? "未提供预期值"}</dd></div>
-                    <div><dt>Actual</dt><dd>{selected.actual ?? "未提供实际值"}</dd></div>
-                    <div><dt>Witness</dt><dd className="mono vf-witness-path" key={selected.id}>{(highlight?.path ?? selected.witness_path ?? []).length ? (highlight?.path ?? selected.witness_path).map((id, index) => <span key={`${id}-${index}`} style={{ animationDelay: `${index * 70}ms` }}>{index ? "→ " : ""}{id}</span>) : "无已记录见证路径"}</dd></div>
+                    <div><dt>原因</dt><dd>{selected.title || selected.description || selected.code}</dd></div>
+                    <div><dt>预期</dt><dd>{selected.expected ?? "未提供预期值"}</dd></div>
+                    <div><dt>实际</dt><dd>{selected.actual ?? "未提供实际值"}</dd></div>
+                    <div><dt>见证路径</dt><dd className="mono vf-witness-path" key={selected.id}>{(highlight?.path ?? selected.witness_path ?? []).length ? (highlight?.path ?? selected.witness_path).map((id, index) => <span key={`${id}-${index}`} style={{ animationDelay: `${index * 70}ms` }}>{index ? "→ " : ""}{id}</span>) : "无已记录见证路径"}</dd></div>
                   </dl>
                   </SpotlightCard>
                   <details className="vf-evidence-details"><summary>查看根因与完整证据</summary><dl className="vf-kv">
-                    <div><dt>Root cause</dt><dd>{root?.summary ?? selected.root_cause_id ?? "—"}</dd></div>
+                    <div><dt>根因</dt><dd>{root?.summary ?? selected.root_cause_id ?? "—"}</dd></div>
                   <div>
-                    <dt>Minimal counterexample</dt>
+                    <dt>最小反例</dt>
                     <dd>
                       {mini
                         ? `nodes ${mini.minimized_nodes.join(", ") || "—"} · path ${(mini.witness_path || []).join(" → ") || "—"} · globally_minimal ${String(mini.globally_minimal)}`
@@ -523,11 +533,11 @@ export default function VerificationConsole({
                     </dd>
                   </div>
                   <div>
-                    <dt>Minimized</dt>
+                    <dt>最小化节点</dt>
                     <dd>{(selected.minimized_nodes ?? []).join(", ") || "—"}</dd>
                   </div>
                   <div>
-                    <dt>Detected by</dt>
+                    <dt>检测算法</dt>
                     <dd>
                       <Link href={`/algorithms/${selected.detected_by || "graph.integrity"}`}>
                         {selected.detected_by || "—"} v{selected.algorithm_version || "—"}
@@ -535,19 +545,19 @@ export default function VerificationConsole({
                     </dd>
                   </div>
                   <div>
-                    <dt>Method</dt>
+                    <dt>方法</dt>
                     <dd>{selected.verification_method ?? "—"}</dd>
                   </div>
                   <div>
-                    <dt>Evidence</dt>
+                    <dt>证据来源</dt>
                     <dd>{selected.evidence_source ?? "—"}</dd>
                   </div>
                   <div>
-                    <dt>Suggestion</dt>
+                    <dt>修复建议</dt>
                     <dd>{selected.repair_hint ?? "—"}</dd>
                   </div>
                   <div>
-                    <dt>Why?</dt>
+                    <dt>邻接</dt>
                     <dd>
                       {graphNb.map((ent) => (
                         <span key={ent.id} className="caption">
@@ -566,21 +576,21 @@ export default function VerificationConsole({
               </section> : null}
               {session.ambiguity && session.ambiguity.status !== "CLEAR" ? (
                 <p className="caption">
-                  Requirement {session.ambiguity.status} ({session.ambiguity.method})
+                  需求 {session.ambiguity.status} ({session.ambiguity.method})
                   {session.ambiguity.items[0] ? ` · ${session.ambiguity.items[0].reason}` : ""}
                 </p>
               ) : null}
             </aside>
           </MagicBento>
           <dl className="vf-outcome-strip" aria-label="核验摘要">
-            <div><dt>Gate / 发布门禁</dt><dd>{chip(session.gate.ready)}</dd></div>
-            <div><dt>Runtime alignment / 运行偏差</dt><dd>{session.alignment.deviation_count}<small> 项偏差</small></dd></div>
-            <div><dt>Next action / 下一步</dt><dd><button type="button" onClick={() => scrollTo(issues.length ? "evidence" : "workflow")}>{issues.length ? "查看当前反例" : "检查工作流"}<ArrowRight size={15} /></button></dd></div>
+            <div><dt>发布门禁</dt><dd>{chip(session.gate.ready)}</dd></div>
+            <div><dt>运行偏差</dt><dd>{session.alignment.deviation_count}<small> 项偏差</small></dd></div>
+            <div><dt>下一步</dt><dd><button type="button" onClick={() => scrollTo(issues.length ? "evidence" : "workflow")}>{issues.length ? "查看当前反例" : "检查工作流"}<ArrowRight size={15} /></button></dd></div>
           </dl>
-          <details className="vf-disclosure"><summary>需求与编译依据 <span>Requirement / Spec</span></summary><div className="vf-disclosure-body">
+          <details className="vf-disclosure"><summary>需求与编译依据</summary><div className="vf-disclosure-body">
           <section className="vf-req">
             <div>
-              <h2>Requirement</h2>
+              <h2>需求</h2>
               <p>
                 {selectedTrace?.start != null && selectedTrace.end != null ? (
                   <>
@@ -595,18 +605,18 @@ export default function VerificationConsole({
             </div>
             <dl className="vf-kv compact">
               <div>
-                <dt>Intent / Spec</dt>
+                <dt>意图 / 规格</dt>
                 <dd>{goal || "—"}</dd>
               </div>
               <div>
-                <dt>Compiler</dt>
+                <dt>编译器</dt>
                 <dd>
                   {String((session.spec as { compiler?: string }).compiler || "—")}
                   {specBasis ? ` · ${specBasis}` : ""}
                 </dd>
               </div>
               <div>
-                <dt>Workflow</dt>
+                <dt>工作流</dt>
                 <dd>
                   {session.ir.name} · {session.ir.nodes.length} nodes · {session.ir.edges.length} edges
                 </dd>
@@ -620,19 +630,19 @@ export default function VerificationConsole({
           </p>
           </div></details>
           {trace ? (
-            <details className="vf-disclosure"><summary>需求覆盖 <span>Requirement Coverage</span></summary><div className="vf-disclosure-body">
+            <details className="vf-disclosure"><summary>需求覆盖</summary><div className="vf-disclosure-body">
               <p className="caption">
-                COVERED {trace.covered} · FAILED {trace.failed} · AMBIGUOUS {trace.ambiguous} · UNMAPPED {trace.unmapped}
+                覆盖 {trace.covered} · 失败 {trace.failed} · 歧义 {trace.ambiguous} · 未映射 {trace.unmapped}
                 。覆盖来自 spec 约束与 verifier，不是 LLM 自评。
               </p>
               <div className="vf-table-wrap">
                 <table className="vf-matrix">
                   <thead>
                     <tr>
-                      <th>Clause</th>
-                      <th>Status</th>
-                      <th>Nodes</th>
-                      <th>Verifier</th>
+                      <th>条款</th>
+                      <th>状态</th>
+                      <th>节点</th>
+                      <th>验证器</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -802,19 +812,19 @@ export default function VerificationConsole({
               </div>
               {origin.run_id && session.run_id && origin.run_id !== session.run_id ? (
                 <p className="caption">
-                  <a href={`/report/runs/${origin.run_id}`}>Original #{origin.run_id}</a>
+                  <a href={`/report/runs/${origin.run_id}`}>原始 #{origin.run_id}</a>
                   {" → "}
-                  <a href={`/report/runs/${session.run_id}`}>Re-verified #{session.run_id}</a>
+                  <a href={`/report/runs/${session.run_id}`}>再验证 #{session.run_id}</a>
                 </p>
               ) : null}
             </div></details>
           ) : null}
-          <details className="vf-disclosure"><summary>核验矩阵 <span>Verification Matrix</span></summary><div className="vf-disclosure-body">
+          <details className="vf-disclosure"><summary>核验矩阵</summary><div className="vf-disclosure-body">
             <div className="vf-table-wrap">
               <table className="vf-matrix">
                 <thead>
                   <tr>
-                    <th>Requirement</th>
+                    <th>需求</th>
                     {session.matrix.columns.map((col) => (
                       <th key={col}>{col}</th>
                     ))}
@@ -848,7 +858,7 @@ export default function VerificationConsole({
             </div>
             {matrixCell ? <p className="caption">{matrixCell}</p> : null}
           </div></details>
-          <details className="vf-disclosure"><summary>运行时对齐 <span>Runtime Alignment</span></summary><div className="vf-disclosure-body">
+          <details className="vf-disclosure"><summary>运行时对齐</summary><div className="vf-disclosure-body">
             <p className="caption">
               cost {session.alignment.alignment_cost} · deviations {session.alignment.deviation_count} · DP edit{" "}
               {session.alignment.sequential_edit_distance} · {session.alignment.limitations}
@@ -874,7 +884,7 @@ export default function VerificationConsole({
               </table>
             </div>
           </div></details>
-          <details className="vf-disclosure"><summary>近期核验记录 <span>Recent runs</span></summary><div className="vf-disclosure-body">
+          <details className="vf-disclosure"><summary>近期核验记录</summary><div className="vf-disclosure-body">
             <div className="section-row">
               <Link className="btn btn-ghost btn-sm" href="/history">
                 打开历史
@@ -948,11 +958,11 @@ export function AlgorithmTable({ items }: { items: AlgorithmRecord[] }) {
       <table className="vf-matrix">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Kind</th>
-            <th>Complexity</th>
+            <th>标识</th>
+            <th>名称</th>
+            <th>类别</th>
+            <th>类型</th>
+            <th>复杂度</th>
           </tr>
         </thead>
         <tbody>
@@ -963,7 +973,7 @@ export function AlgorithmTable({ items }: { items: AlgorithmRecord[] }) {
               </td>
               <td>{item.name}</td>
               <td>{item.category}</td>
-              <td>{item.deterministic ? "Deterministic" : "AI-assisted"}</td>
+              <td>{item.deterministic ? "确定性" : "AI 辅助"}</td>
               <td>{item.complexity}</td>
             </tr>
           ))}

@@ -31,7 +31,7 @@ function ReportBody() {
     <main className="page vf-page">
       <header className="page-head split tight">
         <div>
-          <p className="kicker">VERIFICATION WORKBENCH</p>
+          <p className="kicker">核验工作台</p>
           <h1>核验工作台</h1>
           <p className="lead">从问题定位到证据与修复，查看每一步的确定性核验结果。</p>
         </div>

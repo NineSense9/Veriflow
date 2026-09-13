@@ -8,25 +8,25 @@ ROOT = Path(__file__).resolve().parents[3]
 DEMOS = [
     {
         "id": "case1_order",
-        "title": "Ordering Failure",
+        "title": "顺序失败",
         "file": "examples/golden/case1_order.json",
         "kind": "static FAIL",
     },
     {
         "id": "case2_dataflow",
-        "title": "Dataflow Failure",
+        "title": "数据流失败",
         "file": "examples/golden/case2_dataflow.json",
         "kind": "static FAIL",
     },
     {
         "id": "case3_safety",
-        "title": "Safety Failure",
+        "title": "安全策略失败",
         "file": "examples/golden/case3_safety.json",
         "kind": "static FAIL",
     },
     {
         "id": "case4_runtime",
-        "title": "Static PASS + Runtime FAIL",
+        "title": "静态通过 · 运行失败",
         "file": "examples/golden/case4_runtime.json",
         "kind": "runtime FAIL",
     },

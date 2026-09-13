@@ -89,7 +89,7 @@ function StressInner() {
       <div className="stress" style={{ position: "relative" }}>
         {busy && effectsAllowScan(effects) ? <Scanner active /> : null}
         <div className="arena-top">
-          <span className="pid">STRESS</span>
+          <span className="pid">对拍</span>
           <label className="sr-only" htmlFor="stress-problem">
             题目
           </label>
