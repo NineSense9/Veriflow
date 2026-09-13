@@ -6,6 +6,7 @@
 .graph-surface .rf-node.selected { border-color: var(--accent); outline: 2px solid var(--accent-soft); background: var(--accent-soft); }
 .graph-surface .rf-node.err { border-color: var(--error); }
 .graph-surface .rf-node.dim { opacity: 1; }
+.graph-surface .rf-node.absent { border-style: dashed; border-color: var(--error); background: color-mix(in srgb, var(--error) 8%, var(--surface)); }
 .graph-surface .react-flow__node { cursor: pointer; }
 .graph-surface .react-flow__node:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .graph-surface .react-flow__edge-path { stroke-width: 1.5; }

@@ -11,6 +11,7 @@ export const EVIDENCE_KIND_ZH: Record<string, string> = {
   Requirement: "需求",
   VerificationRun: "核验运行",
   WorkflowEdge: "工作流边",
+  Absent: "未发生",
 };
 
 export const EVIDENCE_REL_ZH: Record<string, string> = {
@@ -29,6 +30,7 @@ export const EVIDENCE_REL_ZH: Record<string, string> = {
   CAUSED_BY: "起因",
   WITNESSES: "见证",
   MINIMIZES: "最小化",
+  REQUIRED: "要求发生",
 };
 
 export function evidenceKindLabel(type: string) {
@@ -74,6 +76,28 @@ export function selectEvidenceSubgraph(entities: EvidenceEntity[], relations: Ev
   };
 }
 
+export function attachAbsentEvents(
+  entities: EvidenceEntity[],
+  relations: EvidenceRelation[],
+  opts: { affectedNodeIds: string[]; tracedNodeIds: string[]; runtime: boolean },
+) {
+  if (!opts.runtime) return { entities, relations, absent: [] as string[] };
+  const traced = new Set(opts.tracedNodeIds);
+  const extraEntities: EvidenceEntity[] = [];
+  const extraRelations: EvidenceRelation[] = [];
+  const absent: string[] = [];
+  for (const nodeId of opts.affectedNodeIds) {
+    if (!nodeId || traced.has(nodeId)) continue;
+    const wfId = nodeEntityId(entities, nodeId);
+    if (!wfId || extraEntities.some((item) => item.id === `absent:${nodeId}`)) continue;
+    const id = `absent:${nodeId}`;
+    extraEntities.push({ id, type: "Absent", label: `轨迹中未见 ${nodeId}` });
+    extraRelations.push({ source_id: wfId, target_id: id, relation_type: "REQUIRED" });
+    absent.push(nodeId);
+  }
+  return { entities: [...entities, ...extraEntities], relations: [...relations, ...extraRelations], absent };
+}
+
 export function storyOrder(entities: EvidenceEntity[], focusId?: string, pathIds: string[] = []) {
   const used = new Set<string>();
   const sequence: EvidenceEntity[] = [];
@@ -87,7 +111,7 @@ export function storyOrder(entities: EvidenceEntity[], focusId?: string, pathIds
   take(focusId);
   for (const entity of entities.filter((item) => item.type === "Constraint")) take(entity.id);
   for (const nodeId of pathIds) take(nodeEntityId(entities, nodeId));
-  for (const type of ["WorkflowNode", "RuntimeEvent", "Algorithm", "Counterexample", "Requirement"]) {
+  for (const type of ["WorkflowNode", "Absent", "RuntimeEvent", "Algorithm", "Counterexample", "Requirement"]) {
     for (const entity of entities.filter((item) => item.type === type)) take(entity.id);
   }
   for (const entity of entities) take(entity.id);
@@ -109,6 +133,7 @@ export function layoutEvidence(entities: EvidenceEntity[], focusId?: string, pat
         label: entity.label,
         kind: evidenceKindLabel(entity.type),
         selected: entity.id === focusId || entity.type === "Issue",
+        absent: entity.type === "Absent",
       },
     })),
   };

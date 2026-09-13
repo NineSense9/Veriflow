@@ -83,6 +83,7 @@ export default function VerificationConsole({
   const { prefs, effects } = useEffects();
   const graphRef = useRef<GraphHandle>(null);
   const evidenceRef = useRef<GraphHandle>(null);
+  const panAfterApply = useRef(false);
   const [focused, setFocused] = useState("");
   const [scan, setScan] = useState(false);
   const [candidateId, setCandidateId] = useState("");
@@ -118,11 +119,13 @@ export default function VerificationConsole({
     steps: { reason: string; patches: { operation: string; source?: string | null; target?: string | null; node_id?: string | null; reason?: string }[] }[];
   } | null>(null);
 
-  function focusIssue(issue: VerifyIssue | null, nodeId?: string) {
+  function focusIssue(issue: VerifyIssue | null, nodeId?: string, pan = true) {
     setSelected(issue);
+    setGraphMode("workflow");
     const ids = issue ? matchingIssueNodes(issue, session?.ir.nodes || []) : nodeId ? [nodeId] : [];
     setNodeNote(issue && !ids.length ? "当前问题没有匹配的工作流节点；请查看预期、实际和证据。" : "");
-    setFocused(ids.length ? nodeId || ids[0] : "");
+    setFocused(ids.length ? (pan ? ids.join(" → ") : nodeId || ids[0]) : "");
+    if (!pan) return;
     if (ids.length) graphRef.current?.focusPath(ids);
     else graphRef.current?.fitAll();
   }
@@ -140,6 +143,10 @@ export default function VerificationConsole({
     setCompare(null);
     setNodeNote(firstIssue && !matchingIssueNodes(firstIssue, next.ir.nodes).length ? "当前问题没有匹配的工作流节点；请查看预期、实际和证据。" : "");
     setPipe(next.pipeline.find((step) => step.status !== "PASS")?.id ?? next.pipeline[0]?.id ?? null);
+    setGraphMode("workflow");
+    const ids = firstIssue ? matchingIssueNodes(firstIssue, next.ir.nodes) : [];
+    setFocused(ids.join(" → "));
+    panAfterApply.current = Boolean(ids.length);
   }
 
   async function loadDemo(id: string) {
@@ -202,6 +209,17 @@ export default function VerificationConsole({
     return () => { cancelled = true; requestId.current++; setAmbientActivity("idle"); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDemo, initialSession, latestOnOpen, reload]);
+
+  useEffect(() => {
+    if (!session || graphMode !== "workflow" || !panAfterApply.current) return;
+    const issue = session.static.issues[0] ?? session.runtime_findings?.[0];
+    const ids = issue ? matchingIssueNodes(issue, session.ir.nodes) : [];
+    const timer = window.setTimeout(() => {
+      if (ids.length) graphRef.current?.focusPath(ids);
+      panAfterApply.current = false;
+    }, 160);
+    return () => window.clearTimeout(timer);
+  }, [session, graphMode]);
 
   const highlight = useMemo(() => {
     if (!selected) return undefined;
@@ -448,7 +466,7 @@ export default function VerificationConsole({
                 >
                   <Maximize2 size={14} />
                 </button>
-                {focused && graphMode === "workflow" ? <span className="caption">高亮: {focused}</span> : null}
+                {focused && graphMode === "workflow" ? <span className="caption">见证路径: {focused}</span> : null}
               </div>
               <div className="vf-dag" style={{ position: "relative" }}>
                 {scan && effectsAllowScan(effects) ? <GridScan active /> : null}
@@ -465,7 +483,7 @@ export default function VerificationConsole({
                       );
                       setNodeNote(hit ? "" : `节点 ${id} 没有 finding。`);
                       if (hit) {
-                        focusIssue(hit, id);
+                        focusIssue(hit, id, false);
                         return;
                       }
                       const hop = ir.edges
@@ -488,6 +506,9 @@ export default function VerificationConsole({
                         )?.id
                       }
                       pathIds={highlight?.path ?? selected?.witness_path ?? []}
+                      affectedNodeIds={selected?.affected_nodes ?? []}
+                      tracedNodeIds={(session.trace?.events || []).map((event) => event.node_id)}
+                      runtime={selected?.category === "runtime" || selected?.id.startsWith("rt:")}
                       onSelectEntity={selectEvidenceEntity}
                     />
                 ) : <div className="graph-empty" role="status">当前问题没有可用证据图</div>}
