@@ -15,7 +15,7 @@ case "$action" in
     [[ ! -e "$release" ]] || { echo 'Release already exists'; exit 2; }
     mkdir -p "$release"
     tar -xzf "/tmp/veriflow-$revision.tar.gz" -C "$release"
-    cmp "$web/package-lock.json" "$root/apps/web/package-lock.json"
+    node -e 'require("node:assert/strict").deepStrictEqual(JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8")), JSON.parse(require("node:fs").readFileSync(process.argv[2],"utf8")))' "$web/package-lock.json" "$root/apps/web/package-lock.json"
     ln -s "$root/apps/web/node_modules" "$web/node_modules"
     if [[ -f "$root/apps/web/.env.production" ]]; then cp "$root/apps/web/.env.production" "$web/.env.production"; fi
     cd "$web"
