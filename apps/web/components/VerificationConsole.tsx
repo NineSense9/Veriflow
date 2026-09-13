@@ -422,7 +422,7 @@ export default function VerificationConsole({
           <MagicBento gridClassName="vf-evidence-grid" enableSpotlight={false} enableBorderGlow={false} disableAnimations>
             <section className="vf-viz" ref={graphSection} tabIndex={-1} aria-label="工作流图">
               <div className="vf-toolbar vf-graph-toolbar">
-                <h2><GitBranch size={16} /> {graphMode === "workflow" ? "工作流图" : "当前问题证据图"} {graphMode === "workflow" ? <span>{session.ir.nodes.length} 节点 · {session.ir.edges.length} 连线</span> : null}</h2>
+                <h2><GitBranch size={16} /> {graphMode === "workflow" ? "工作流图" : "当前问题证据链"} {graphMode === "workflow" ? <span>{session.ir.nodes.length} 节点 · {session.ir.edges.length} 连线</span> : null}</h2>
                 <button
                   type="button"
                   className={graphMode === "workflow" ? "btn btn-sm btn-primary" : "btn btn-sm"}
@@ -487,6 +487,7 @@ export default function VerificationConsole({
                             selected && item.type === "Issue" && (item.label === selected.code || item.id.endsWith(selected.id)),
                         )?.id
                       }
+                      pathIds={highlight?.path ?? selected?.witness_path ?? []}
                       onSelectEntity={selectEvidenceEntity}
                     />
                 ) : <div className="graph-empty" role="status">当前问题没有可用证据图</div>}

@@ -43,9 +43,17 @@ export default function RuntimeReplay({
 
   useEffect(() => {
     if (!selectionKey) return;
-    const related = new Set(relatedKey.split(",").filter(Boolean).map(Number));
-    const selected = events.findIndex((event) => related.has(event.event_index));
-    setIndex(selected < 0 ? events.length : selected);
+    const related = relatedKey.split(",").filter(Boolean).map(Number);
+    if (!related.length) {
+      setIndex(events.length);
+      setPlaying(false);
+      return;
+    }
+    const last = Math.max(
+      ...related.map((eventIndex) => events.findIndex((event) => event.event_index === eventIndex)).filter((i) => i >= 0),
+      -1,
+    );
+    setIndex(last < 0 ? events.length : last);
     setPlaying(false);
   }, [selectionKey, events, relatedKey]);
 
@@ -67,7 +75,7 @@ export default function RuntimeReplay({
       <header className="section-row">
         <h3>运行轨迹</h3>
         <span className="caption">
-          {playing ? "回放中" : "已记录"} · {events.length} events
+          {playing ? "回放中" : "已记录"} · {events.length} 个事件
         </span>
         <div className="vf-replay-controls">
           <button type="button" className="icon-btn" title={playing ? "暂停回放" : "回放记录"} aria-label={playing ? "暂停回放" : "回放记录"} disabled={!effectsAllowScan(effects)} onClick={() => { if (!playing && index >= events.length - 1) setIndex(0); setPlaying(!playing); }}>{playing ? <Pause size={13} /> : <Play size={13} />}</button>
@@ -82,8 +90,11 @@ export default function RuntimeReplay({
         ))}
       </ol>
       <p className="caption">
-        当前 {current.node_id}{current.branch ? ` · branch ${current.branch}` : ""} · 记录回放
-        {selectionKey ? selectedEventIndices.length ? ` · ${selectedEventIndices.length} 个相关事件` : " · 当前问题无匹配事件" : ""}
+        {selectedEventIndices.length
+          ? `当前问题相关轨迹停在 ${current.node_id}${current.branch ? ` · ${current.branch}` : ""} · ${selectedEventIndices.length} 个相关事件`
+          : selectionKey
+            ? "当前问题在轨迹中没有对应事件（约束要求发生，但记录里没有）"
+            : `当前 ${current.node_id}${current.branch ? ` · ${current.branch}` : ""} · 记录回放`}
       </p>
     </div>
   );

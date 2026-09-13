@@ -1,8 +1,8 @@
 .graph-surface { width: 100%; min-width: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin; background: var(--surface); border-radius: 8px; }
 .graph-surface-canvas { min-height: 260px; position: relative; }
-.graph-surface .rf-node { box-sizing: border-box; width: 176px; min-width: 176px; max-width: 176px; height: 100px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; }
+.graph-surface .rf-node { box-sizing: border-box; width: 168px; min-width: 168px; max-width: 168px; height: 88px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; }
 .graph-surface .rf-kind { font-size: 10px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.graph-surface .rf-node strong { font-size: 13px; line-height: 18px; overflow-wrap: anywhere; word-break: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.graph-surface .rf-node strong { font-size: 12px; line-height: 16px; max-height: 48px; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .graph-surface .rf-node.selected { border-color: var(--accent); outline: 2px solid var(--accent-soft); background: var(--accent-soft); }
 .graph-surface .rf-node.err { border-color: var(--error); }
 .graph-surface .rf-node.dim { opacity: 1; }

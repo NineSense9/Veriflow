@@ -1,7 +1,46 @@
 export type EvidenceEntity = { id: string; type: string; label: string };
 export type EvidenceRelation = { source_id: string; target_id: string; relation_type: string };
 
-const TYPES = ["Issue", "Constraint", "WorkflowNode", "RuntimeEvent", "Algorithm", "Counterexample", "Requirement", "VerificationRun", "WorkflowEdge"];
+export const EVIDENCE_KIND_ZH: Record<string, string> = {
+  Issue: "问题",
+  Constraint: "约束",
+  WorkflowNode: "工作流节点",
+  RuntimeEvent: "运行事件",
+  Algorithm: "算法",
+  Counterexample: "反例",
+  Requirement: "需求",
+  VerificationRun: "核验运行",
+  WorkflowEdge: "工作流边",
+};
+
+export const EVIDENCE_REL_ZH: Record<string, string> = {
+  VIOLATES: "违反",
+  INVOLVES: "涉及",
+  DETECTED_BY: "检测自",
+  DETECTED: "检测自",
+  CONSTRAINS: "约束",
+  FROM_REQUIREMENT: "来自需求",
+  HAS_REQUIREMENT: "对应需求",
+  HAS_EVENT: "轨迹",
+  ON_NODE: "落在",
+  PRODUCED_BY: "产生自",
+};
+
+export function evidenceKindLabel(type: string) {
+  return EVIDENCE_KIND_ZH[type] || type;
+}
+
+export function evidenceRelationLabel(type: string) {
+  return EVIDENCE_REL_ZH[type] || EVIDENCE_REL_ZH[type.toUpperCase()] || type;
+}
+
+function nodeEntityId(entities: EvidenceEntity[], nodeId: string) {
+  return entities.find(
+    (entity) =>
+      entity.type === "WorkflowNode" &&
+      (entity.id === nodeId || entity.id.endsWith(nodeId) || entity.label === nodeId || entity.label.endsWith(nodeId)),
+  )?.id;
+}
 
 export function selectEvidenceSubgraph(entities: EvidenceEntity[], relations: EvidenceRelation[], focusId?: string) {
   const byId = new Map(entities.map((entity) => [entity.id, entity]));
@@ -30,17 +69,42 @@ export function selectEvidenceSubgraph(entities: EvidenceEntity[], relations: Ev
   };
 }
 
-export function layoutEvidence(entities: EvidenceEntity[]) {
-  const types = [...TYPES.filter((type) => entities.some((entity) => entity.type === type)),
-    ...Array.from(new Set(entities.map((entity) => entity.type))).filter((type) => !TYPES.includes(type)).sort()];
-  const columns = types.map((type) => entities.filter((entity) => entity.type === type).sort((a, b) => a.id.localeCompare(b.id)));
-  const maxRows = Math.max(1, ...columns.map((column) => column.length));
+export function storyOrder(entities: EvidenceEntity[], focusId?: string, pathIds: string[] = []) {
+  const used = new Set<string>();
+  const sequence: EvidenceEntity[] = [];
+  const take = (id?: string) => {
+    if (!id) return;
+    const entity = entities.find((item) => item.id === id);
+    if (!entity || used.has(entity.id)) return;
+    sequence.push(entity);
+    used.add(entity.id);
+  };
+  take(focusId);
+  for (const entity of entities.filter((item) => item.type === "Constraint")) take(entity.id);
+  for (const nodeId of pathIds) take(nodeEntityId(entities, nodeId));
+  for (const type of ["WorkflowNode", "RuntimeEvent", "Algorithm", "Counterexample", "Requirement"]) {
+    for (const entity of entities.filter((item) => item.type === type)) take(entity.id);
+  }
+  for (const entity of entities) take(entity.id);
+  return sequence;
+}
+
+export function layoutEvidence(entities: EvidenceEntity[], focusId?: string, pathIds: string[] = []) {
+  const sequence = storyOrder(entities, focusId, pathIds);
   return {
-    maxRows, maxDepth: columns.length, nodeCount: entities.length,
-    nodes: columns.flatMap((column, col) => column.map((entity, row) => ({
-      id: entity.id, type: "kind", position: { x: col * 220, y: ((maxRows - column.length) / 2 + row) * 132 },
-      style: { width: 176, height: 100 },
-      data: { label: entity.label, kind: entity.type, selected: entity.type === "Issue" },
-    }))),
+    maxRows: 1,
+    maxDepth: Math.max(1, sequence.length),
+    nodeCount: sequence.length,
+    nodes: sequence.map((entity, col) => ({
+      id: entity.id,
+      type: "kind",
+      position: { x: 16 + col * 196, y: 28 },
+      style: { width: 168, height: 88 },
+      data: {
+        label: entity.label,
+        kind: evidenceKindLabel(entity.type),
+        selected: entity.id === focusId || entity.type === "Issue",
+      },
+    })),
   };
 }

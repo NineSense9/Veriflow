@@ -58,7 +58,7 @@ for (const name of ["case1_order", "case2_dataflow", "case3_safety", "case4_runt
     }
     await page.locator(".vf-issue-option").first().click();
     await page.getByRole("button", { name: "证据图", exact: true }).click();
-    const graph = page.getByRole("region", { name: "当前问题局部证据链" });
+    const graph = page.getByRole("region", { name: "当前问题证据链" });
     await expect(graph).toBeVisible();
     await expect.poll(async () => (await bounds(page)).contained).toBe(true);
     expect((await bounds(page)).overlap).toBe(false);
@@ -84,7 +84,7 @@ for (const width of [1440, 1280, 768, 390]) for (const theme of ["light", "dark"
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.locator(".vf-viz").screenshot({ path: path.join(output, `workflow-${width}-${theme}.png`) });
     await page.getByRole("button", { name: "证据图", exact: true }).click();
-    await expect(page.getByRole("region", { name: "当前问题局部证据链" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "当前问题证据链" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.locator(".vf-viz").screenshot({ path: path.join(output, `evidence-${width}-${theme}.png`) });
   });
