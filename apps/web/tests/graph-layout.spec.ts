@@ -64,6 +64,11 @@ for (const name of ["case1_order", "case2_dataflow", "case3_safety", "case4_runt
     const ids = await graph.locator(".react-flow__node").evaluateAll(nodes => nodes.map(node => node.getAttribute("data-id")));
     expect(ids.filter(id => id?.startsWith("issue:"))).toHaveLength(1);
     expect(ids.length).toBeLessThan(cases[name].graph.entities.length);
+    const evidenceNode = graph.locator(".react-flow__node").first();
+    await evidenceNode.click();
+    await expect(page.getByRole("region", { name: "证据实体详情" }).or(page.getByRole("region", { name: "当前问题证据" }))).toBeVisible();
+    await evidenceNode.focus();
+    await evidenceNode.press("Enter");
     await page.getByRole("button", { name: "适应画布", exact: true }).click();
     await page.screenshot({ path: path.join(output, `${name}-evidence.png`), fullPage: true });
   });

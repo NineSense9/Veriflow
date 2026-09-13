@@ -25,6 +25,7 @@ import { effectsAllowScan, useEffects } from "@/lib/effects";
 import { setAmbientActivity } from "@/lib/ambient-activity";
 import ComposeCanvas, { type GraphHandle } from "@/components/ComposeCanvas";
 import { matchingIssueNodes } from "./verification-selection";
+import { evidenceEntityAction } from "./evidence-interaction";
 import "./verification-workbench.css";
 const EvidenceGraphView = dynamic(() => import("@/components/EvidenceGraphView"), { ssr: false });
 
@@ -84,6 +85,7 @@ export default function VerificationConsole({
   const [focused, setFocused] = useState("");
   const [scan, setScan] = useState(false);
   const [candidateId, setCandidateId] = useState("");
+  const [entityDetail, setEntityDetail] = useState<{ type: string; label: string; id: string; metadata?: Record<string, unknown> } | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [reload, setReload] = useState(0);
   const requestId = useRef(0);
@@ -263,6 +265,18 @@ export default function VerificationConsole({
   const selectedEvents = session?.trace?.events.filter((event) =>
     runtimeFinding?.trace_slice?.includes(event.event_index) || selectedNodes.includes(event.node_id) || selected?.witness_path?.includes(String(event.event_index)),
   ).map((event) => event.event_index) || [];
+  function selectEvidenceEntity(entity: { id: string; type: string; label: string; metadata?: Record<string, unknown> }) {
+    const action = evidenceEntityAction(entity);
+    if (action.kind === "issue") {
+      const hit = issues.find((issue) => issue.id === action.id || issue.code === entity.label || issue.constraint_id === entity.label || entity.id.endsWith(issue.id));
+      if (hit) { focusIssue(hit); setEntityDetail(null); return; }
+    }
+    if (action.kind === "workflow-node") {
+      const node = session?.ir.nodes.find(item => item.id === action.id);
+      if (node) { setGraphMode("workflow"); graphRef.current?.focusPath([node.id]); setFocused(node.id); setEntityDetail(null); return; }
+    }
+    setEntityDetail(entity);
+  }
   const scrollTo = (target: "workflow" | "evidence" | "repair") => {
     setView(target);
     let el: HTMLElement | null = target === "workflow" ? graphSection.current : findingsSection.current;
@@ -463,6 +477,7 @@ export default function VerificationConsole({
                             selected && item.type === "Issue" && (item.label === selected.code || item.id.endsWith(selected.id)),
                         )?.id
                       }
+                      onSelectEntity={selectEvidenceEntity}
                     />
                 ) : <div className="graph-empty" role="status">当前问题没有可用证据图</div>}
               </div>
@@ -544,6 +559,11 @@ export default function VerificationConsole({
                   </dl></details>
                 </section>
               ) : null}
+              {entityDetail ? <section className="vf-entity-detail" aria-label="证据实体详情">
+                <div className="vf-evidence-heading"><span>{entityDetail.type}</span><span>{entityDetail.id}</span></div>
+                <p>{entityDetail.label}</p>
+                {entityDetail.metadata ? <dl className="vf-kv">{Object.entries(entityDetail.metadata).filter(([, value]) => value != null && value !== "").slice(0, 6).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}</dl> : null}
+              </section> : null}
               {session.ambiguity && session.ambiguity.status !== "CLEAR" ? (
                 <p className="caption">
                   Requirement {session.ambiguity.status} ({session.ambiguity.method})
