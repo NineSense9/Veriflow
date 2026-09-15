@@ -55,6 +55,15 @@ export default function ProblemsPage() {
           <h1>题库</h1>
           <p className="lead">训练场。选题、对拍、提交。通过率来自服务端统计，不是模型自评。</p>
         </header>
+        <aside className="ingest-banner" aria-label="入库检查">
+          <p>
+            <strong>有题目未通过入库检查</strong>
+            一份出题流程规定必须入库，跑完记录里没有这一步，所以不能进库。
+          </p>
+          <Link className="btn btn-sm" href="/report?demo=case4_runtime">
+            查看检查结果
+          </Link>
+        </aside>
         {error ? <p className="err" role="alert">{error}</p> : null}
         <div className="toolbar">
           <label className="sr-only" htmlFor="problem-search">

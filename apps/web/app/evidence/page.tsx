@@ -44,7 +44,7 @@ export default function EvidencePage() {
         <header className="page-head tight evidence-cert">
           <p className="kicker">证据证书</p>
           <h1>证据证书</h1>
-          <p className="lead">提案来源与判定权分开记录。模型没有最终判定权。</p>
+          <p className="lead">这是入库检查的依据：提案来源和最终判定分开记录。模型没有最终判定权。</p>
         </header>
         {error ? <p className="err">{error}</p> : null}
         {!session ? (

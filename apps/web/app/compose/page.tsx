@@ -54,7 +54,7 @@ export default function ComposeIndexPage() {
     setBusy(true);
     setError("");
     setLastAction(null);
-    setPhase(prefs.aiInterpret ? "正在编译需求，生成工作流草稿…" : "正在按规则编译工作流草稿…");
+    setPhase(prefs.aiInterpret ? "正在根据需求生成出题草案…" : "正在按规则生成出题草案…");
     try {
       const project = await api.composeCreate(nl, prefs.aiInterpret);
       router.push(`/compose/${project.id}`);
@@ -88,9 +88,9 @@ export default function ComposeIndexPage() {
       <main className={`page wide ${styles.compose}`}>
         <header className={styles.composeHeader}>
           <BrandAmbient variant="lines" className={styles.headingAmbient} />
-          <p className={styles.eyebrow}>01 / 从需求开始</p>
-          <h1>描述需求，编译工作流。</h1>
-          <p>把目标与约束写清楚，生成可检查、可修改的工作流草稿。</p>
+          <p className={styles.eyebrow}>入库检查 / 出题草案</p>
+          <h1>描述出题要求，生成待检查草稿。</h1>
+          <p>写清题目、审题和入库条件。编译只出草案，进库前仍要过检查。</p>
         </header>
 
         <div className={styles.composeLayout}>
@@ -99,20 +99,20 @@ export default function ComposeIndexPage() {
             <label className={styles.inputLabel} htmlFor="compose-nl">描述要生成的题目、工作步骤与限制条件</label>
             <textarea id="compose-nl" className={styles.requirementInput} rows={7} value={nl} onChange={(event) => setNl(event.target.value)} disabled={busy} required placeholder="例如：生成一道最长递增子序列题，约束输入规模，生成边界测试，通过审题后入库。" aria-describedby="compose-help" />
             <p id="compose-help" className={styles.inputHelp}>建议包含：题目目标、输入范围、测试要求、审题与入库条件。</p>
-            <div className={styles.compileFooter}><span>编译后进入草稿，继续验证与修复。</span><button className="btn btn-primary" type="submit" disabled={busy || !nl.trim()}>{busy ? "处理中…" : "编译工作流"}<span aria-hidden="true">→</span></button></div>
+            <div className={styles.compileFooter}><span>编译后进入草稿，再做入库检查。</span><button className="btn btn-primary" type="submit" disabled={busy || !nl.trim()}>{busy ? "处理中…" : "生成草案"}<span aria-hidden="true">→</span></button></div>
             {busy ? <p className={styles.busyMessage} role="status">{phase}</p> : null}
             {error ? <div className={styles.inlineError} role="alert"><p>{error}</p><button className="btn btn-sm" type="button" disabled={busy} onClick={() => lastAction ? loadExample(lastAction) : compile()}>重试{lastAction ? "创建示例" : "编译"}</button></div> : null}
           </form>
 
           <aside className={styles.composeAside} aria-labelledby="examples-title">
-            <div className={styles.asideIntro}><span className={styles.asideIndex}>需求 → 工作流 → 验证</span><h2 id="examples-title">从一个示例开始</h2><p>选择示例会创建一份新草稿，并打开工作流编辑页面。</p></div>
+            <div className={styles.asideIntro}><span className={styles.asideIndex}>草案 → 检查 → 入库</span><h2 id="examples-title">从一个示例开始</h2><p>选择示例会创建一份新草稿。过检查之前不能进题库。</p></div>
             <div className={styles.exampleList}>{EXAMPLES.map((item, index) => <button className={styles.exampleButton} key={item.name} type="button" disabled={busy} onClick={() => loadExample(item.name)}><span className={styles.caseNumber}>0{index + 1}</span><span><strong>{item.label}</strong><small>{item.description}</small></span><span aria-hidden="true">↗</span></button>)}</div>
-            <p className={styles.verifierNote}><span aria-hidden="true">✓</span> 编译生成候选，验证器独立给出结论。</p>
+            <p className={styles.verifierNote}><span aria-hidden="true">✓</span> 草案由 AI 或规则生成，能否进库由验证器判定。</p>
           </aside>
         </div>
 
         <section className={styles.drafts} aria-labelledby="drafts-title">
-          <div className={styles.panelHeading}><h2 id="drafts-title">工作流草稿 {loaded && !listError ? <span className={styles.count}>{rows.length}</span> : null}</h2><button className="btn btn-ghost btn-sm" onClick={refresh} disabled={!loaded}>刷新列表</button></div>
+          <div className={styles.panelHeading}><h2 id="drafts-title">出题草稿 {loaded && !listError ? <span className={styles.count}>{rows.length}</span> : null}</h2><button className="btn btn-ghost btn-sm" onClick={refresh} disabled={!loaded}>刷新列表</button></div>
           {!loaded ? <p className={styles.quietState} role="status">正在读取草稿…</p> : listError ? <div className={styles.inlineError} role="alert"><p>{listError}</p><button className="btn btn-sm" type="button" onClick={refresh}>重新加载</button></div> : !rows.length ? <div className={styles.draftEmpty}><span aria-hidden="true">⌁</span><h3>还没有工作流草稿</h3><p>编译上方需求，或选择一个示例开始。</p></div> : (
             <div className={styles.draftTableWrap}><table className={`table ${styles.draftTable}`}><thead><tr><th className="num">编号</th><th>需求描述</th><th>草稿状态</th><th>审题状态</th><th>入库题目</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td className="num"><Link href={`/compose/${row.id}`}>#{row.id}</Link></td><td className={styles.draftDescription}><Link href={`/compose/${row.id}`}>{row.source_nl || "未命名需求"}</Link></td><td><DraftStatus value={row.status} /></td><td><DraftStatus value={row.gate_status} /></td><td>{row.published_problem_id ? <Link href={`/problems/${row.published_problem_id}`}>{row.published_problem_id}</Link> : <span className={styles.smallLabel}>未入库</span>}</td></tr>)}</tbody></table></div>
           )}

@@ -31,9 +31,9 @@ function ReportBody() {
     <main className="page vf-page">
       <header className="page-head split tight">
         <div>
-          <p className="kicker">核验工作台</p>
-          <h1>核验工作台</h1>
-          <p className="lead">从问题定位到证据与修复，查看每一步的确定性核验结果。</p>
+          <p className="kicker">入库检查</p>
+          <h1>入库检查</h1>
+          <p className="lead">AI 可以帮忙出题，但题进库必须过检查。过不过由验证器根据记录判定，不是模型自评。</p>
         </div>
       </header>
       <VerificationConsole initialDemo={demo} />

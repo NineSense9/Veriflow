@@ -11,10 +11,10 @@ import FadeContent from "@/components/reactbits/FadeContent";
 import styles from "../entry.module.css";
 
 const PIPE = [
-  { label: "需求", hint: "用自然语言描述目标与约束" },
-  { label: "工作流", hint: "将需求编译成可检查的图" },
-  { label: "验证", hint: "检查结构、语义与运行过程" },
-  { label: "证据与修复", hint: "定位问题，修复后再次验证" },
+  { label: "题库", hint: "选题、看题、按标签筛选" },
+  { label: "对拍", hint: "生成器、暴力和解对照" },
+  { label: "提交", hint: "沙箱实测，不是模型自评" },
+  { label: "入库检查", hint: "AI 出题进库前必须过验证器" },
 ];
 
 export default function LoginPage() {
@@ -61,9 +61,9 @@ export default function LoginPage() {
         <BrandAmbient variant="rays" className={styles.loginAmbient} />
         <FadeContent className={styles.loginIntroContent}>
           <Brand href={null} />
-          <p className={styles.eyebrow}>可验证工作流</p>
-          <h1>让 AI 生成的工作流，<br /><span>经得起验证。</span></h1>
-          <p className={styles.introDescription}>从一句需求到一份可追溯的验证证据。<br />让每一次生成，都有清晰的检查与修复路径。</p>
+          <p className={styles.eyebrow}>训练评测</p>
+          <h1>题库、对拍、提交。<br /><span>进库前要过检查。</span></h1>
+          <p className={styles.introDescription}>刷题和对拍在训练场。<br />AI 可以帮忙出题，但不能自己说能进库。</p>
         </FadeContent>
       </section>
       <section className={styles.loginPanel} aria-labelledby="login-title">
@@ -133,7 +133,7 @@ export default function LoginPage() {
           </div>
         </div>
       </section>
-      <section className={styles.loginStory} aria-label="从需求到证据的四个步骤">
+      <section className={styles.loginStory} aria-label="训练场与入库检查">
         <ol className={styles.loginPath}>
           {PIPE.map((step, index) => (
             <li key={step.label}>
@@ -143,7 +143,7 @@ export default function LoginPage() {
             </li>
           ))}
         </ol>
-        <p className={styles.loginPrinciple}><span aria-hidden="true">✓</span> 模型生成候选，验证器给出判定。</p>
+        <p className={styles.loginPrinciple}><span aria-hidden="true">✓</span> 训练在题库和对拍；进库前由验证器检查，不是模型说了算。</p>
       </section>
     </div>
   );
