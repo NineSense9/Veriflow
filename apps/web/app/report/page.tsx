@@ -23,6 +23,7 @@ const TRAIN: { title: string; keys: [string, string][] }[] = [
 function ReportBody() {
   const search = useSearchParams();
   const demo = search.get("demo") || "case4_runtime";
+  const tour = search.get("tour") === "1";
   const [train, setTrain] = useState<Record<string, number | null> | null>(null);
   useEffect(() => {
     api.report().then(setTrain).catch(() => undefined);
@@ -34,9 +35,14 @@ function ReportBody() {
           <p className="kicker">入库检查</p>
           <h1>入库检查</h1>
           <p className="lead">AI 可以帮忙出题，但题进库必须过检查。过不过由验证器根据记录判定，不是模型自评。</p>
+          <ol className="judge-path" aria-label="三分钟演示">
+            <li><span>1</span>拦住：该入库却未入库</li>
+            <li><span>2</span>证据：轨迹中未见这一步</li>
+            <li><span>3</span>修复仍受约束：AI 补丁也要过守卫</li>
+          </ol>
         </div>
       </header>
-      <VerificationConsole initialDemo={demo} />
+      <VerificationConsole initialDemo={demo} tour={tour} />
       {train ? (
         <details className="vf-disclosure vf-training"><summary>{TRAIN[0].title}</summary><div className="vf-disclosure-body">
           <dl className="kv">

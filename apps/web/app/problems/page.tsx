@@ -55,13 +55,13 @@ export default function ProblemsPage() {
           <h1>题库</h1>
           <p className="lead">训练场。选题、对拍、提交。通过率来自服务端统计，不是模型自评。</p>
         </header>
-        <aside className="ingest-banner" aria-label="入库检查">
+        <aside className="ingest-banner" aria-label="评委演示：入库检查">
           <p>
-            <strong>有题目未通过入库检查</strong>
-            一份出题流程规定必须入库，跑完记录里没有这一步，所以不能进库。
+            <strong>看为什么这题不能进库</strong>
+            规定必须入库，记录里没有这一步，系统拦住。进去可看缺席证据；AI 提补丁也要过守卫，不会自动进库。
           </p>
-          <Link className="btn btn-sm" href="/report?demo=case4_runtime">
-            查看检查结果
+          <Link className="btn btn-sm btn-primary" href="/report?demo=case4_runtime&tour=1">
+            开始演示
           </Link>
         </aside>
         {error ? <p className="err" role="alert">{error}</p> : null}

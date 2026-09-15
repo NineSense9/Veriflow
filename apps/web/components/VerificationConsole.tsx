@@ -26,6 +26,7 @@ import { setAmbientActivity } from "@/lib/ambient-activity";
 import ComposeCanvas, { type GraphHandle } from "@/components/ComposeCanvas";
 import { matchingIssueNodes } from "./verification-selection";
 import { demoTitle, pipelineLabel } from "@/lib/ui-zh";
+import { shouldLoadDemoWhenOpening } from "@/lib/session-selection";
 import { evidenceEntityAction } from "./evidence-interaction";
 import "./verification-workbench.css";
 const EvidenceGraphView = dynamic(() => import("@/components/EvidenceGraphView"), { ssr: false });
@@ -42,10 +43,12 @@ export default function VerificationConsole({
   initialDemo = "case4_runtime",
   initialSession,
   latestOnOpen = false,
+  tour = false,
 }: {
   initialDemo?: string;
   initialSession?: VerifySession | null;
   latestOnOpen?: boolean;
+  tour?: boolean;
 }) {
   const [demos, setDemos] = useState<{ id: string; title: string; kind: string }[]>([]);
   const [session, setSession] = useState<VerifySession | null>(null);
@@ -189,16 +192,12 @@ export default function VerificationConsole({
         if (cancelled) return;
         setHistory(hist.runs);
         const latestId = hist.runs[0]?.id;
-        if (!latestId) {
+        if (shouldLoadDemoWhenOpening({ hasLatestRun: Boolean(latestId) })) {
           await loadDemo(initialDemo);
           return;
         }
         const latest = await api.reportRun(latestId);
         if (cancelled) return;
-        if (latest.status === "PASS" && latest.parent_run_id) {
-          await loadDemo(initialDemo);
-          return;
-        }
         apply(latest);
         if (latest.ir?.name) setDemoId(latest.ir.name);
       }).catch((err: Error) => { if (!cancelled) setError(err.message); })
@@ -307,10 +306,14 @@ export default function VerificationConsole({
   }
   const scrollTo = (target: "workflow" | "evidence" | "repair") => {
     setView(target);
-    let el: HTMLElement | null = target === "workflow" ? graphSection.current : findingsSection.current;
+    if (target === "evidence") setGraphMode("evidence");
+    if (target === "workflow") setGraphMode("workflow");
+    let el: HTMLElement | null = target === "repair" ? null : graphSection.current;
     if (target === "repair") {
       if (repairSection.current) { repairSection.current.open = true; el = repairSection.current; }
       else el = repairButton.current;
+    } else if (target === "evidence") {
+      el = graphSection.current || findingsSection.current;
     }
     el?.scrollIntoView({ behavior: effectsAllowScan(effects) ? "smooth" : "instant", block: "nearest" });
     el?.focus({ preventScroll: true });
@@ -326,6 +329,17 @@ export default function VerificationConsole({
             </button>
           ))}
         </div>
+        <ol className="vf-story-rail" aria-label="评委三步">
+          <li className={graphMode === "workflow" && view !== "repair" ? "is-active" : undefined}>
+            <button type="button" onClick={() => scrollTo("workflow")}><span>1</span>拦住</button>
+          </li>
+          <li className={graphMode === "evidence" ? "is-active" : undefined}>
+            <button type="button" onClick={() => scrollTo("evidence")}><span>2</span>缺席证据</button>
+          </li>
+          <li className={view === "repair" ? "is-active" : undefined}>
+            <button type="button" onClick={() => scrollTo("repair")}><span>3</span>修复仍受约束</button>
+          </li>
+        </ol>
         <span className="vf-session-source"><ShieldCheck size={14} /> 确定性核验 · {initialLoading ? "读取中" : "已记录的结果"}</span>
       </nav>
       <div className="vf-toolbar vf-session-actions">
@@ -395,6 +409,12 @@ export default function VerificationConsole({
           </button>
         ) : null}
       </div>
+      {session && issues.length ? (
+        <p className="caption vf-repair-hint">
+          {tour ? "演示第三步：" : ""}
+          「受约束修复」会让 AI 或规则提补丁，再过守卫和再验证。模型说修好了也不会自动进库。
+        </p>
+      ) : null}
       {error ? (
         <p className="err" role="alert">
           {error}
@@ -733,12 +753,13 @@ export default function VerificationConsole({
             <details className="vf-disclosure"><summary>已记录的运行回放 <span>{session.trace.events.length} events · 非重新执行</span></summary><div className="vf-disclosure-body"><RuntimeReplay events={session.trace.events} play={false} /></div></details>
           ) : null}
           {repair && origin ? (
-            <details className="vf-disclosure vf-repair" ref={repairSection} tabIndex={-1} open={view === "repair"}><summary>受约束修复记录 <span>Repair → Guard → Re-Verify</span></summary><div className="vf-disclosure-body">
+            <details className="vf-disclosure vf-repair" ref={repairSection} tabIndex={-1} open={view === "repair"}><summary>受约束修复记录 <span>提案 → 守卫 → 再验证</span></summary><div className="vf-disclosure-body">
               <p className="vf-repair-decision"><strong>最终决策：{repair.final_decision || "—"}</strong> · {chip(repair.final.status)}</p>
               <p className="caption">
-                Problem / Proposal / Guard playback / Outcome. selected_candidate_id 与 final_decision 分离。source 来自 API，不在前端猜。
-                {origin.run_id ? ` Before #${origin.run_id}` : ""}
-                {session.run_id ? ` · After #${session.run_id}` : ""}.
+                AI 或规则只提出补丁。守卫拒绝 {repair.candidates_rejected_guard ?? 0} 个，增量拒绝 {repair.candidates_rejected_incremental ?? 0} 个。
+                再验证后状态 {repair.final.status}。补丁未因模型表态而自动获准入库。
+                {origin.run_id ? ` 修复前 #${origin.run_id}` : ""}
+                {session.run_id ? ` · 修复后 #${session.run_id}` : ""}。
               </p>
               {repair.candidates?.length ? (
                 <div className="vf-candidates">
