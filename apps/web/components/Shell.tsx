@@ -13,10 +13,15 @@ import CardNav from "@/components/reactbits/CardNav";
 import StaggeredMenu from "@/components/reactbits/StaggeredMenu";
 
 const CORE = [
-  { href: "/", label: "工作台" },
-  { href: "/compose", label: "需求编译" },
-  { href: "/report", label: "验证" },
-  { href: "/evidence", label: "证据" },
+  { href: "/problems", label: "题库" },
+  { href: "/stress", label: "对拍" },
+  { href: "/status", label: "提交" },
+];
+
+const CHECK_LINKS = [
+  { href: "/report", label: "检查结果", description: "题进库前的核验" },
+  { href: "/compose", label: "需求编译", description: "AI 出题草案" },
+  { href: "/evidence", label: "证据", description: "判定依据" },
 ];
 
 const EVAL_LINKS = [
@@ -24,17 +29,10 @@ const EVAL_LINKS = [
   { href: "/benchmark", label: "基准", description: "评测实验室" },
   { href: "/algorithms", label: "算法中心", description: "验证器注册表" },
   { href: "/architecture", label: "系统地图", description: "仓库内架构图" },
-];
-
-const LAB_LINKS = [
-  { href: "/problems", label: "题库", description: "训练题目" },
   { href: "/sets", label: "题单", description: "题目分组" },
-  { href: "/status", label: "提交记录", description: "评测历史" },
-  { href: "/stress", label: "对拍", description: "压力对拍" },
 ];
 
 const EVAL_ITEMS = EVAL_LINKS;
-const LAB_ITEMS = LAB_LINKS;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -146,20 +144,20 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const drawer = useMemo(
     () => (
       <nav className="drawer-nav" id="site-nav">
-        <p className="nav-group-label">核心</p>
+        <p className="nav-group-label">训练</p>
         {CORE.map((link) => (
+          <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
+            {link.label}
+          </Link>
+        ))}
+        <p className="nav-group-label">入库检查</p>
+        {CHECK_LINKS.map((link) => (
           <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
             {link.label}
           </Link>
         ))}
         <p className="nav-group-label">评估</p>
         {EVAL_ITEMS.map((link) => (
-          <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
-            {link.label}
-          </Link>
-        ))}
-        <p className="nav-group-label">实验室</p>
-        {LAB_ITEMS.map((link) => (
           <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
             {link.label}
           </Link>
@@ -196,8 +194,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         onClose={() => setNavOpen(false)}
         items={[
           ...CORE.map((item) => ({ label: item.label, link: item.href })),
+          ...CHECK_LINKS.map((item) => ({ label: item.label, link: item.href })),
           ...EVAL_LINKS.map((item) => ({ label: item.label, link: item.href })),
-          ...LAB_LINKS.map((item) => ({ label: item.label, link: item.href })),
           { label: "设置", link: "/settings" },
         ]}
       />
@@ -218,8 +216,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </button>
         <nav className="top-nav" aria-label="主导航" ref={navRef}>
           <PillNav items={CORE} activeHref={pathname} className="desktop-pill" />
+          <CardDrop label="入库检查" items={CHECK_LINKS} pathname={pathname} open={drop === "check"} onToggle={() => setDrop(drop === "check" ? null : "check")} onClose={() => setDrop(null)} />
           <CardDrop label="评估" items={EVAL_LINKS} pathname={pathname} open={drop === "eval"} onToggle={() => setDrop(drop === "eval" ? null : "eval")} onClose={() => setDrop(null)} />
-          <CardDrop label="实验室" items={LAB_LINKS} pathname={pathname} open={drop === "lab"} onToggle={() => setDrop(drop === "lab" ? null : "lab")} onClose={() => setDrop(null)} />
         </nav>
         <div className="top-meta">
           <span className="sandbox" title={`评测沙箱：${sandbox}`}>

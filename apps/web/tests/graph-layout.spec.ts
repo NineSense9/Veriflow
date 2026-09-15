@@ -28,7 +28,7 @@ async function openCase(page: Page, name: string, theme = "light") {
     else if (url.pathname === "/api/demos") json = { demos: Object.keys(cases).map(id => ({ id, title: id, kind: "test" })) };
     await route.fulfill({ json });
   });
-  await page.goto("/");
+  await page.goto("/report");
   await expect(page.locator(".graph-surface .react-flow__node")).toHaveCount(session.ir.nodes.length);
   await expect.poll(async () => page.locator(".react-flow__viewport").first().getAttribute("style")).toContain("translate");
 }

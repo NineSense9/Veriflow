@@ -53,7 +53,7 @@ export default function ProblemsPage() {
       <main className="page wide">
         <header className="page-head">
           <h1>题库</h1>
-          <p className="lead">按标签和关键词筛选。通过率和变异杀死率来自服务端统计。</p>
+          <p className="lead">训练场。选题、对拍、提交。通过率来自服务端统计，不是模型自评。</p>
         </header>
         {error ? <p className="err" role="alert">{error}</p> : null}
         <div className="toolbar">
