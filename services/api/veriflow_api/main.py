@@ -20,6 +20,7 @@ from veriflow_api.mutate_service import ensure_kill_rate
 from veriflow_api.report import export_markdown, sets_payload, summary
 from veriflow_api.solver import solve as draft_solution
 from veriflow_api.tutor import ask_tutor
+from veriflow_api.contrast import ce_case, passes_tests, propose_aligned
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_sandbox.factory import SandboxUnavailable, get_sandbox, sandbox_mode
 from veriflow_sandbox.judge import Case, judge_submission
@@ -146,6 +147,10 @@ class MutateBody(BaseModel):
 
 
 class TutorBody(BaseModel):
+    submission_id: int
+
+
+class ContrastBody(BaseModel):
     submission_id: int
 
 
@@ -855,6 +860,111 @@ def _register_routes(application: FastAPI) -> None:
             "question": question,
             "backend": backend,
             "spoiler_rejects": rejects,
+        }
+
+    @application.post("/api/problems/{problem_id}/contrast")
+    def contrast_problem(problem_id: str, body: ContrastBody, user=Depends(current_user)):
+        hour_prefix = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H")
+        with connect() as connection:
+            used = connection.execute(
+                """
+                SELECT COUNT(*) AS n FROM (
+                    SELECT created_at FROM tutor_logs WHERE user_id = ? AND created_at LIKE ?
+                    UNION ALL
+                    SELECT created_at FROM contrast_logs WHERE user_id = ? AND created_at LIKE ?
+                )
+                """,
+                (user["id"], hour_prefix + "%", user["id"], hour_prefix + "%"),
+            ).fetchone()["n"]
+            if used >= 30:
+                raise HTTPException(
+                    status_code=429,
+                    detail={"code": "rate_limited", "message": "对照本小时次数用尽"},
+                )
+            submission = connection.execute(
+                """
+                SELECT id, problem_id, user_id, lang, source, verdict, counterexample_json
+                FROM submissions WHERE id = ?
+                """,
+                (body.submission_id,),
+            ).fetchone()
+            problem = connection.execute(
+                "SELECT statement, spec_json FROM problems WHERE id = ? AND published = 1",
+                (problem_id,),
+            ).fetchone()
+            tests = connection.execute(
+                "SELECT name, stdin, stdout, visibility FROM tests WHERE problem_id = ?",
+                (problem_id,),
+            ).fetchall()
+        if submission is None or submission["user_id"] != user["id"]:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "submission not found"}
+            )
+        if submission["problem_id"] != problem_id:
+            raise HTTPException(
+                status_code=400, detail={"code": "mismatch", "message": "submission 不属于这题"}
+            )
+        if submission["verdict"] not in {"WA", "RE"} or not submission["counterexample_json"]:
+            raise HTTPException(
+                status_code=400,
+                detail={"code": "not_failed", "message": "只在有反例的 WA/RE 上对照"},
+            )
+        if problem is None:
+            raise HTTPException(
+                status_code=404, detail={"code": "not_found", "message": "problem not found"}
+            )
+        spec = json.loads(problem["spec_json"])
+        counterexample = json.loads(submission["counterexample_json"])
+        lang = submission["lang"]
+        time_ms = spec.get("time_limit_ms", 1000)
+        mem_mb = spec.get("memory_limit_mb", 256)
+        full_cases = [
+            Case(stdin=row["stdin"], stdout=row["stdout"], visibility=row["visibility"], name=row["name"])
+            for row in tests
+        ]
+        ce_only = [ce_case(counterexample)]
+        solver = "none"
+        reference = None
+        guess = ""
+        note = ""
+        proposed, backend, guess = propose_aligned(
+            submission["source"], problem["statement"], lang, counterexample
+        )
+        if proposed and passes_tests(lang, proposed, ce_only, time_ms, mem_mb):
+            reference = proposed
+            solver = backend
+            if passes_tests(lang, proposed, full_cases, time_ms, mem_mb):
+                note = "近邻代码已在公开和隐藏测试上通过沙箱。"
+            else:
+                note = "近邻代码过了这组反例，完整测试未全过。仍展示，不当成整题 AC。"
+        if reference is None:
+            brute = pack_file(problem_id, "brute.py")
+            if brute and passes_tests("python3", brute, ce_only, time_ms, mem_mb):
+                reference = brute
+                solver = "brute"
+                guess = ""
+                note = "模型这份在反例上没过或未配置，已回退到本题暴力解。沙箱已在这组反例上跑过。"
+        if reference is None:
+            note = "没有可展示的对照：模型代码未过这组反例，本题也没有可用暴力解。不展示假正解。"
+        now = datetime.now(timezone.utc).isoformat()
+        with connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO contrast_logs(user_id, submission_id, solver, guess, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (user["id"], body.submission_id, solver, guess, now),
+            )
+            connection.commit()
+        return {
+            "solver": solver,
+            "reference_source": reference,
+            "reference_lang": "python3" if solver == "brute" else lang,
+            "user_source": submission["source"],
+            "user_lang": lang,
+            "guess": guess,
+            "note": note,
+            "counterexample": counterexample,
         }
 
     @application.post("/api/problems/{problem_id}/stress")

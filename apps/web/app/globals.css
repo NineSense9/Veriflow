@@ -1519,6 +1519,33 @@ button.sample {
   background: var(--wa-soft);
 }
 
+.contrast-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.contrast-pair pre {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--sample);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+.contrast-pair strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .verdict-bar {
   display: flex;
   align-items: center;
@@ -2710,6 +2737,10 @@ code {
   }
 
   .diff {
+    grid-template-columns: 1fr;
+  }
+
+  .contrast-pair {
     grid-template-columns: 1fr;
   }
 

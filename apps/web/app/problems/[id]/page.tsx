@@ -30,6 +30,14 @@ export default function ProblemPage() {
   const [error, setError] = useState("");
   const [coach, setCoach] = useState("");
   const [coachBusy, setCoachBusy] = useState(false);
+  const [contrast, setContrast] = useState<{
+    solver: string;
+    reference_source: string | null;
+    user_source: string;
+    guess: string;
+    note: string;
+  } | null>(null);
+  const [contrastBusy, setContrastBusy] = useState(false);
 
   useEffect(() => {
     api
@@ -64,6 +72,7 @@ export default function ProblemPage() {
     setBusy(true);
     setError("");
     setCoach("");
+    setContrast(null);
     try {
       const next = await api.submit(id, lang, source);
       setResult(next);
@@ -89,6 +98,20 @@ export default function ProblemPage() {
       setError((err as Error).message || "教练暂时不在。");
     } finally {
       setCoachBusy(false);
+    }
+  }
+
+  async function askContrast() {
+    if (!result?.submission_id) return;
+    setContrastBusy(true);
+    setError("");
+    try {
+      const next = await api.contrast(id, result.submission_id);
+      setContrast(next);
+    } catch (err) {
+      setError((err as Error).message || "对照失败。");
+    } finally {
+      setContrastBusy(false);
     }
   }
 
@@ -143,6 +166,9 @@ export default function ProblemPage() {
               }}
             >
               起草
+            </button>
+            <button type="button" disabled={!canTutor || contrastBusy} onClick={askContrast}>
+              {contrastBusy ? "对照中" : "对照"}
             </button>
             <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
               {coachBusy ? "追问中" : "教练"}
@@ -211,6 +237,35 @@ export default function ProblemPage() {
               </>
             ) : (
               <p className="ghost">提交后若 WA，三列会停在这里。有反例才能请教。</p>
+            )}
+            <h2>对照</h2>
+            {contrast?.reference_source ? (
+              <>
+                <p className="ghost">{contrast.note}</p>
+                <div className="contrast-pair">
+                  <pre>
+                    <strong>你的代码</strong>
+                    {"\n"}
+                    {contrast.user_source}
+                  </pre>
+                  <pre>
+                    <strong>{contrast.solver === "brute" ? "暴力解（已过这组反例）" : "近邻代码（已过这组反例）"}</strong>
+                    {"\n"}
+                    {contrast.reference_source}
+                  </pre>
+                </div>
+                {contrast.guess ? (
+                  <p className="note">模型猜测，不是判定：{contrast.guess}</p>
+                ) : (
+                  <p className="ghost">对照来自沙箱跑过的代码，不是模型宣布你对错。</p>
+                )}
+              </>
+            ) : (
+              <p className="ghost">
+                {canTutor
+                  ? contrast?.note || "点顶栏「对照」：先用沙箱验证一份能过这组反例的代码，再并排看差异。"
+                  : "先交一发带反例的 WA。"}
+              </p>
             )}
             <h2>教练</h2>
             {coach ? (

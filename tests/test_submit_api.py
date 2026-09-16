@@ -180,3 +180,41 @@ def test_submit_wa_counterexample(api_client):
     assert counter["stdin"]
     assert counter["expected"]
     assert counter["actual"]
+
+
+def test_contrast_rejects_ac(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    submitted = api_client.post(
+        "/api/problems/VF1001/submit",
+        json={"lang": "python3", "source": AC_SOURCE},
+        headers=headers,
+    )
+    response = api_client.post(
+        "/api/problems/VF1001/contrast",
+        json={"submission_id": submitted.json()["submission_id"]},
+        headers=headers,
+    )
+    assert response.status_code == 400
+
+
+def test_contrast_wa_falls_back_to_brute(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    submitted = api_client.post(
+        "/api/problems/VF1001/submit",
+        json={"lang": "python3", "source": WA_SOURCE},
+        headers=headers,
+    )
+    assert submitted.json()["verdict"] == "WA"
+    response = api_client.post(
+        "/api/problems/VF1001/contrast",
+        json={"submission_id": submitted.json()["submission_id"]},
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["solver"] in {"brute", "deepseek"}
+    assert body["reference_source"]
+    assert "print(n)" in body["user_source"]
+    assert body["note"]

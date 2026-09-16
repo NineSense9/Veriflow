@@ -490,6 +490,20 @@ export const api = {
         body: JSON.stringify({ submission_id: submissionId }),
       },
     ),
+  contrast: (problemId: string, submissionId: number) =>
+    request<{
+      solver: string;
+      reference_source: string | null;
+      reference_lang: string;
+      user_source: string;
+      user_lang: string;
+      guess: string;
+      note: string;
+      counterexample: Counterexample;
+    }>(`/api/problems/${problemId}/contrast`, {
+      method: "POST",
+      body: JSON.stringify({ submission_id: submissionId }),
+    }),
   kit: (id: string) => request<StressKit>(`/api/problems/${id}/kit`),
   version: () =>
     request<{ git_commit: string | null; build_time: string | null; app_version: string; verifier_version: string }>(

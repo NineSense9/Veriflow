@@ -76,6 +76,14 @@ CREATE TABLE IF NOT EXISTS tutor_logs (
   spoiler_rejects INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS contrast_logs (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  submission_id INTEGER,
+  solver TEXT NOT NULL,
+  guess TEXT,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS compose_projects (
   id INTEGER PRIMARY KEY,
   user_id INTEGER NOT NULL,
