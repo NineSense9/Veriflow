@@ -1,4 +1,8 @@
-"""Emit VF1002-VF1030 problem packs with original statements and generated tests."""
+"""Emit VF1002-VF1030 problem packs with original statements and generated tests.
+
+Do not re-run main() against a seeded contest bank: hidden tests would change.
+To refresh 题面 only, run scripts/problem_statements.py.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +14,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BANK = ROOT / "examples" / "problems"
+
+
+def _statement_lib():
+    scripts = Path(__file__).resolve().parent
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    import problem_statements as module
+
+    return module
 
 
 def run_src(source: str, stdin: str) -> str:
@@ -58,16 +71,23 @@ def write_problem(
         "forbidden": ["交互", "读额外文件"],
     }
     (folder / "spec.json").write_text(json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    (folder / "statement.md").write_text(f"# {pid} {title}\n\n{statement.strip()}\n", encoding="utf-8")
     (folder / "ref.py").write_text(ref.strip() + "\n", encoding="utf-8")
     (folder / "brute.py").write_text(ref.strip() + "\n", encoding="utf-8")
     (folder / "gen.py").write_text(gen.strip() + "\n", encoding="utf-8")
+    samples: list[tuple[str, str]] = []
     for index, stdin in enumerate(public, start=1):
         stdout = run_src(ref, stdin)
         (folder / "tests" / "public" / f"{index:02d}.in").write_text(stdin, encoding="utf-8")
         (folder / "tests" / "public" / f"{index:02d}.out").write_text(stdout, encoding="utf-8")
         spec["public_tests"].append({"stdin": stdin, "stdout": stdout})
+        samples.append((stdin, stdout))
     (folder / "spec.json").write_text(json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    statements = _statement_lib()
+    body = statements.BODIES.get(pid, statement)
+    (folder / "statement.md").write_text(
+        statements.format_statement(pid, title, body, samples),
+        encoding="utf-8",
+    )
     for index, seed in enumerate(hidden_seeds, start=1):
         env = os.environ.copy()
         env["VF_SEED"] = str(seed)

@@ -12,13 +12,36 @@ import {
   PYTHON_STUB,
   ContrastResult,
   ProblemDetail,
+  PublicTest,
   SubmitResult,
   api,
 } from "@/lib/api";
+import { statementProse } from "@/lib/statement-view";
 
 const CodeEditor = dynamic(() => import("@/components/CodeEditor"), { ssr: false });
 
 type Lang = "python3" | "cpp17";
+
+function SamplePanel({ tests }: { tests: PublicTest[] }) {
+  return (
+    <div className="statement-samples">
+      <h2>输入输出样例</h2>
+      {tests.length === 0 ? <p className="ghost">本题暂无公开样例</p> : null}
+      {tests.map((test, index) => (
+        <div className="statement-sample" key={test.name}>
+          <div className="sample-head">
+            <span>样例 {index + 1}</span>
+            <CopyButton text={`${test.stdin}\n${test.stdout}`} label={`复制样例 ${test.name}`} />
+          </div>
+          <p className="io-label">输入</p>
+          <pre>{test.stdin}</pre>
+          <p className="io-label">输出</p>
+          <pre>{test.stdout}</pre>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function ProblemPage() {
   const params = useParams<{ id: string }>();
@@ -202,7 +225,18 @@ export default function ProblemPage() {
         </div>
         <div className="arena-body">
           <section className="statement">
-            {problem ? <Statement source={problem.statement} /> : <p className="ghost">题目加载中…</p>}
+            {problem ? (
+              <Statement
+                source={
+                  problem.public_tests.length
+                    ? statementProse(problem.statement)
+                    : problem.statement
+                }
+              />
+            ) : (
+              <p className="ghost">题目加载中…</p>
+            )}
+            {problem ? <SamplePanel tests={problem.public_tests} /> : null}
             {problem ? (
               <p className="limits">
                 {problem.spec.time_limit_ms} ms / {problem.spec.memory_limit_mb} MB
@@ -214,6 +248,9 @@ export default function ProblemPage() {
           </section>
           <aside className="side">
             <h2>公开样例</h2>
+            {problem && problem.public_tests.length === 0 ? (
+              <p className="ghost">本题暂无公开样例</p>
+            ) : null}
             {problem?.public_tests.map((test) => (
               <div className="sample" key={test.name}>
                 <div className="sample-head">
@@ -223,9 +260,9 @@ export default function ProblemPage() {
                     label={`复制样例 ${test.name}`}
                   />
                 </div>
-                <div>in</div>
+                <div>输入</div>
                 {test.stdin}
-                <div>out</div>
+                <div>输出</div>
                 {test.stdout}
               </div>
             ))}

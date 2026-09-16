@@ -1416,6 +1416,28 @@ h1 {
   margin: 20px 0 8px;
 }
 
+.statement h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+}
+
+.statement-samples {
+  margin-top: 8px;
+}
+
+.statement-sample {
+  margin-bottom: 16px;
+}
+
+.statement-sample .io-label,
+.statement .io-label {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: inherit;
+}
+
 .statement p,
 .statement li {
   font-family: var(--font-serif), Literata, "Noto Serif SC", Georgia, serif;

@@ -27,6 +27,8 @@ function renderMarkdown(source: string) {
         nodes.push(<h1 key={key++}>{line.slice(2)}</h1>);
       } else if (line.startsWith("## ")) {
         nodes.push(<h2 key={key++}>{line.slice(3)}</h2>);
+      } else if (line.startsWith("### ")) {
+        nodes.push(<h3 key={key++}>{line.slice(4)}</h3>);
       } else {
         nodes.push(<p key={key++}>{tidyMath(line)}</p>);
       }
