@@ -946,17 +946,7 @@ def _register_routes(application: FastAPI) -> None:
                 note = "模型这份在反例上没过或未配置，已回退到本题暴力解。沙箱已在这组反例上跑过。"
         if reference is None:
             note = "没有可展示的对照：模型代码未过这组反例，本题也没有可用暴力解。不展示假正解。"
-        now = datetime.now(timezone.utc).isoformat()
-        with connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO contrast_logs(user_id, submission_id, solver, guess, created_at)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (user["id"], body.submission_id, solver, guess, now),
-            )
-            connection.commit()
-        return {
+        payload = {
             "solver": solver,
             "reference_source": reference,
             "reference_lang": "python3" if solver == "brute" else lang,
@@ -965,6 +955,58 @@ def _register_routes(application: FastAPI) -> None:
             "guess": guess,
             "note": note,
             "counterexample": counterexample,
+        }
+        now = datetime.now(timezone.utc).isoformat()
+        with connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO contrast_logs(user_id, submission_id, solver, guess, payload_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (user["id"], body.submission_id, solver, guess, json.dumps(payload, ensure_ascii=False), now),
+            )
+            connection.commit()
+        return payload
+
+    @application.get("/api/problems/{problem_id}/review")
+    def review_problem(problem_id: str, user=Depends(current_user)):
+        with connect() as connection:
+            submission = connection.execute(
+                """
+                SELECT id, lang, source, verdict, time_ms, counterexample_json
+                FROM submissions
+                WHERE user_id = ? AND problem_id = ?
+                ORDER BY id DESC LIMIT 1
+                """,
+                (user["id"], problem_id),
+            ).fetchone()
+            contrast = None
+            if submission is not None:
+                contrast = connection.execute(
+                    """
+                    SELECT payload_json FROM contrast_logs
+                    WHERE user_id = ? AND submission_id = ?
+                    ORDER BY id DESC LIMIT 1
+                    """,
+                    (user["id"], submission["id"]),
+                ).fetchone()
+        if submission is None:
+            return {"submission": None, "contrast": None}
+        counterexample = json.loads(submission["counterexample_json"]) if submission["counterexample_json"] else None
+        payload = None
+        if contrast and contrast["payload_json"]:
+            payload = json.loads(contrast["payload_json"])
+        return {
+            "submission": {
+                "job_id": "",
+                "submission_id": submission["id"],
+                "verdict": submission["verdict"],
+                "stage": "running_hidden" if submission["verdict"] in {"WA", "RE"} else "done",
+                "time_ms": submission["time_ms"] or 0,
+                "counterexample": counterexample,
+                "sandbox": "",
+            },
+            "contrast": payload,
         }
 
     @application.post("/api/problems/{problem_id}/stress")

@@ -393,6 +393,17 @@ export type SubmitResult = {
   sandbox: string;
 };
 
+export type ContrastResult = {
+  solver: string;
+  reference_source: string | null;
+  reference_lang: string;
+  user_source: string;
+  user_lang: string;
+  guess: string;
+  note: string;
+  counterexample: Counterexample;
+};
+
 export type SubmissionRow = {
   id: number;
   problem_id: string;
@@ -491,19 +502,14 @@ export const api = {
       },
     ),
   contrast: (problemId: string, submissionId: number) =>
-    request<{
-      solver: string;
-      reference_source: string | null;
-      reference_lang: string;
-      user_source: string;
-      user_lang: string;
-      guess: string;
-      note: string;
-      counterexample: Counterexample;
-    }>(`/api/problems/${problemId}/contrast`, {
+    request<ContrastResult>(`/api/problems/${problemId}/contrast`, {
       method: "POST",
       body: JSON.stringify({ submission_id: submissionId }),
     }),
+  review: (problemId: string) =>
+    request<{ submission: SubmitResult | null; contrast: ContrastResult | null }>(
+      `/api/problems/${problemId}/review`,
+    ),
   kit: (id: string) => request<StressKit>(`/api/problems/${id}/kit`),
   version: () =>
     request<{ git_commit: string | null; build_time: string | null; app_version: string; verifier_version: string }>(

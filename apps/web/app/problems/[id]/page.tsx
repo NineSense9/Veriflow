@@ -10,6 +10,7 @@ import CopyButton from "@/components/CopyButton";
 import {
   CPP_STUB,
   PYTHON_STUB,
+  ContrastResult,
   ProblemDetail,
   SubmitResult,
   api,
@@ -30,21 +31,36 @@ export default function ProblemPage() {
   const [error, setError] = useState("");
   const [coach, setCoach] = useState("");
   const [coachBusy, setCoachBusy] = useState(false);
-  const [contrast, setContrast] = useState<{
-    solver: string;
-    reference_source: string | null;
-    user_source: string;
-    guess: string;
-    note: string;
-  } | null>(null);
+  const [contrast, setContrast] = useState<ContrastResult | null>(null);
   const [contrastBusy, setContrastBusy] = useState(false);
+  const [contrastOpen, setContrastOpen] = useState(false);
 
   useEffect(() => {
     api
       .problem(id)
       .then(setProblem)
       .catch(() => setError("题目加载失败。"));
+    api
+      .review(id)
+      .then((data) => {
+        if (data.submission) setResult(data.submission);
+        if (data.contrast) setContrast(data.contrast);
+      })
+      .catch(() => undefined);
   }, [id]);
+
+  useEffect(() => {
+    if (!contrastOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setContrastOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [contrastOpen]);
 
   const monacoLang = lang === "python3" ? "python" : "cpp";
   const stages = useMemo(() => {
@@ -73,6 +89,7 @@ export default function ProblemPage() {
     setError("");
     setCoach("");
     setContrast(null);
+    setContrastOpen(false);
     try {
       const next = await api.submit(id, lang, source);
       setResult(next);
@@ -101,13 +118,18 @@ export default function ProblemPage() {
     }
   }
 
-  async function askContrast() {
+  async function askContrast(force = false) {
     if (!result?.submission_id) return;
+    if (!force && contrast?.reference_source) {
+      setContrastOpen(true);
+      return;
+    }
     setContrastBusy(true);
     setError("");
     try {
       const next = await api.contrast(id, result.submission_id);
       setContrast(next);
+      if (next.reference_source) setContrastOpen(true);
     } catch (err) {
       setError((err as Error).message || "对照失败。");
     } finally {
@@ -167,8 +189,8 @@ export default function ProblemPage() {
             >
               起草
             </button>
-            <button type="button" disabled={!canTutor || contrastBusy} onClick={askContrast}>
-              {contrastBusy ? "对照中" : "对照"}
+            <button type="button" disabled={!canTutor || contrastBusy} onClick={() => askContrast(false)}>
+              {contrastBusy ? "对照中" : contrast?.reference_source ? "摊开对照" : "对照"}
             </button>
             <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
               {coachBusy ? "追问中" : "教练"}
@@ -242,17 +264,13 @@ export default function ProblemPage() {
             {contrast?.reference_source ? (
               <>
                 <p className="ghost">{contrast.note}</p>
-                <div className="contrast-pair">
-                  <pre>
-                    <strong>你的代码</strong>
-                    {"\n"}
-                    {contrast.user_source}
-                  </pre>
-                  <pre>
-                    <strong>{contrast.solver === "brute" ? "暴力解（已过这组反例）" : "近邻代码（已过这组反例）"}</strong>
-                    {"\n"}
-                    {contrast.reference_source}
-                  </pre>
+                <div className="sample-head">
+                  <button className="btn btn-sm" type="button" onClick={() => setContrastOpen(true)}>
+                    摊开对照
+                  </button>
+                  <button className="btn btn-sm" type="button" disabled={contrastBusy} onClick={() => askContrast(true)}>
+                    {contrastBusy ? "对照中" : "重新对照"}
+                  </button>
                 </div>
                 {contrast.guess ? (
                   <p className="note">模型猜测，不是判定：{contrast.guess}</p>
@@ -292,6 +310,48 @@ export default function ProblemPage() {
           </span>
         </div>
       </div>
+      {contrastOpen && contrast?.reference_source ? (
+        <div className="contrast-stage" role="dialog" aria-modal="true" aria-labelledby="contrast-stage-title">
+          <header className="contrast-stage-bar">
+            <div>
+              <p className="kicker">对照</p>
+              <h2 id="contrast-stage-title">
+                {problem?.id} {problem?.title}
+              </h2>
+            </div>
+            <button className="btn" type="button" onClick={() => setContrastOpen(false)}>
+              退出对照
+            </button>
+          </header>
+          <div className="contrast-stage-code">
+            <section>
+              <h3>你的代码</h3>
+              <pre>{contrast.user_source}</pre>
+            </section>
+            <section>
+              <h3>{contrast.solver === "brute" ? "暴力解（已过这组反例）" : "近邻代码（已过这组反例）"}</h3>
+              <pre>{contrast.reference_source}</pre>
+            </section>
+          </div>
+          <footer className="contrast-stage-note">
+            <p className="ghost">{contrast.note}</p>
+            {contrast.guess ? (
+              <p>
+                <strong>解析（模型猜测，不是判定）</strong>
+                {contrast.guess}
+              </p>
+            ) : (
+              <p>对照来自沙箱跑过的代码，不是模型宣布你对错。</p>
+            )}
+            {result?.counterexample ? (
+              <p className="ghost">
+                这组反例 输入 {result.counterexample.stdin.replace(/\s+/g, " ").trim()} · 期望{" "}
+                {result.counterexample.expected.trim()} · 你的输出 {result.counterexample.actual.trim()}
+              </p>
+            ) : null}
+          </footer>
+        </div>
+      ) : null}
     </Shell>
   );
 }

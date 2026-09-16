@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS contrast_logs (
   submission_id INTEGER,
   solver TEXT NOT NULL,
   guess TEXT,
+  payload_json TEXT,
   created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS compose_projects (
@@ -139,4 +140,7 @@ def init_db() -> None:
         compose_cols = [row[1] for row in connection.execute("PRAGMA table_info(compose_projects)").fetchall()]
         if compose_cols and "ai_trace_json" not in compose_cols:
             connection.execute("ALTER TABLE compose_projects ADD COLUMN ai_trace_json TEXT")
+        contrast_cols = [row[1] for row in connection.execute("PRAGMA table_info(contrast_logs)").fetchall()]
+        if contrast_cols and "payload_json" not in contrast_cols:
+            connection.execute("ALTER TABLE contrast_logs ADD COLUMN payload_json TEXT")
         connection.commit()

@@ -218,3 +218,9 @@ def test_contrast_wa_falls_back_to_brute(api_client):
     assert body["reference_source"]
     assert "print(n)" in body["user_source"]
     assert body["note"]
+    saved = api_client.get("/api/problems/VF1001/review", headers=headers)
+    assert saved.status_code == 200, saved.text
+    review = saved.json()
+    assert review["submission"]["submission_id"] == submitted.json()["submission_id"]
+    assert review["contrast"]["reference_source"]
+    assert review["contrast"]["solver"] == body["solver"]
