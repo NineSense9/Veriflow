@@ -38,7 +38,7 @@ export default function LoginPage() {
     try {
       const result = await api.login(username, password);
       setSession(result.username, result.token);
-      router.replace("/problems");
+      router.replace("/");
     } catch {
       setError("用户名或密码不正确。");
     } finally {
@@ -70,7 +70,7 @@ export default function LoginPage() {
         <div className={styles.loginCard}>
           <p className={styles.eyebrow}>进入训练场</p>
           <h2 id="login-title">欢迎使用 VeriFlow</h2>
-          <p className={styles.loginDescription}>登录后进入题库。对拍和提交在顶栏。</p>
+          <p className={styles.loginDescription}>登录后先到首页。题库、对拍、提交在顶栏。</p>
           <form onSubmit={onSubmit} aria-busy={busy}>
             <div className="field">
               <label htmlFor="user">用户名</label>
@@ -122,7 +122,7 @@ export default function LoginPage() {
               {error || "\u00a0"}
             </div>
             <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
-              {busy ? "正在登录…" : "进入题库"}
+              {busy ? "正在登录…" : "进入"}
             </button>
           </form>
           <div className={styles.loginDemo}>

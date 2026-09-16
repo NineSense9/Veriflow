@@ -13,6 +13,7 @@ import CardNav from "@/components/reactbits/CardNav";
 import StaggeredMenu from "@/components/reactbits/StaggeredMenu";
 
 const CORE = [
+  { href: "/", label: "首页" },
   { href: "/problems", label: "题库" },
   { href: "/stress", label: "对拍" },
   { href: "/status", label: "提交" },
