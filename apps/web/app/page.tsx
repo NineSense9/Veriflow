@@ -88,8 +88,8 @@ export default function HomePage() {
           <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
             <h2 id="home-check">AI 也可以出题</h2>
             <p>起草之后要先验过，才能进题库。</p>
-            <Link className="btn btn-sm" href="/report?demo=case4_runtime&tour=1">
-              看一次检查过程
+            <Link className="btn btn-sm" href="/compose?story=1">
+              去出一道题
             </Link>
           </section>
         </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import BrandAmbient from "@/components/BrandAmbient";
+import ComposeStoryStart from "@/components/ComposeStoryStart";
 import { api, ComposeSummary } from "@/lib/api";
 import { useEffects } from "@/lib/effects";
 import styles from "../entry.module.css";
@@ -21,7 +22,7 @@ function DraftStatus({ value }: { value: string }) {
   return <span className={`verdict ${statusTone}`} title={value}><i className="status-dot" aria-hidden="true" />{labels[value] || value}</span>;
 }
 
-export default function ComposeIndexPage() {
+function ComposeIndexPage() {
   const router = useRouter();
   const [nl, setNl] = useState("把题直接入库，不要审题门。");
   const [rows, setRows] = useState<ComposeSummary[]>([]);
@@ -119,5 +120,25 @@ export default function ComposeIndexPage() {
         </section>
       </main>
     </Shell>
+  );
+}
+
+function ComposeIndexSwitch() {
+  const search = useSearchParams();
+  if (search.get("story") === "1") return <ComposeStoryStart />;
+  return <ComposeIndexPage />;
+}
+
+export default function ComposePage() {
+  return (
+    <Suspense
+      fallback={
+        <Shell>
+          <p className="page ghost">出题页加载中…</p>
+        </Shell>
+      }
+    >
+      <ComposeIndexSwitch />
+    </Suspense>
   );
 }

@@ -2,18 +2,21 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Shell from "@/components/Shell";
 import { api, ComposeProject, VerifyIssue } from "@/lib/api";
 import { useEffects } from "@/lib/effects";
 import WitnessMotion from "@/components/WitnessMotion";
 import RuntimeReplay from "@/components/RuntimeReplay";
+import ComposeStoryDesk from "@/components/ComposeStoryDesk";
 
 const ComposeCanvas = dynamic(() => import("@/components/ComposeCanvas"), { ssr: false });
 
-export default function ComposeProjectPage() {
+function ComposeProjectBody() {
   const params = useParams<{ id: string }>();
+  const search = useSearchParams();
+  const story = search.get("story") === "1";
   const id = Number(params.id);
   const [project, setProject] = useState<ComposeProject | null>(null);
   const [nl, setNl] = useState("");
@@ -57,18 +60,17 @@ export default function ComposeProjectPage() {
   }, [selected]);
 
   if (!project) {
-    return (
-      <Shell>
-        <p className="page ghost">画布展开中…</p>
-      </Shell>
-    );
+    return <p className="page ghost">画布展开中…</p>;
+  }
+
+  if (story) {
+    return <ComposeStoryDesk project={project} onProject={apply} />;
   }
 
   const verification = project.verification;
   const status = verification?.status ?? (project.errors.length ? "FAIL" : "PASS");
 
   return (
-    <Shell>
       <div className="compose-desk">
         <div className="arena-top">
           <Link href="/compose" className="btn btn-ghost btn-sm">
@@ -443,6 +445,15 @@ export default function ComposeProjectPage() {
           </aside>
         </div>
       </div>
+  );
+}
+
+export default function ComposeProjectPage() {
+  return (
+    <Shell>
+      <Suspense fallback={<p className="page ghost">画布展开中…</p>}>
+        <ComposeProjectBody />
+      </Suspense>
     </Shell>
   );
 }
