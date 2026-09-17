@@ -556,32 +556,12 @@ a.brand:hover .brand-text strong {
   isolation: isolate;
   overflow: hidden;
   margin: 0;
-  padding: 36px 40px 32px;
-  min-height: 320px;
+  padding: 28px 28px 24px 36px;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: 16px 16px 0 0;
-  background: #0e2a2a;
-  color: #f4f7f4;
-}
-
-.vf-home-hero-photo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-}
-
-.vf-home-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    linear-gradient(90deg, rgba(8, 22, 22, 0.78) 0%, rgba(8, 22, 22, 0.42) 48%, rgba(8, 22, 22, 0.22) 100%),
-    linear-gradient(180deg, rgba(8, 22, 22, 0.12) 0%, rgba(8, 22, 22, 0.35) 100%);
-  pointer-events: none;
+  background: #f3efe6;
+  color: var(--text);
 }
 
 .vf-home-hero-split {
@@ -591,14 +571,19 @@ a.brand:hover .brand-text strong {
   align-items: stretch;
 }
 
-.vf-home-hero > *:not(.vf-home-hero-photo) {
-  position: relative;
-  z-index: 2;
+.vf-home-print {
+  margin: 0;
+  min-height: 240px;
+  display: grid;
+  place-items: center;
 }
 
-.vf-home-hero .vf-home-kicker,
-.vf-home-hero .lead {
-  color: rgba(244, 247, 244, 0.86);
+.vf-home-print img {
+  width: 100%;
+  height: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  object-position: right center;
 }
 
 .vf-home-kicker {
@@ -608,10 +593,17 @@ a.brand:hover .brand-text strong {
   letter-spacing: 0.08em;
 }
 
+.vf-home-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 8px 12px 0;
+}
+
 .vf-home-hero-copy h1 {
   margin: 0 0 16px;
   max-width: 9em;
-  color: #f4f7f4;
+  color: var(--text);
   font-size: clamp(32px, 4.2vw, 52px);
   line-height: 1.12;
   letter-spacing: -0.03em;
@@ -621,47 +613,34 @@ a.brand:hover .brand-text strong {
 .vf-home-hero-copy .lead {
   margin: 0 0 24px;
   max-width: 28em;
-  color: rgba(244, 247, 244, 0.9);
-}
-
-.vf-home-hero-copy .vf-home-kicker {
-  color: #b7e4d4;
+  color: var(--text-2);
 }
 
 .vf-home-hero-copy .btn-primary {
   display: inline-flex;
+  align-self: flex-start;
   min-width: 132px;
   justify-content: center;
-  background: #f4f7f4;
-  color: #122;
-  border-color: #f4f7f4;
 }
 
-.vf-home-continue-card {
-  position: relative;
-  z-index: 2;
+.vf-home-continue-inline {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  color: var(--text);
-  box-shadow: 0 18px 40px rgba(8, 22, 22, 0.22);
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 20px;
+  text-decoration: none;
+  color: inherit;
+  background: var(--surface);
 }
 
-.vf-home-continue-card img {
-  display: block;
-  width: 100%;
-  height: 132px;
-  object-fit: cover;
+.vf-home-continue-inline:hover {
+  background: var(--bg);
 }
 
-.vf-home-continue-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px 18px 18px;
+.vf-home-continue-inline strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
 }
 
 .vf-home-continue-card h2 {
@@ -691,7 +670,7 @@ a.brand:hover .brand-text strong {
 
 .vf-home-band {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 0.7fr));
   gap: 1px;
   margin: 0 0 20px;
   border: 1px solid var(--border);
@@ -786,8 +765,9 @@ a.brand:hover .brand-text strong {
 .vf-home-panel-photo {
   display: block;
   width: 100%;
-  height: 120px;
-  object-fit: cover;
+  height: 148px;
+  object-fit: contain;
+  background: #f3efe6;
 }
 
 .vf-home-check-body {
@@ -1073,14 +1053,9 @@ a.user-name {
   margin-top: 4px;
 }
 
-html[data-theme="dark"] .vf-home-hero {
-  background: #071414;
-}
-
-html[data-theme="dark"] .vf-home-hero::after {
-  background:
-    linear-gradient(90deg, rgba(4, 12, 12, 0.82) 0%, rgba(4, 12, 12, 0.5) 52%, rgba(4, 12, 12, 0.28) 100%),
-    linear-gradient(180deg, rgba(4, 12, 12, 0.1) 0%, rgba(4, 12, 12, 0.4) 100%);
+html[data-theme="dark"] .vf-home-hero,
+html[data-theme="dark"] .vf-home-panel-photo {
+  background: color-mix(in srgb, var(--surface) 86%, #1a1814);
 }
 
 .vf-story-rail {
@@ -3578,9 +3553,13 @@ code {
   }
 
   .vf-home-hero {
-    padding: 32px 22px 28px;
+    padding: 24px 18px 18px;
     min-height: 0;
     border-radius: 16px 16px 0 0;
+  }
+
+  .vf-home-print img {
+    max-height: 200px;
   }
 
   .vf-account-hero,

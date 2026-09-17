@@ -45,7 +45,6 @@ export default function HomePage() {
     <Shell>
       <main className="page wide vf-home">
         <section className="vf-home-hero vf-home-hero-split" aria-label="训练场">
-          <img className="vf-home-hero-photo" src="/home/hero.jpg" alt="" />
           <div className="vf-home-hero-copy">
             <p className="vf-home-kicker">训练场{name ? ` · ${name}` : ""}</p>
             <h1>刷题、对拍、提交。</h1>
@@ -54,34 +53,26 @@ export default function HomePage() {
               进入题库
             </Link>
           </div>
-          <aside className="vf-home-continue-card">
-            <img src="/home/continue.jpg" alt="" />
-            <div className="vf-home-continue-body">
-              <p className="vf-home-kicker">{latest ? "接着做" : "从这道开始"}</p>
-              {continueTo ? (
-                <>
-                  <p className="pid">{continueTo.id}</p>
-                  <h2>{continueTo.title}</h2>
-                  {latest ? (
-                    <p>
-                      <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict ?? "—"}</span>
-                      <span className="ghost"> {stamp(latest.created_at)}</span>
-                    </p>
-                  ) : (
-                    <p className="ghost">还没有提交。先做签到题。</p>
-                  )}
-                  <Link className="btn btn-sm" href={`/problems/${continueTo.id}`}>
-                    {latest ? "打开这题" : "打开 VF1001"}
-                  </Link>
-                </>
-              ) : (
-                <p className="ghost">题库还在加载。</p>
-              )}
-            </div>
-          </aside>
+          <figure className="vf-home-print">
+            <img src="/home/print-hero.jpg" alt="" />
+          </figure>
         </section>
 
         <section className="vf-home-band" aria-label="我的记录">
+          <Link className="vf-home-continue-inline" href={continueTo ? `/problems/${continueTo.id}` : "/problems"}>
+            <span className="vf-home-kicker">{latest ? "接着做" : "从这道开始"}</span>
+            <strong>{continueTo ? `${continueTo.id} ${continueTo.title}` : "题库"}</strong>
+            <span>
+              {latest ? (
+                <>
+                  <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict ?? "—"}</span>
+                  <span className="ghost"> {stamp(latest.created_at)}</span>
+                </>
+              ) : (
+                "先做签到题"
+              )}
+            </span>
+          </Link>
           <div>
             <strong>{me?.submissions ?? 0}</strong>
             <span>次提交</span>
@@ -138,7 +129,7 @@ export default function HomePage() {
               </ul>
             </section>
             <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
-              <img className="vf-home-panel-photo" src="/home/compose.jpg" alt="" />
+              <img className="vf-home-panel-photo" src="/home/print-flow.jpg" alt="" />
               <div className="vf-home-check-body">
                 <h2 id="home-check">AI 也可以出题</h2>
                 <p>起草之后要先验过，才能进题库。</p>
