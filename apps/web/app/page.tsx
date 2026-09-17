@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import BrandAmbient from "@/components/BrandAmbient";
 import { Me, ProblemListItem, SubmissionRow, api, currentUsername } from "@/lib/api";
 
 const FEATURED_IDS = ["VF1001", "VF1004", "VF1016"];
@@ -46,7 +45,7 @@ export default function HomePage() {
     <Shell>
       <main className="page wide vf-home">
         <section className="vf-home-hero vf-home-hero-split" aria-label="训练场">
-          <BrandAmbient variant="rays" className="vf-home-hero-ambient" />
+          <img className="vf-home-hero-photo" src="/home/hero.jpg" alt="" />
           <div className="vf-home-hero-copy">
             <p className="vf-home-kicker">训练场{name ? ` · ${name}` : ""}</p>
             <h1>刷题、对拍、提交。</h1>
@@ -56,26 +55,29 @@ export default function HomePage() {
             </Link>
           </div>
           <aside className="vf-home-continue-card">
-            <p className="vf-home-kicker">{latest ? "接着做" : "从这道开始"}</p>
-            {continueTo ? (
-              <>
-                <p className="pid">{continueTo.id}</p>
-                <h2>{continueTo.title}</h2>
-                {latest ? (
-                  <p>
-                    <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict ?? "—"}</span>
-                    <span className="ghost"> {stamp(latest.created_at)}</span>
-                  </p>
-                ) : (
-                  <p className="ghost">还没有提交。先做签到题。</p>
-                )}
-                <Link className="btn btn-sm" href={`/problems/${continueTo.id}`}>
-                  {latest ? "打开这题" : "打开 VF1001"}
-                </Link>
-              </>
-            ) : (
-              <p className="ghost">题库还在加载。</p>
-            )}
+            <img src="/home/continue.jpg" alt="" />
+            <div className="vf-home-continue-body">
+              <p className="vf-home-kicker">{latest ? "接着做" : "从这道开始"}</p>
+              {continueTo ? (
+                <>
+                  <p className="pid">{continueTo.id}</p>
+                  <h2>{continueTo.title}</h2>
+                  {latest ? (
+                    <p>
+                      <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict ?? "—"}</span>
+                      <span className="ghost"> {stamp(latest.created_at)}</span>
+                    </p>
+                  ) : (
+                    <p className="ghost">还没有提交。先做签到题。</p>
+                  )}
+                  <Link className="btn btn-sm" href={`/problems/${continueTo.id}`}>
+                    {latest ? "打开这题" : "打开 VF1001"}
+                  </Link>
+                </>
+              ) : (
+                <p className="ghost">题库还在加载。</p>
+              )}
+            </div>
           </aside>
         </section>
 
@@ -136,13 +138,16 @@ export default function HomePage() {
               </ul>
             </section>
             <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
-              <h2 id="home-check">AI 也可以出题</h2>
-              <p>起草之后要先验过，才能进题库。</p>
-              <div className="vf-home-check-actions">
-                <Link className="btn btn-sm" href="/compose?story=1">
-                  去出一道题
-                </Link>
-                <Link href="/stress">去对拍</Link>
+              <img className="vf-home-panel-photo" src="/home/compose.jpg" alt="" />
+              <div className="vf-home-check-body">
+                <h2 id="home-check">AI 也可以出题</h2>
+                <p>起草之后要先验过，才能进题库。</p>
+                <div className="vf-home-check-actions">
+                  <Link className="btn btn-sm" href="/compose?story=1">
+                    去出一道题
+                  </Link>
+                  <Link href="/stress">去对拍</Link>
+                </div>
               </div>
             </section>
           </div>
