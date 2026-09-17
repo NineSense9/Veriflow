@@ -82,7 +82,7 @@ export default function ComposeStoryDesk({
       <div className="vf-story-split">
         <section className="vf-story-graph" aria-label="出题流程">
           {project.ir ? (
-            <ComposeCanvas ir={project.ir} errors={project.errors} failing={failing} height={420} />
+            <ComposeCanvas ir={project.ir} errors={project.errors} failing={failing} />
           ) : (
             <p className="ghost">还没有生成出题流程。</p>
           )}

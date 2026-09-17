@@ -128,16 +128,17 @@ function ComposeProjectBody() {
             入库
           </button>
         </div>
-        <label htmlFor="compose-nl-edit">Requirement</label>
-        <textarea
-          id="compose-nl-edit"
-          className="compose-nl tight"
-          rows={3}
-          value={nl}
-          onChange={(e) => setNl(e.target.value)}
-        />
-        <div className="compose-split">
-          <section className="compose-canvas">
+        <div className="compose-req">
+          <label htmlFor="compose-nl-edit">出题要求</label>
+          <textarea
+            id="compose-nl-edit"
+            className="compose-nl tight"
+            rows={2}
+            value={nl}
+            onChange={(e) => setNl(e.target.value)}
+          />
+        </div>
+        <section className="compose-canvas">
             {project.ir ? (
               <ComposeCanvas
                 ir={project.ir}
@@ -152,12 +153,13 @@ function ComposeProjectBody() {
               />
             ) : (
               <p className="ghost" style={{ padding: 16 }}>
-                还没有 IR
+                还没有生成出题流程。
               </p>
             )}
-          </section>
-          <aside className="side">
-            <h2>AI scene</h2>
+        </section>
+        <div className="compose-boards">
+          <section className="compose-board">
+            <h2>检查</h2>
             <p className="caption">
               {busy
                 ? prefs.aiInterpret
@@ -186,7 +188,6 @@ function ComposeProjectBody() {
             {project.ai_trace?.status === "UNKNOWN" ? (
               <p className="caption">legacy row: provenance unavailable (not NOT_USED).</p>
             ) : null}
-            <h2>验证</h2>
             <p className="caption">
               {verification
                 ? `${verification.constraints_passed ?? verification.requirements_passed} PASS · ${verification.constraints_failed ?? 0} FAIL · ${verification.constraints_unknown ?? 0} UNKNOWN`
@@ -262,67 +263,12 @@ function ComposeProjectBody() {
                 {selected.repair_hint ? <p className="caption">{selected.repair_hint}</p> : null}
               </>
             ) : null}
+          </section>
+          <section className="compose-board">
+            <h2>运行</h2>
             {(traceOverlay || project.trace)?.events?.length ? (
               <RuntimeReplay events={(traceOverlay || project.trace)!.events} play={Boolean(traceOverlay)} />
             ) : null}
-            {project.repair ? (
-              <>
-                <h2>Timeline</h2>
-                <ol className="caption">
-                  <li>Spec compiled</li>
-                  <li>
-                    {project.repair.initial.constraints_passed ?? project.repair.initial.requirements_passed}/
-                    {project.repair.initial.constraints?.length ?? project.repair.initial.requirements_total} constraints
-                  </li>
-                  {project.repair.steps.map((step) => (
-                    <li key={step.iteration}>
-                      iter {step.iteration}: {step.reason}
-                      {step.candidates_evaluated ? ` · ${step.candidates_evaluated} candidates` : ""}
-                    </li>
-                  ))}
-                  <li>
-                    Re-verify {project.repair.final.status}
-                  </li>
-                </ol>
-                <h2>Repair</h2>
-                <p className="caption">
-                  {project.repair.initial.status} → {project.repair.final.status} · ops {project.repair.patch_operations ?? "—"} · nodes {project.repair.changed_nodes ?? "—"}
-                </p>
-                {project.repair.steps.flatMap((step) =>
-                  step.patches.map((patch, index) => (
-                    <p className="caption" key={`${step.iteration}-${index}`}>
-                      {patch.operation}
-                      {patch.source && patch.target ? ` ${patch.source} → ${patch.target}` : ""}
-                      {patch.reason ? ` · ${patch.reason}` : ""}
-                    </p>
-                  )),
-                )}
-              </>
-            ) : null}
-            <h2>Gate</h2>
-            <p>
-              <span
-                className={`verdict ${
-                  project.gate?.ready === "READY" ? "AC" : project.gate?.ready === "REVIEW REQUIRED" ? "TLE" : "WA"
-                }`}
-              >
-                {project.gate?.ready ?? "—"}
-              </span>
-            </p>
-            {Object.entries(project.gate?.dimensions ?? {}).map(([name, status]) => (
-              <div key={name} className="latest-line">
-                <span className={`verdict ${status === "PASS" || status === "READY" ? "AC" : status === "WARNING" || status === "UNKNOWN" ? "TLE" : "WA"}`}>
-                  {status}
-                </span>
-                <span>{name}</span>
-              </div>
-            ))}
-            {(project.gate?.reasons ?? []).map((reason) => (
-              <p className="caption" key={reason}>
-                {reason}
-              </p>
-            ))}
-            <h2>Runtime</h2>
             <p className="caption">
               {(crossOverlay ?? project.cross)?.pattern ?? "NOT RUN"} · coverage{" "}
               {(runtimeOverlay ?? project.runtime)?.constraint_runtime_coverage != null
@@ -402,7 +348,46 @@ function ComposeProjectBody() {
                   </div>
                 </button>
               ))}
-            <h2>Changes</h2>
+          </section>
+          <section className="compose-board">
+            <h2>修复</h2>
+            {project.repair ? (
+              <>
+                <h2>Timeline</h2>
+                <ol className="caption">
+                  <li>Spec compiled</li>
+                  <li>
+                    {project.repair.initial.constraints_passed ?? project.repair.initial.requirements_passed}/
+                    {project.repair.initial.constraints?.length ?? project.repair.initial.requirements_total} constraints
+                  </li>
+                  {project.repair.steps.map((step) => (
+                    <li key={step.iteration}>
+                      iter {step.iteration}: {step.reason}
+                      {step.candidates_evaluated ? ` · ${step.candidates_evaluated} candidates` : ""}
+                    </li>
+                  ))}
+                  <li>
+                    Re-verify {project.repair.final.status}
+                  </li>
+                </ol>
+                <h2>Repair</h2>
+                <p className="caption">
+                  {project.repair.initial.status} → {project.repair.final.status} · ops {project.repair.patch_operations ?? "—"} · nodes {project.repair.changed_nodes ?? "—"}
+                </p>
+                {project.repair.steps.flatMap((step) =>
+                  step.patches.map((patch, index) => (
+                    <p className="caption" key={`${step.iteration}-${index}`}>
+                      {patch.operation}
+                      {patch.source && patch.target ? ` ${patch.source} → ${patch.target}` : ""}
+                      {patch.reason ? ` · ${patch.reason}` : ""}
+                    </p>
+                  )),
+                )}
+              </>
+            ) : (
+              <p className="ghost">还没有修过。点「受约束修复」才会留下对比。</p>
+            )}
+            <h2>改动</h2>
             {project.repair ? (
               <>
                 <p className="caption">
@@ -422,9 +407,39 @@ function ComposeProjectBody() {
                 <p className="caption">Final full verification: {project.repair.final.status}</p>
               </>
             ) : (
-              <p className="ghost">没有 Patch。Incremental 只在修复或对比两次 IR 时计算。</p>
+              <p className="ghost">没有 Patch。先修一轮才有对比。</p>
             )}
-            <h2>弱测资攻击</h2>
+          </section>
+          <section className="compose-board">
+            <h2>审题 / 入库</h2>
+            <p>
+              <span
+                className={`verdict ${
+                  project.gate?.ready === "READY" ? "AC" : project.gate?.ready === "REVIEW REQUIRED" ? "TLE" : "WA"
+                }`}
+              >
+                {project.gate?.ready ?? "—"}
+              </span>
+              <span className="ghost">
+                {" "}
+                {project.gate_status}
+                {project.published_problem_id ? ` · 已入库 ${project.published_problem_id}` : ""}
+              </span>
+            </p>
+            {Object.entries(project.gate?.dimensions ?? {}).map(([name, status]) => (
+              <div key={name} className="latest-line">
+                <span className={`verdict ${status === "PASS" || status === "READY" ? "AC" : status === "WARNING" || status === "UNKNOWN" ? "TLE" : "WA"}`}>
+                  {status}
+                </span>
+                <span>{name}</span>
+              </div>
+            ))}
+            {(project.gate?.reasons ?? []).map((reason) => (
+              <p className="caption" key={reason}>
+                {reason}
+              </p>
+            ))}
+            <h2>弱测资</h2>
             {project.attack.length === 0 ? (
               <p className="ghost">没有明显弱数据。</p>
             ) : (
@@ -435,14 +450,9 @@ function ComposeProjectBody() {
                 </div>
               ))
             )}
-            <h2>审题门</h2>
-            <p>
-              {project.gate_status}
-              {project.published_problem_id ? ` · 已入库 ${project.published_problem_id}` : ""}
-            </p>
             {message ? <p className="err" role="alert">{message}</p> : null}
             {busy ? <p className="ghost">{busy}…</p> : null}
-          </aside>
+          </section>
         </div>
       </div>
   );

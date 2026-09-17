@@ -44,17 +44,22 @@ const View = forwardRef<GraphHandle, Props & { width: number; frameHeight: numbe
 export default forwardRef<GraphHandle, Props>(function GraphSurface(props, ref) {
   const host = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(800);
+  const [hostHeight, setHostHeight] = useState(0);
   useEffect(() => {
     const element = host.current;
     if (!element) return;
-    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(1, Math.round(entry.contentRect.width))));
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(Math.max(1, Math.round(entry.contentRect.width)));
+      setHostHeight(Math.max(0, Math.round(entry.contentRect.height)));
+    });
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
   const contentWidth = Math.max(176, ...props.nodes.map((node) => node.position.x + 176));
   const contentHeight = Math.max(100, ...props.nodes.map((node) => node.position.y + 100));
   const canvasWidth = width < 600 ? Math.max(width, Math.ceil(contentWidth * .72 + 32)) : width;
-  const frameHeight = props.height ?? dagFrameHeight({ maxRows: Math.ceil(contentHeight / 132), nodeCount: props.nodes.length, maxDepth: Math.ceil(contentWidth / 220) }, canvasWidth);
+  const natural = dagFrameHeight({ maxRows: Math.ceil(contentHeight / 132), nodeCount: props.nodes.length, maxDepth: Math.ceil(contentWidth / 220) }, canvasWidth);
+  const frameHeight = props.height ?? Math.max(natural, hostHeight || 0);
   return <div className="graph-surface" ref={host} data-testid="graph-surface" role="region" aria-label={props.label} tabIndex={0}>
     <div className="graph-surface-canvas" style={{ width: canvasWidth, height: frameHeight }}>
       <ReactFlowProvider><View {...props} ref={ref} width={canvasWidth} frameHeight={frameHeight} /></ReactFlowProvider>

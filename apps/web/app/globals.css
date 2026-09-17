@@ -806,15 +806,22 @@ html[data-theme="dark"] .vf-home-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
   gap: 16px;
-  min-height: 420px;
+  min-height: calc(100dvh - 140px);
+  align-items: stretch;
 }
 
 .vf-story-graph {
   min-height: 420px;
+  height: 100%;
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   background: var(--surface);
+}
+
+.vf-story-graph .graph-surface {
+  height: 100%;
+  min-height: 420px;
 }
 
 .vf-story-panel p {
@@ -2094,8 +2101,37 @@ button.sample {
 .compose-desk {
   height: calc(100dvh - var(--topbar-h));
   display: grid;
-  grid-template-rows: auto auto auto 1fr;
+  grid-template-rows: auto auto minmax(280px, 1fr) minmax(200px, 34vh);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   min-height: 0;
+}
+
+.compose-req {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  align-items: start;
+  padding: 8px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.compose-req label {
+  padding-top: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.compose-req textarea {
+  margin: 0;
+  width: 100%;
+  min-height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .compose-desk > label {
@@ -2107,13 +2143,64 @@ button.sample {
 
 .compose-split {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr;
   min-height: 0;
 }
 
 .compose-canvas {
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: var(--editor);
+  border-bottom: 1px solid var(--border);
+}
+
+.compose-canvas .graph-surface {
+  flex: 1;
+  min-height: 280px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+.compose-boards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.compose-board {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px 16px;
+  background: var(--bg);
+}
+
+.compose-board h2 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+@media (max-width: 700px) {
+  .compose-boards {
+    grid-template-columns: 1fr;
+    max-height: 46vh;
+  }
 }
 
 .compose-hero {
@@ -3090,6 +3177,16 @@ code {
   .compose-desk {
     height: auto;
     min-height: calc(100dvh - var(--topbar-h));
+    grid-template-rows: auto auto minmax(280px, 52vh) auto;
+  }
+
+  .compose-boards {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+
+  .compose-req {
+    grid-template-columns: 1fr;
   }
 
   .editor-pane {
