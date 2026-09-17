@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
+import BrandAmbient from "@/components/BrandAmbient";
 import { Me, ProblemListItem, SubmissionRow, api, currentUsername } from "@/lib/api";
 
 const FEATURED_IDS = ["VF1001", "VF1004", "VF1016"];
@@ -45,6 +46,7 @@ export default function HomePage() {
     <Shell>
       <main className="page wide vf-home">
         <section className="vf-home-hero vf-home-hero-split" aria-label="训练场">
+          <BrandAmbient variant="rays" className="vf-home-hero-ambient" />
           <div className="vf-home-hero-copy">
             <p className="vf-home-kicker">训练场{name ? ` · ${name}` : ""}</p>
             <h1>刷题、对拍、提交。</h1>
@@ -54,7 +56,7 @@ export default function HomePage() {
             </Link>
           </div>
           <figure className="vf-home-print">
-            <img src="/home/print-hero.jpg" alt="" />
+            <img src="/home/print-hero-mint.jpg" alt="" />
           </figure>
         </section>
 
@@ -129,7 +131,7 @@ export default function HomePage() {
               </ul>
             </section>
             <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
-              <img className="vf-home-panel-photo" src="/home/print-flow.jpg" alt="" />
+              <img className="vf-home-panel-photo" src="/home/print-flow-mint.jpg" alt="" />
               <div className="vf-home-check-body">
                 <h2 id="home-check">AI 也可以出题</h2>
                 <p>起草之后要先验过，才能进题库。</p>
