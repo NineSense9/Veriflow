@@ -225,5 +225,6 @@ def test_contrast_wa_falls_back_to_brute(api_client):
     assert saved.status_code == 200, saved.text
     review = saved.json()
     assert review["submission"]["submission_id"] == submitted.json()["submission_id"]
+    assert "print(n)" in (review["submission"].get("source") or "")
     assert review["contrast"]["reference_source"]
     assert review["contrast"]["solver"] == body["solver"]

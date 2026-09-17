@@ -33,7 +33,7 @@ export default function StatusPage() {
       <main className="page wide">
         <header className="page-head">
           <h1>提交记录</h1>
-          <p className="lead">按判定筛选。耗时来自沙箱实测。</p>
+          <p className="lead">点「看代码」打开当时交上去的源码。耗时来自沙箱实测。</p>
         </header>
         {error ? <p className="err" role="alert">{error}</p> : null}
         <div className="filters" aria-label="判定筛选">
@@ -72,6 +72,7 @@ export default function StatusPage() {
                   <th>判定</th>
                   <th className="num">耗时</th>
                   <th>时间</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -81,14 +82,19 @@ export default function StatusPage() {
                       <Link href={`/status/${row.id}`}>{row.id}</Link>
                     </td>
                     <td>
-                      <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
+                      <Link href={`/status/${row.id}`}>{row.problem_id}</Link>
                     </td>
                     <td>{row.lang}</td>
                     <td>
-                      <span className={`verdict ${row.verdict ?? ""}`}>{row.verdict}</span>
+                      <Link href={`/status/${row.id}`}>
+                        <span className={`verdict ${row.verdict ?? ""}`}>{row.verdict}</span>
+                      </Link>
                     </td>
                     <td className="num">{row.time_ms ?? "—"} ms</td>
                     <td>{row.created_at.replace("T", " ").slice(0, 19)}</td>
+                    <td>
+                      <Link href={`/status/${row.id}`}>看代码</Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

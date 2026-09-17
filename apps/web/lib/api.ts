@@ -391,6 +391,8 @@ export type SubmitResult = {
   time_ms: number;
   counterexample: Counterexample | null;
   sandbox: string;
+  source?: string;
+  lang?: string;
 };
 
 export type ContrastResult = {

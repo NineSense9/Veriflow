@@ -187,6 +187,7 @@ export default function AccountPage() {
                           {row.problem_id}
                           {titles.get(row.problem_id) ? ` ${titles.get(row.problem_id)}` : ""}
                         </Link>
+                        <span className="ghost"> · 看代码</span>
                       </td>
                       <td>
                         <Link href={`/status/${row.id}`}>

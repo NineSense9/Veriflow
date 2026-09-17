@@ -50,10 +50,17 @@ export default function SubmissionPage() {
               </p>
             </header>
             <div className="sample-head" style={{ marginBottom: 8 }}>
-              <span>代码</span>
-              <CopyButton text={row.source} label="复制代码" />
+              <span>当时提交的代码</span>
+              <span className="vf-home-more" style={{ margin: 0 }}>
+                <CopyButton text={row.source || ""} label="复制代码" />
+                <Link href={`/problems/${row.problem_id}?sub=${row.id}`}>载入编辑器</Link>
+              </span>
             </div>
-            <pre className="vf-account-source">{row.source}</pre>
+            {row.source ? (
+              <pre className="vf-account-source">{row.source}</pre>
+            ) : (
+              <p className="ghost">这条记录没有存下源码。</p>
+            )}
             {row.counterexample ? (
               <section>
                 <h2>反例</h2>

@@ -63,10 +63,38 @@ export default function ProblemPage() {
       .problem(id)
       .then(setProblem)
       .catch(() => setError("题目加载失败。"));
+    const wanted = Number(new URLSearchParams(window.location.search).get("sub") || "");
+    if (Number.isFinite(wanted) && wanted > 0) {
+      api
+        .submission(wanted)
+        .then((row) => {
+          if (row.source) setSource(row.source);
+          if (row.lang === "cpp17" || row.lang === "python3") setLang(row.lang);
+          setResult({
+            job_id: "",
+            submission_id: row.id,
+            verdict: row.verdict || "",
+            stage: "done",
+            time_ms: row.time_ms || 0,
+            counterexample: row.counterexample,
+            sandbox: "",
+            source: row.source,
+            lang: row.lang,
+          });
+        })
+        .catch(() => undefined);
+      return;
+    }
     api
       .review(id)
       .then((data) => {
-        if (data.submission) setResult(data.submission);
+        if (data.submission) {
+          setResult(data.submission);
+          if (data.submission.source) setSource(data.submission.source);
+          if (data.submission.lang === "cpp17" || data.submission.lang === "python3") {
+            setLang(data.submission.lang);
+          }
+        }
         if (data.contrast) setContrast(data.contrast);
       })
       .catch(() => undefined);
@@ -344,6 +372,12 @@ export default function ProblemPage() {
           </div>
           <span className="verdict-meta">
             {busy ? "判定中" : result ? `${result.time_ms} ms · ${result.sandbox}` : "尚未提交"}
+            {result?.submission_id ? (
+              <>
+                {" · "}
+                <Link href={`/status/${result.submission_id}`}>看这次代码</Link>
+              </>
+            ) : null}
           </span>
         </div>
       </div>

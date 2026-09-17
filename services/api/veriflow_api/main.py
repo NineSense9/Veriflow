@@ -1052,6 +1052,8 @@ def _register_routes(application: FastAPI) -> None:
                 "time_ms": submission["time_ms"] or 0,
                 "counterexample": counterexample,
                 "sandbox": "",
+                "source": submission["source"],
+                "lang": submission["lang"],
             },
             "contrast": payload,
         }
