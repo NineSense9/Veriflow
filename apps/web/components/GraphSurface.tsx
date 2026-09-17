@@ -59,7 +59,7 @@ export default forwardRef<GraphHandle, Props>(function GraphSurface(props, ref) 
   const contentHeight = Math.max(100, ...props.nodes.map((node) => node.position.y + 100));
   const canvasWidth = width < 600 ? Math.max(width, Math.ceil(contentWidth * .72 + 32)) : width;
   const natural = dagFrameHeight({ maxRows: Math.ceil(contentHeight / 132), nodeCount: props.nodes.length, maxDepth: Math.ceil(contentWidth / 220) }, canvasWidth);
-  const frameHeight = props.height ?? Math.max(natural, hostHeight || 0);
+  const frameHeight = props.height ?? (hostHeight > 0 ? hostHeight : natural);
   return <div className="graph-surface" ref={host} data-testid="graph-surface" role="region" aria-label={props.label} tabIndex={0}>
     <div className="graph-surface-canvas" style={{ width: canvasWidth, height: frameHeight }}>
       <ReactFlowProvider><View {...props} ref={ref} width={canvasWidth} frameHeight={frameHeight} /></ReactFlowProvider>
