@@ -612,7 +612,7 @@ a.brand:hover .brand-text strong {
 
 .vf-home-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   margin: 0 0 16px;
 }
@@ -640,15 +640,73 @@ a.brand:hover .brand-text strong {
   font-size: 13px;
 }
 
-.vf-admin-login {
-  grid-template-columns: 1fr !important;
-  justify-items: center;
+.vf-account-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin: 0 0 20px;
 }
 
-.vf-admin-login .loginPanel,
-.vf-admin-login [class*="loginPanel"] {
-  border-left: none;
-  width: min(440px, 100%);
+.vf-account-who {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vf-account-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.vf-account-hero h1 {
+  margin: 0 0 4px;
+}
+
+.vf-account-hero .lead {
+  margin: 0;
+}
+
+.vf-account-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.vf-account-tally {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.vf-account-tally li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.vf-account-log {
+  margin-top: 20px;
+}
+
+.vf-account-log h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.vf-home-picks a .verdict {
+  margin-left: auto;
 }
 
 .vf-admin-form {
@@ -3250,6 +3308,11 @@ code {
   .vf-home-hero {
     padding: 32px 22px 28px;
     min-height: 0;
+  }
+
+  .vf-account-hero {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .vf-home-hero h1 {
