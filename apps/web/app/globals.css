@@ -760,18 +760,16 @@ a.brand:hover .brand-text strong {
   flex-direction: column;
   overflow: hidden;
   padding: 0;
-  min-height: 340px;
 }
 
 .vf-home-panel-photo {
   display: block;
   width: 100%;
-  flex: 1 1 auto;
-  min-height: 220px;
-  height: 220px;
-  object-fit: cover;
-  object-position: 82% 55%;
-  background: var(--accent-soft);
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  object-position: center;
+  background: #e7f6f2;
 }
 
 .vf-home-check-body {
