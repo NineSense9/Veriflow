@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, setSession } from "@/lib/api";
 import { readTheme, type Theme } from "@/lib/theme";
@@ -37,10 +38,11 @@ export default function LoginPage() {
     setError("");
     try {
       const result = await api.login(username, password);
-      setSession(result.username, result.token);
-      router.replace("/");
-    } catch {
-      setError("用户名或密码不正确。");
+      setSession(result.username, result.token, result.role);
+      router.replace(result.role === "admin" ? "/admin" : "/");
+    } catch (err) {
+      const message = (err as Error).message || "";
+      setError(message.includes("停用") ? "账号已停用。" : "用户名或密码不正确。");
     } finally {
       setBusy(false);
     }
@@ -131,6 +133,9 @@ export default function LoginPage() {
               填入体验账号
             </button>
           </div>
+          <p className="vf-admin-back">
+            <Link href="/admin/login">管理员入口</Link>
+          </p>
         </div>
       </section>
       <section className={styles.loginStory} aria-label="训练场与入库检查">

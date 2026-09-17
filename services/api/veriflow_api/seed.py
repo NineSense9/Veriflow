@@ -30,6 +30,7 @@ def _seed_users(connection) -> None:
     users = [
         ("demo", os.environ.get("DEMO_PASSWORD", "demo"), "contestant"),
         ("setter", os.environ.get("SETTER_PASSWORD", "setter"), "setter"),
+        ("admin", os.environ.get("ADMIN_PASSWORD", "admin"), "admin"),
     ]
     for name, password, role in users:
         existing = connection.execute(

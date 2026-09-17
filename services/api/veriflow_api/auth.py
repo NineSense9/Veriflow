@@ -55,7 +55,7 @@ def user_for_token(token: str | None) -> sqlite3.Row | None:
     with connect() as connection:
         row = connection.execute(
             """
-            SELECT users.id, users.name, users.role, sessions.expires_at
+            SELECT users.id, users.name, users.role, users.disabled, sessions.expires_at
             FROM sessions
             JOIN users ON users.id = sessions.user_id
             WHERE sessions.token = ?
@@ -68,5 +68,7 @@ def user_for_token(token: str | None) -> sqlite3.Row | None:
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=timezone.utc)
     if expires < datetime.now(timezone.utc):
+        return None
+    if int(row["disabled"] or 0) != 0:
         return None
     return row

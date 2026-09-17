@@ -143,4 +143,7 @@ def init_db() -> None:
         contrast_cols = [row[1] for row in connection.execute("PRAGMA table_info(contrast_logs)").fetchall()]
         if contrast_cols and "payload_json" not in contrast_cols:
             connection.execute("ALTER TABLE contrast_logs ADD COLUMN payload_json TEXT")
+        user_cols = [row[1] for row in connection.execute("PRAGMA table_info(users)").fetchall()]
+        if user_cols and "disabled" not in user_cols:
+            connection.execute("ALTER TABLE users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0")
         connection.commit()

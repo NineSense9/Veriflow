@@ -76,6 +76,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const routerRef = useRef(router);
   routerRef.current = router;
   const [user, setUser] = useState<string | null>(null);
+  const [role, setRole] = useState("");
   const [sandbox, setSandbox] = useState("…");
   const [theme, setTheme] = useState<Theme>("light");
   const [navOpen, setNavOpen] = useState(false);
@@ -93,7 +94,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     setUser(name);
     api
       .me()
-      .then((me) => setUser(me.username))
+      .then((me) => {
+        setUser(me.username);
+        setRole(me.role);
+      })
       .catch(() => {
         clearSession();
         routerRef.current.replace("/login");
@@ -164,12 +168,20 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </Link>
         ))}
         <p className="nav-group-label">系统</p>
+        <Link href="/account" className={isActive(pathname, "/account") ? "active" : undefined}>
+          个人中心
+        </Link>
         <Link href="/settings" className={isActive(pathname, "/settings") ? "active" : undefined}>
           设置
         </Link>
+        {role === "admin" ? (
+          <Link href="/admin" className={isActive(pathname, "/admin") ? "active" : undefined}>
+            后台
+          </Link>
+        ) : null}
       </nav>
     ),
-    [pathname],
+    [pathname, role],
   );
 
   if (!user) {
@@ -197,7 +209,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           ...CORE.map((item) => ({ label: item.label, link: item.href })),
           ...CHECK_LINKS.map((item) => ({ label: item.label, link: item.href })),
           ...EVAL_LINKS.map((item) => ({ label: item.label, link: item.href })),
+          { label: "个人中心", link: "/account" },
           { label: "设置", link: "/settings" },
+          ...(role === "admin" ? [{ label: "后台", link: "/admin" }] : []),
         ]}
       />
       <aside className="drawer">{drawer}</aside>
@@ -225,7 +239,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <span className={sandbox === "down" ? "dot down" : "dot"} />
             <span>{sandbox}</span>
           </span>
-          <span className="user-name">{user}</span>
+          <Link href="/account" className="user-name">
+            {user}
+          </Link>
+          {role === "admin" ? (
+            <Link href="/admin" className="btn btn-ghost btn-sm">
+              后台
+            </Link>
+          ) : null}
           <ThemeToggle theme={theme} onToggle={setTheme} />
           <Link href="/settings" className="btn btn-ghost btn-sm">
             设置

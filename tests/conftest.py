@@ -17,6 +17,7 @@ def api_client(tmp_path, monkeypatch):
     monkeypatch.setenv("VERIFLOW_SANDBOX", "process")
     monkeypatch.setenv("DEMO_PASSWORD", "demo")
     monkeypatch.setenv("SETTER_PASSWORD", "setter")
+    monkeypatch.setenv("ADMIN_PASSWORD", "admin")
     from veriflow_api.main import create_app
 
     with TestClient(create_app()) as client:

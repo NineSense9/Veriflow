@@ -29,7 +29,10 @@ def test_me_requires_login(api_client):
     token = _login(api_client)
     response = api_client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
-    assert response.json()["username"] == "demo"
+    body = response.json()
+    assert body["username"] == "demo"
+    assert "submissions" in body
+    assert "solved" in body
 
 
 def test_submit_requires_login(api_client):

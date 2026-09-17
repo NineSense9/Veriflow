@@ -77,7 +77,9 @@ export default function StatusPage() {
               <tbody>
                 {visible.map((row) => (
                   <tr key={row.id}>
-                    <td className="num">{row.id}</td>
+                    <td className="num">
+                      <Link href={`/status/${row.id}`}>{row.id}</Link>
+                    </td>
                     <td>
                       <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
                     </td>

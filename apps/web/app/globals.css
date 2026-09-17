@@ -556,8 +556,8 @@ a.brand:hover .brand-text strong {
   isolation: isolate;
   overflow: hidden;
   margin: 0 0 24px;
-  padding: 48px 40px 40px;
-  min-height: 280px;
+  padding: 36px 40px 32px;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: color-mix(in srgb, var(--accent-soft) 78%, var(--surface));
@@ -604,6 +604,87 @@ a.brand:hover .brand-text strong {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.75fr);
   gap: 16px;
+}
+
+.vf-home-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vf-home-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.vf-home-stats div {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.vf-home-stats strong {
+  display: block;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.vf-home-stats span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.vf-admin-back {
+  margin: 16px 0 0;
+  font-size: 13px;
+}
+
+.vf-admin-login {
+  grid-template-columns: 1fr !important;
+  justify-items: center;
+}
+
+.vf-admin-login .loginPanel,
+.vf-admin-login [class*="loginPanel"] {
+  border-left: none;
+  width: min(440px, 100%);
+}
+
+.vf-admin-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 0 0 20px;
+}
+
+.vf-admin-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.vf-admin-form input,
+.vf-admin-form select {
+  min-width: 140px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.vf-account-source {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 420px;
+}
+
+a.user-name {
+  text-decoration: none;
 }
 
 .vf-home-panel {
@@ -3157,6 +3238,8 @@ code {
 
   .home-split,
   .vf-home-grid,
+  .vf-home-grid-3,
+  .vf-home-stats,
   .vf-story-split,
   .vf-req,
   .vf-dims,

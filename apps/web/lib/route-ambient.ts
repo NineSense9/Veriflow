@@ -52,6 +52,8 @@ export function selftestAmbient(): string[] {
     ["/history", "none"],
     ["/problems", "none"],
     ["/status", "none"],
+    ["/account", "none"],
+    ["/admin", "none"],
     ["/sets", "none"],
   ];
   const failures: string[] = [];

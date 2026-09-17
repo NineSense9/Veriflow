@@ -413,6 +413,35 @@ export type SubmissionRow = {
   created_at: string;
 };
 
+export type SubmissionDetail = SubmissionRow & {
+  source: string;
+  counterexample: Counterexample | null;
+};
+
+export type Me = {
+  username: string;
+  role: string;
+  submissions: number;
+  solved: number;
+};
+
+export type AdminUser = {
+  id: number;
+  username: string;
+  role: string;
+  disabled: boolean;
+  submissions: number;
+  solved: number;
+};
+
+export type AdminProblem = {
+  id: string;
+  title: string;
+  difficulty: number;
+  published: boolean;
+  submissions: number;
+};
+
 function token(): string | null {
   if (typeof window === "undefined") return null;
   return sessionStorage.getItem("vf_token");
@@ -423,14 +452,21 @@ export function currentUsername(): string | null {
   return sessionStorage.getItem("vf_user");
 }
 
-export function setSession(username: string, accessToken: string) {
+export function setSession(username: string, accessToken: string, role?: string) {
   sessionStorage.setItem("vf_token", accessToken);
   sessionStorage.setItem("vf_user", username);
+  if (role) sessionStorage.setItem("vf_role", role);
+}
+
+export function currentRole(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem("vf_role");
 }
 
 export function clearSession() {
   sessionStorage.removeItem("vf_token");
   sessionStorage.removeItem("vf_user");
+  sessionStorage.removeItem("vf_role");
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -478,7 +514,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ username, password }),
     }),
-  me: () => request<{ username: string; role: string }>("/api/auth/me"),
+  me: () => request<Me>("/api/auth/me"),
   logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   problems: () => request<{ problems: ProblemListItem[] }>("/api/problems"),
   problem: (id: string) => request<ProblemDetail>(`/api/problems/${id}`),
@@ -493,6 +529,24 @@ export const api = {
       body: JSON.stringify({ lang }),
     }),
   submissions: () => request<{ submissions: SubmissionRow[] }>("/api/submissions"),
+  submission: (id: number) => request<SubmissionDetail>(`/api/submissions/${id}`),
+  adminUsers: () => request<{ users: AdminUser[] }>("/api/admin/users"),
+  adminCreateUser: (username: string, password: string, role: string) =>
+    request<AdminUser>("/api/admin/users", {
+      method: "POST",
+      body: JSON.stringify({ username, password, role }),
+    }),
+  adminDisableUser: (id: number, disabled: boolean) =>
+    request<{ ok: boolean; disabled: boolean }>(`/api/admin/users/${id}/disabled`, {
+      method: "POST",
+      body: JSON.stringify({ disabled }),
+    }),
+  adminProblems: () => request<{ problems: AdminProblem[] }>("/api/admin/problems"),
+  adminPublishProblem: (id: string, published: boolean) =>
+    request<{ ok: boolean; published: boolean }>(`/api/admin/problems/${id}/publish`, {
+      method: "POST",
+      body: JSON.stringify({ published }),
+    }),
   tutor: (problemId: string, submissionId: number) =>
     request<{ question: string; backend: string; spoiler_rejects: number }>(
       `/api/problems/${problemId}/tutor`,

@@ -12,7 +12,7 @@ from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
-from veriflow_api.auth import create_session, revoke_session, user_for_token, verify_password
+from veriflow_api.auth import create_session, hash_password, revoke_session, user_for_token, verify_password
 from veriflow_api import compose_service
 from veriflow_api.db import connect, init_db
 from veriflow_api.seed import pack_file, seed
@@ -62,6 +62,20 @@ def create_app() -> FastAPI:
 class LoginBody(BaseModel):
     username: str
     password: str
+
+
+class AdminCreateUserBody(BaseModel):
+    username: str = Field(min_length=2, max_length=32)
+    password: str = Field(min_length=4, max_length=72)
+    role: Literal["contestant", "setter", "admin"] = "contestant"
+
+
+class AdminDisableBody(BaseModel):
+    disabled: bool
+
+
+class AdminPublishBody(BaseModel):
+    published: bool
 
 
 class SubmitBody(BaseModel):
@@ -271,6 +285,27 @@ def current_user(
     if user is None:
         raise HTTPException(status_code=401, detail={"code": "unauthenticated", "message": "login required"})
     return user
+
+
+def require_admin(user=Depends(current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail={"code": "forbidden", "message": "需要管理员"})
+    return user
+
+
+def _user_stats(connection, user_id: int) -> tuple[int, int]:
+    submissions = connection.execute(
+        "SELECT COUNT(*) AS n FROM submissions WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()["n"]
+    solved = connection.execute(
+        """
+        SELECT COUNT(DISTINCT problem_id) AS n
+        FROM submissions WHERE user_id = ? AND verdict = 'AC'
+        """,
+        (user_id,),
+    ).fetchone()["n"]
+    return int(submissions or 0), int(solved or 0)
 
 
 def _register_routes(application: FastAPI) -> None:
@@ -635,13 +670,18 @@ def _register_routes(application: FastAPI) -> None:
     def login(body: LoginBody):
         with connect() as connection:
             row = connection.execute(
-                "SELECT id, name, role, password_hash FROM users WHERE name = ?",
+                "SELECT id, name, role, password_hash, disabled FROM users WHERE name = ?",
                 (body.username,),
             ).fetchone()
         if row is None or not verify_password(body.password, row["password_hash"]):
             raise HTTPException(
                 status_code=401,
-                detail={"code": "invalid_credentials", "message": "wrong username or password"},
+                detail={"code": "invalid_credentials", "message": "用户名或密码不正确"},
+            )
+        if int(row["disabled"] or 0) != 0:
+            raise HTTPException(
+                status_code=403,
+                detail={"code": "account_disabled", "message": "账号已停用"},
             )
         token = create_session(row["id"])
         response = JSONResponse(
@@ -659,7 +699,14 @@ def _register_routes(application: FastAPI) -> None:
 
     @application.get("/api/auth/me")
     def me(user=Depends(current_user)):
-        return {"username": user["name"], "role": user["role"]}
+        with connect() as connection:
+            submissions, solved = _user_stats(connection, user["id"])
+        return {
+            "username": user["name"],
+            "role": user["role"],
+            "submissions": submissions,
+            "solved": solved,
+        }
 
     @application.post("/api/auth/logout")
     def logout(
@@ -1231,6 +1278,147 @@ def _register_routes(application: FastAPI) -> None:
                 for row in rows
             ]
         }
+
+    @application.get("/api/submissions/{submission_id}")
+    def get_submission(submission_id: int, user=Depends(current_user)):
+        with connect() as connection:
+            row = connection.execute(
+                """
+                SELECT id, user_id, problem_id, lang, source, verdict, time_ms,
+                       counterexample_json, created_at
+                FROM submissions WHERE id = ?
+                """,
+                (submission_id,),
+            ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "没有这条提交"})
+        if row["user_id"] != user["id"] and user["role"] != "admin":
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "没有这条提交"})
+        counterexample = None
+        if row["counterexample_json"]:
+            try:
+                counterexample = json.loads(row["counterexample_json"])
+            except json.JSONDecodeError:
+                counterexample = None
+        return {
+            "id": row["id"],
+            "problem_id": row["problem_id"],
+            "lang": row["lang"],
+            "source": row["source"],
+            "verdict": row["verdict"],
+            "time_ms": row["time_ms"],
+            "counterexample": counterexample,
+            "created_at": row["created_at"],
+        }
+
+    @application.get("/api/admin/users")
+    def admin_users(user=Depends(require_admin)):
+        del user
+        with connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT u.id, u.name, u.role, u.disabled,
+                       (SELECT COUNT(*) FROM submissions s WHERE s.user_id = u.id) AS submissions,
+                       (SELECT COUNT(DISTINCT s.problem_id) FROM submissions s
+                        WHERE s.user_id = u.id AND s.verdict = 'AC') AS solved
+                FROM users u
+                ORDER BY u.id
+                """
+            ).fetchall()
+        return {
+            "users": [
+                {
+                    "id": row["id"],
+                    "username": row["name"],
+                    "role": row["role"],
+                    "disabled": bool(row["disabled"]),
+                    "submissions": int(row["submissions"] or 0),
+                    "solved": int(row["solved"] or 0),
+                }
+                for row in rows
+            ]
+        }
+
+    @application.post("/api/admin/users")
+    def admin_create_user(body: AdminCreateUserBody, user=Depends(require_admin)):
+        del user
+        name = body.username.strip()
+        if not name.replace("_", "").isalnum() or name.replace("_", "").isdigit():
+            raise HTTPException(status_code=400, detail={"code": "bad_name", "message": "用户名只用字母、数字和下划线"})
+        with connect() as connection:
+            exists = connection.execute("SELECT id FROM users WHERE name = ?", (name,)).fetchone()
+            if exists:
+                raise HTTPException(status_code=409, detail={"code": "exists", "message": "这个用户名已经有了"})
+            connection.execute(
+                "INSERT INTO users(name, password_hash, role, disabled) VALUES (?, ?, ?, 0)",
+                (name, hash_password(body.password), body.role),
+            )
+            connection.commit()
+            row = connection.execute(
+                "SELECT id, name, role, disabled FROM users WHERE name = ?", (name,)
+            ).fetchone()
+        return {"id": row["id"], "username": row["name"], "role": row["role"], "disabled": False, "submissions": 0, "solved": 0}
+
+    @application.post("/api/admin/users/{user_id}/disabled")
+    def admin_disable_user(user_id: int, body: AdminDisableBody, user=Depends(require_admin)):
+        if user_id == user["id"] and body.disabled:
+            raise HTTPException(status_code=409, detail={"code": "self", "message": "不能停用自己"})
+        with connect() as connection:
+            row = connection.execute("SELECT id, role, disabled FROM users WHERE id = ?", (user_id,)).fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail={"code": "not_found", "message": "没有这个账号"})
+            if row["role"] == "admin" and body.disabled:
+                others = connection.execute(
+                    "SELECT COUNT(*) AS n FROM users WHERE role = 'admin' AND disabled = 0 AND id != ?",
+                    (user_id,),
+                ).fetchone()["n"]
+                if int(others or 0) < 1:
+                    raise HTTPException(status_code=409, detail={"code": "last_admin", "message": "至少留一个管理员"})
+            connection.execute("UPDATE users SET disabled = ? WHERE id = ?", (1 if body.disabled else 0, user_id))
+            if body.disabled:
+                connection.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+            connection.commit()
+        return {"ok": True, "disabled": body.disabled}
+
+    @application.get("/api/admin/problems")
+    def admin_problems(user=Depends(require_admin)):
+        del user
+        with connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT p.id, p.spec_json, p.difficulty, p.published,
+                       (SELECT COUNT(*) FROM submissions s WHERE s.problem_id = p.id) AS sub_count
+                FROM problems p
+                ORDER BY p.id
+                """
+            ).fetchall()
+        items = []
+        for row in rows:
+            spec = json.loads(row["spec_json"])
+            items.append(
+                {
+                    "id": row["id"],
+                    "title": spec.get("title"),
+                    "difficulty": row["difficulty"],
+                    "published": bool(row["published"]),
+                    "submissions": int(row["sub_count"] or 0),
+                }
+            )
+        return {"problems": items}
+
+    @application.post("/api/admin/problems/{problem_id}/publish")
+    def admin_publish_problem(problem_id: str, body: AdminPublishBody, user=Depends(require_admin)):
+        del user
+        with connect() as connection:
+            row = connection.execute("SELECT id FROM problems WHERE id = ?", (problem_id,)).fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail={"code": "not_found", "message": "没有这道题"})
+            connection.execute(
+                "UPDATE problems SET published = ? WHERE id = ?",
+                (1 if body.published else 0, problem_id),
+            )
+            connection.commit()
+        return {"ok": True, "published": body.published}
 
 
 app = create_app()
