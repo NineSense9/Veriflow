@@ -131,7 +131,7 @@ export default function HomePage() {
               </ul>
             </section>
             <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
-              <img className="vf-home-panel-photo" src="/home/print-nodes.jpg" alt="" />
+              <img className="vf-home-panel-photo" src="/home/print-arrows.jpg" alt="" />
               <div className="vf-home-check-body">
                 <h2 id="home-check">AI 也可以出题</h2>
                 <p>起草之后要先验过，才能进题库。</p>
