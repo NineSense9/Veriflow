@@ -26,6 +26,7 @@ def test_bench_latest_flattens_metrics(api_client):
     assert body["baselines"]["veriflow_hybrid"]["detection_f1"] == body["detection_f1"]
     source = Path(body["source"])
     assert source.as_posix() in {
+        "experiments/runs/competition/metrics.json",
         "experiments/runs/smoke/metrics.json",
         "experiments/runs/dev/metrics.json",
     }

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
-import BrandAmbient from "@/components/BrandAmbient";
+import VerificationMiniFlow from "@/components/home/VerificationMiniFlow";
 import { Me, ProblemListItem, SubmissionRow, api, currentUsername } from "@/lib/api";
 
 const FEATURED_IDS = ["VF1001", "VF1004", "VF1016"];
@@ -45,19 +45,28 @@ export default function HomePage() {
   return (
     <Shell>
       <main className="page wide vf-home">
-        <section className="vf-home-hero vf-home-hero-split" aria-label="训练场">
-          <BrandAmbient variant="rays" className="vf-home-hero-ambient" />
+        <section className="vf-home-hero vf-home-hero-split" aria-label="验流">
           <div className="vf-home-hero-copy">
-            <p className="vf-home-kicker">训练场{name ? ` · ${name}` : ""}</p>
-            <h1>刷题、对拍、提交。</h1>
-            <p className="lead">打开题就能写代码，对拍帮你找错，交上去用沙箱跑，不是模型自己说对。</p>
-            <Link className="btn btn-primary" href="/problems">
-              进入题库
-            </Link>
+            <p className="vf-home-kicker">验流{name ? ` · ${name}` : ""}</p>
+            <h1>
+              让 AI 出题，
+              <br />
+              但不让 AI 当裁判。
+            </h1>
+            <p className="lead">
+              AI 负责理解需求和提出候选；规格、反例、运行轨迹和入库门禁由确定性验证器裁决。
+            </p>
+            <div className="vf-home-ctas">
+              <Link className="btn btn-primary" href="/report?demo=case4_runtime&tour=1">
+                3 分钟验证演示
+              </Link>
+              <Link className="btn" href="/problems">
+                进入训练场
+              </Link>
+            </div>
+            <p className="vf-home-secondary">刷题、对拍、提交仍在训练场，判定不来自模型。</p>
           </div>
-          <figure className="vf-home-print">
-            <img src="/home/print-hero-mint.jpg" alt="" />
-          </figure>
+          <VerificationMiniFlow />
         </section>
 
         <section className="vf-home-band" aria-label="我的记录">
@@ -87,6 +96,21 @@ export default function HomePage() {
             <strong>{latest?.verdict ?? "—"}</strong>
             <span>最近判定</span>
           </div>
+        </section>
+
+        <section className="vf-home-capabilities" aria-label="核心能力">
+          <Link className="vf-home-cap" href="/compose">
+            <h2>Specification</h2>
+            <p>自然语言 → 可检查约束</p>
+          </Link>
+          <Link className="vf-home-cap" href="/evidence">
+            <h2>Evidence</h2>
+            <p>Issue → minimized witness</p>
+          </Link>
+          <Link className="vf-home-cap" href="/report">
+            <h2>Guarded Repair</h2>
+            <p>AI Patch → verifier accept/reject</p>
+          </Link>
         </section>
 
         <div className="vf-home-grid">
@@ -131,15 +155,22 @@ export default function HomePage() {
               </ul>
             </section>
             <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
-              <img className="vf-home-panel-photo" src="/home/print-arrows.jpg" alt="" />
               <div className="vf-home-check-body">
-                <h2 id="home-check">AI 也可以出题</h2>
-                <p>起草之后要先验过，才能进题库。</p>
+                <h2 id="home-check">AI 提案 ≠ 最终判定</h2>
+                <ol className="vf-home-steps">
+                  <li>AI 解释需求</li>
+                  <li>Verifier 检查约束</li>
+                  <li>AI 提议最小 Patch</li>
+                  <li>Gate 再验证</li>
+                </ol>
+                <p>
+                  <span className="verdict WA">HIGH</span> MISSING_HUMAN_GATE
+                </p>
+                <p className="caption">AI proposal + ADD_NODE human_gate → guarded check → BLOCKED 或 READY</p>
                 <div className="vf-home-check-actions">
                   <Link className="btn btn-sm" href="/compose?story=1">
-                    去出一道题
+                    体验缺少审题门案例
                   </Link>
-                  <Link href="/stress">去对拍</Link>
                 </div>
               </div>
             </section>

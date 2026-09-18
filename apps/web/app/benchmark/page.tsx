@@ -97,9 +97,41 @@ export default function BenchmarkPage() {
               </div>
             </dl>
             <p className="caption">
-              源文件 {String(data.source || "—")} · clean {fmt(data.n_clean, 0)} · LLM-judge baseline{" "}
-              {String(data.llm_judge_baseline ?? "N/A")}
+              源文件 {String(data.source || "—")} · clean {fmt(data.n_clean, 0)} · bases{" "}
+              {fmt(data.base_workflow_count, 0)} · 复现 {String(data.reproduce || data.command || "python scripts/competition_benchmark.py")}
+              · LLM-judge {String((data.llm_judge as { status?: string } | undefined)?.status || data.llm_judge_baseline || "NOT RUN")}
             </p>
+            {data.ablation && typeof data.ablation === "object" ? (
+              <section>
+                <h2>Ablation（同一 dataset / seed）</h2>
+                <div className="table-wrap">
+                  <table className="table tight">
+                    <thead>
+                      <tr>
+                        <th>模式</th>
+                        <th>F1</th>
+                        <th>召回</th>
+                        <th>FP 率</th>
+                        <th>TP/FN</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(data.ablation as Record<string, Record<string, unknown>>).map(([mode, row]) => (
+                        <tr key={mode}>
+                          <td>{mode}</td>
+                          <td>{fmt(row.detection_f1)}</td>
+                          <td>{fmt(row.detection_recall)}</td>
+                          <td>{fmt(row.false_positive_rate)}</td>
+                          <td>
+                            {fmt(row.tp, 0)}/{fmt(row.fn, 0)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ) : null}
             {data.baselines && typeof data.baselines === "object" ? (
               <section>
                 <h2>对照</h2>

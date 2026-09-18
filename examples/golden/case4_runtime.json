@@ -6,5 +6,11 @@
   "expect_static": "PASS",
   "expect_runtime": "FAIL",
   "expect_pattern": "STATIC PASS + RUNTIME FAIL",
-  "story": "DAG 含通知节点，静态覆盖通过；runtime 在 IF.true 后终止，通知与入库均未执行。"
+  "story": "DAG 含通知节点，静态覆盖通过；runtime 在 IF.true 后终止，通知与入库均未执行。",
+  "issue": {
+    "code": "NOTIFY_NOT_OBSERVED",
+    "severity": "HIGH",
+    "title": "notify step was not observed"
+  },
+  "witness": ["if_pay", "terminate"]
 }

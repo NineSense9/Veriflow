@@ -1,0 +1,9 @@
+{
+  "status": "NOT RUN",
+  "reason": "DEEPSEEK_API_KEY unset",
+  "provider": "deepseek",
+  "model": "deepseek-chat",
+  "prompt_version": "competition-llm-judge-v1",
+  "repeats": 0,
+  "cases": []
+}

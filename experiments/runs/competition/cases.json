@@ -1,0 +1,533 @@
+[
+  {
+    "gold": "valid_lis",
+    "fault": "clean",
+    "category": "clean",
+    "expected": "PASS",
+    "detected": false,
+    "codes": [],
+    "static_status": "PASS",
+    "runtime_failed": false,
+    "static_ms": 0.774,
+    "runtime_ms": 0.64,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "orphan_node",
+    "category": "structural",
+    "expected": "DEAD_NODE",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE"
+    ],
+    "static_status": "WARNING",
+    "runtime_failed": false,
+    "static_ms": 0.594,
+    "runtime_ms": 0.259,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "broken_edge",
+    "category": "structural",
+    "expected": "DEAD_NODE",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.39,
+    "runtime_ms": 0.12,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "missing_required_action",
+    "category": "semantic",
+    "expected": "MISSING_HUMAN_GATE",
+    "detected": true,
+    "codes": [
+      "MISSING_HUMAN_GATE",
+      "MISSING_REQUIRED_ACTION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": true,
+    "static_ms": 0.303,
+    "runtime_ms": 0.113,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "wrong_order",
+    "category": "ordering",
+    "expected": "ORDER_VIOLATION",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.322,
+    "runtime_ms": 0.101,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "missing_branch",
+    "category": "branch",
+    "expected": "WEAK_BOUNDS",
+    "detected": true,
+    "codes": [
+      "MISSING_REQUIRED_ACTION",
+      "WEAK_BOUNDS"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.213,
+    "runtime_ms": 0.083,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "wrong_parameter",
+    "category": "parameter",
+    "expected": "GUARD_NOT_EXPR",
+    "detected": true,
+    "codes": [
+      "GUARD_NOT_EXPR",
+      "WEAK_BOUNDS"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.281,
+    "runtime_ms": 0.121,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "broken_binding",
+    "category": "dataflow",
+    "expected": "BROKEN_BINDING",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION",
+      "BROKEN_BINDING"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.369,
+    "runtime_ms": 0.113,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "hardcoded_secret",
+    "category": "safety",
+    "expected": "HARDCODED_SECRET",
+    "detected": true,
+    "codes": [
+      "HARDCODED_SECRET"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.295,
+    "runtime_ms": 0.106,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "valid_lis",
+    "fault": "unsafe_webhook",
+    "category": "safety",
+    "expected": "UNRESTRICTED_WEBHOOK",
+    "detected": true,
+    "codes": [
+      "UNRESTRICTED_WEBHOOK"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.291,
+    "runtime_ms": 0.106,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "commit_a",
+    "fault": "clean",
+    "category": "clean",
+    "expected": "PASS",
+    "detected": false,
+    "codes": [],
+    "static_status": "PASS",
+    "runtime_failed": false,
+    "static_ms": 0.249,
+    "runtime_ms": 0.096,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "commit_a",
+    "fault": "orphan_node",
+    "category": "structural",
+    "expected": "DEAD_NODE",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE"
+    ],
+    "static_status": "WARNING",
+    "runtime_failed": false,
+    "static_ms": 0.31,
+    "runtime_ms": 0.113,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "commit_a",
+    "fault": "broken_edge",
+    "category": "structural",
+    "expected": "DEAD_NODE",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.302,
+    "runtime_ms": 0.095,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "commit_a",
+    "fault": "missing_required_action",
+    "category": "semantic",
+    "expected": "MISSING_HUMAN_GATE",
+    "detected": true,
+    "codes": [
+      "MISSING_HUMAN_GATE",
+      "MISSING_REQUIRED_ACTION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": true,
+    "static_ms": 0.277,
+    "runtime_ms": 0.097,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "commit_a",
+    "fault": "wrong_order",
+    "category": "ordering",
+    "expected": "ORDER_VIOLATION",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.389,
+    "runtime_ms": 0.103,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "commit_a",
+    "fault": "missing_branch",
+    "category": "branch",
+    "expected": "WEAK_BOUNDS",
+    "detected": true,
+    "codes": [
+      "MISSING_REQUIRED_ACTION",
+      "WEAK_BOUNDS"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.225,
+    "runtime_ms": 0.088,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "commit_a",
+    "fault": "wrong_parameter",
+    "category": "parameter",
+    "expected": "GUARD_NOT_EXPR",
+    "detected": true,
+    "codes": [
+      "GUARD_NOT_EXPR",
+      "WEAK_BOUNDS"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.267,
+    "runtime_ms": 0.096,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "commit_a",
+    "fault": "broken_binding",
+    "category": "dataflow",
+    "expected": "BROKEN_BINDING",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION",
+      "BROKEN_BINDING"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.323,
+    "runtime_ms": 0.093,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "commit_a",
+    "fault": "hardcoded_secret",
+    "category": "safety",
+    "expected": "HARDCODED_SECRET",
+    "detected": true,
+    "codes": [
+      "HARDCODED_SECRET"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.246,
+    "runtime_ms": 0.086,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "commit_a",
+    "fault": "unsafe_webhook",
+    "category": "safety",
+    "expected": "UNRESTRICTED_WEBHOOK",
+    "detected": true,
+    "codes": [
+      "UNRESTRICTED_WEBHOOK"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.224,
+    "runtime_ms": 0.079,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "clean",
+    "category": "clean",
+    "expected": "PASS",
+    "detected": false,
+    "codes": [],
+    "static_status": "PASS",
+    "runtime_failed": false,
+    "static_ms": 0.288,
+    "runtime_ms": 0.122,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "orphan_node",
+    "category": "structural",
+    "expected": "DEAD_NODE",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE"
+    ],
+    "static_status": "WARNING",
+    "runtime_failed": false,
+    "static_ms": 0.309,
+    "runtime_ms": 0.115,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "broken_edge",
+    "category": "structural",
+    "expected": "DEAD_NODE",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.293,
+    "runtime_ms": 0.099,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "missing_required_action",
+    "category": "semantic",
+    "expected": "MISSING_HUMAN_GATE",
+    "detected": true,
+    "codes": [
+      "MISSING_HUMAN_GATE",
+      "MISSING_REQUIRED_ACTION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": true,
+    "static_ms": 0.262,
+    "runtime_ms": 0.101,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "wrong_order",
+    "category": "ordering",
+    "expected": "ORDER_VIOLATION",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.302,
+    "runtime_ms": 0.1,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "missing_branch",
+    "category": "branch",
+    "expected": "WEAK_BOUNDS",
+    "detected": true,
+    "codes": [
+      "MISSING_REQUIRED_ACTION",
+      "WEAK_BOUNDS"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.223,
+    "runtime_ms": 0.094,
+    "mode": "full",
+    "localized": false
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "wrong_parameter",
+    "category": "parameter",
+    "expected": "GUARD_NOT_EXPR",
+    "detected": true,
+    "codes": [
+      "GUARD_NOT_EXPR",
+      "WEAK_BOUNDS"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.271,
+    "runtime_ms": 0.109,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "broken_binding",
+    "category": "dataflow",
+    "expected": "BROKEN_BINDING",
+    "detected": true,
+    "codes": [
+      "DEAD_NODE",
+      "DEAD_NODE",
+      "DEAD_NODE",
+      "MISSING_HUMAN_GATE",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION",
+      "ORDER_VIOLATION",
+      "BROKEN_BINDING"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.363,
+    "runtime_ms": 0.109,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "hardcoded_secret",
+    "category": "safety",
+    "expected": "HARDCODED_SECRET",
+    "detected": true,
+    "codes": [
+      "HARDCODED_SECRET"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.265,
+    "runtime_ms": 0.097,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "unsafe_webhook",
+    "category": "safety",
+    "expected": "UNRESTRICTED_WEBHOOK",
+    "detected": true,
+    "codes": [
+      "UNRESTRICTED_WEBHOOK"
+    ],
+    "static_status": "FAIL",
+    "runtime_failed": false,
+    "static_ms": 0.261,
+    "runtime_ms": 0.097,
+    "mode": "full",
+    "localized": true
+  },
+  {
+    "gold": "case4_runtime",
+    "fault": "runtime_skip",
+    "category": "runtime",
+    "expected": "RUNTIME_FAIL",
+    "detected": true,
+    "codes": [],
+    "static_status": "PASS",
+    "runtime_failed": true,
+    "static_ms": 0.251,
+    "runtime_ms": 0.104,
+    "mode": "full",
+    "localized": true
+  }
+]

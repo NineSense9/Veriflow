@@ -6,6 +6,7 @@ import Shell from "@/components/Shell";
 import StatusChip from "@/components/StatusChip";
 import { api, VerifySession } from "@/lib/api";
 import { dimLabel } from "@/lib/status";
+import { downloadSessionEvidence } from "@/lib/evidence-export";
 
 
 type Clause = {
@@ -114,6 +115,14 @@ export default function EvidencePage() {
               {session.cross.pattern} · {session.cross.story}
               {session.run_id ? ` · #${session.run_id}` : ""}
               {session.parent_run_id ? ` · parent #${session.parent_run_id}` : ""}
+            </p>
+            <p className="vf-home-more">
+              <button type="button" className="btn btn-sm" onClick={() => downloadSessionEvidence(session, "json")}>
+                导出 JSON
+              </button>
+              <button type="button" className="btn btn-sm" onClick={() => downloadSessionEvidence(session, "md")}>
+                导出 Markdown
+              </button>
             </p>
             <section>
               <h2>维度（验证器裁决）</h2>

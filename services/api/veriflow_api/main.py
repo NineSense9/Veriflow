@@ -614,6 +614,7 @@ def _register_routes(application: FastAPI) -> None:
 
         root = Path(__file__).resolve().parents[3]
         preferred = [
+            root / "experiments" / "runs" / "competition" / "metrics.json",
             root / "experiments" / "runs" / "dev" / "metrics.json",
             root / "experiments" / "runs" / "smoke" / "metrics.json",
         ]
@@ -630,7 +631,14 @@ def _register_routes(application: FastAPI) -> None:
             "metrics": metrics,
             "note": metrics.get("note")
             or "仓库内 gold IR 故障注入。不是外部竞赛榜，禁止写成 SOTA。",
+            "reproduce": metrics.get("command") or "python scripts/competition_benchmark.py",
         }
+        ablation_path = path.parent / "ablation.json"
+        llm_path = path.parent / "llm_judge.json"
+        if ablation_path.exists():
+            payload["ablation"] = json.loads(ablation_path.read_text(encoding="utf-8"))
+        if llm_path.exists():
+            payload["llm_judge"] = json.loads(llm_path.read_text(encoding="utf-8"))
         for key, value in metrics.items():
             if key not in payload:
                 payload[key] = value
@@ -659,9 +667,15 @@ def _register_routes(application: FastAPI) -> None:
                 "note": "static + repair.guard + incremental.impact + patch selection。",
             },
             "llm_as_judge": {
-                "status": "NOT RUN",
+                "status": (payload.get("llm_judge") or {}).get("status")
+                if isinstance(payload.get("llm_judge"), dict)
+                else payload.get("llm_judge_baseline") or "NOT RUN",
                 "label": "LLM-as-judge",
-                "reason": "未执行模型打分（无评测 Key 或不允许用 LLM 当裁判）。禁止填假数。",
+                "reason": (
+                    (payload.get("llm_judge") or {}).get("reason")
+                    if isinstance(payload.get("llm_judge"), dict)
+                    else "未执行模型打分（无评测 Key 或不允许用 LLM 当裁判）。禁止填假数。"
+                ),
             },
         }
         return payload

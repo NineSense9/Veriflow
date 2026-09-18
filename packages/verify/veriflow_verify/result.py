@@ -61,9 +61,13 @@ class VerificationResult(BaseModel):
     verifier_version: str = VERIFIER_VERSION
 
 
-def verify_workflow(ir: WorkflowIR, spec: WorkflowSpec | None = None) -> VerificationResult:
+def verify_workflow(
+    ir: WorkflowIR,
+    spec: WorkflowSpec | None = None,
+    dimensions: set[str] | None = None,
+) -> VerificationResult:
     spec = spec or compile_spec("", ir.domain)
-    issues, spec_issues = collect_issues(ir, spec)
+    issues, spec_issues = collect_issues(ir, spec, run=dimensions)
     return assemble_result(ir, spec, issues, spec_issues)
 
 

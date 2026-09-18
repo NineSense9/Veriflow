@@ -1,0 +1,62 @@
+{
+  "structure-only": {
+    "mode": "structure-only",
+    "n_clean": 3,
+    "n_faulty": 28,
+    "tp": 3,
+    "fp": 0,
+    "tn": 3,
+    "fn": 25,
+    "detection_precision": 1.0,
+    "detection_recall": 0.10714285714285714,
+    "detection_f1": 0.19354838709677416,
+    "false_positive_rate": 0.0,
+    "fault_localization_accuracy": 0.10714285714285714,
+    "average_static_ms": 0.36
+  },
+  "no-safety": {
+    "mode": "no-safety",
+    "n_clean": 3,
+    "n_faulty": 28,
+    "tp": 18,
+    "fp": 0,
+    "tn": 3,
+    "fn": 10,
+    "detection_precision": 1.0,
+    "detection_recall": 0.6428571428571429,
+    "detection_f1": 0.782608695652174,
+    "false_positive_rate": 0.0,
+    "fault_localization_accuracy": 0.42857142857142855,
+    "average_static_ms": 0.141
+  },
+  "no-runtime": {
+    "mode": "no-runtime",
+    "n_clean": 3,
+    "n_faulty": 28,
+    "tp": 27,
+    "fp": 0,
+    "tn": 3,
+    "fn": 1,
+    "detection_precision": 1.0,
+    "detection_recall": 0.9642857142857143,
+    "detection_f1": 0.9818181818181818,
+    "false_positive_rate": 0.0,
+    "fault_localization_accuracy": 0.6428571428571429,
+    "average_static_ms": 0.154
+  },
+  "full": {
+    "mode": "full",
+    "n_clean": 3,
+    "n_faulty": 28,
+    "tp": 28,
+    "fp": 0,
+    "tn": 3,
+    "fn": 0,
+    "detection_precision": 1.0,
+    "detection_recall": 1.0,
+    "detection_f1": 1.0,
+    "false_positive_rate": 0.0,
+    "fault_localization_accuracy": 0.6785714285714286,
+    "average_static_ms": 0.314
+  }
+}

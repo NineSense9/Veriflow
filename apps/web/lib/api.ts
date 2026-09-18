@@ -620,6 +620,21 @@ export const api = {
     }>("/api/sets"),
   report: () => request<Record<string, number | null>>("/api/report/summary"),
   demos: () => request<{ demos: { id: string; title: string; kind: string }[] }>("/api/demos"),
+  demo: (id: string) =>
+    request<{
+      id: string;
+      title: string;
+      nl: string;
+      ir: WorkflowIR;
+      skip_after?: string | null;
+      expect_static?: string;
+      expect_runtime?: string;
+      expect_pattern?: string;
+      story?: string;
+      issue?: { code?: string; severity?: string; title?: string };
+      witness?: string[];
+      kind: string;
+    }>(`/api/demos/${id}`),
   reportSession: (body: { demo?: string; ir?: WorkflowIR; nl?: string; skip_after?: string | null; parent_run_id?: number }) =>
     request<VerifySession>("/api/report/session", { method: "POST", body: JSON.stringify(body) }),
   reportRun: (id: number) => request<VerifySession>(`/api/report/runs/${id}`),
