@@ -1,5 +1,7 @@
 "use client";
 
+import { statusLabel } from "@/lib/ui-zh";
+
 import { useEffect, useState } from "react";
 import { effectsAllowScan, useEffects } from "@/lib/effects";
 import { useVisibleMotion } from "@/lib/use-visible-motion";
@@ -85,7 +87,7 @@ export default function RuntimeReplay({
       <ol>
         {events.map((ev, i) => (
           <li key={ev.event_index} data-related={selectedEventIndices.includes(ev.event_index) ? "true" : undefined} className={i === index ? "on" : i < index ? "done" : ""}>
-            <button type="button" aria-label={`事件 ${ev.event_index}: ${ev.node_id}`} aria-pressed={i === index} onClick={() => { setPlaying(false); setIndex(i); }}><span className="mono">{ev.node_id}</span><span>{ev.status}</span></button>
+            <button type="button" aria-label={`事件 ${ev.event_index}: ${ev.node_id}`} aria-pressed={i === index} onClick={() => { setPlaying(false); setIndex(i); }}><span className="mono">{ev.node_id}</span><span>{statusLabel(ev.status)}</span></button>
           </li>
         ))}
       </ol>

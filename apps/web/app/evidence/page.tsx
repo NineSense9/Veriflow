@@ -1,5 +1,7 @@
 "use client";
 
+import { statusLabel, categoryLabel } from "@/lib/ui-zh";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
@@ -49,7 +51,7 @@ export default function EvidencePage() {
         </header>
         {error ? <p className="err">{error}</p> : null}
         {!session ? (
-          <p className="ghost">读取最近 run…</p>
+          <p className="ghost">读取最近验证记录…</p>
         ) : (
           <>
             <section className="vf-evidence-span">
@@ -78,7 +80,7 @@ export default function EvidencePage() {
                     <tr>
                       <td>验证</td>
                       <td>—</td>
-                      <td>{session.status} · 门禁 {session.gate.ready}</td>
+                      <td>{statusLabel(session.status)} · 门禁 {statusLabel(session.gate.ready)}</td>
                     </tr>
                     <tr>
                       <td>修复</td>
@@ -103,7 +105,7 @@ export default function EvidencePage() {
                 </dd>
               </div>
               <div>
-                <dt>Hash</dt>
+                <dt>工作流指纹</dt>
                 <dd>{session.workflow_hash.slice(0, 12)}</dd>
               </div>
               <div>
@@ -114,7 +116,7 @@ export default function EvidencePage() {
             <p className="caption">
               {session.cross.pattern} · {session.cross.story}
               {session.run_id ? ` · #${session.run_id}` : ""}
-              {session.parent_run_id ? ` · parent #${session.parent_run_id}` : ""}
+              {session.parent_run_id ? ` · 原始运行 #${session.parent_run_id}` : ""}
             </p>
             <p className="vf-home-more">
               <button type="button" className="btn btn-sm" onClick={() => downloadSessionEvidence(session, "json")}>
@@ -131,13 +133,13 @@ export default function EvidencePage() {
                   <li key={dim.name} className="vf-dim-card">
                     <span className="vf-dim-name">{dimLabel(dim.name)}</span>
                     <StatusChip value={dim.status} />
-                    <span className="caption">{dim.issue_count} issues</span>
+                    <span className="caption">{dim.issue_count} 个问题</span>
                   </li>
                 ))}
                 <li className="vf-dim-card">
                   <span className="vf-dim-name">运行时</span>
                   <StatusChip value={session.runtime?.status} />
-                  <span className="caption">{(session.runtime_findings ?? session.runtime?.issues ?? []).length} issues</span>
+                  <span className="caption">{(session.runtime_findings ?? session.runtime?.issues ?? []).length} 个问题</span>
                 </li>
               </ul>
             </section>
@@ -161,7 +163,7 @@ export default function EvidencePage() {
                           <td>
                             {row.id} · {row.text}
                           </td>
-                          <td>{row.kind}</td>
+                          <td>{categoryLabel(row.kind)}</td>
                           <td>
                             <StatusChip value={row.status} />
                           </td>
@@ -173,7 +175,7 @@ export default function EvidencePage() {
                   </table>
                 </div>
               ) : (
-                <p className="caption">本 run 未带 traceability 字段时，打开验证页会写入新 session。</p>
+                <p className="caption">这条历史记录未包含需求追溯数据。可前往验证页重新运行案例，生成新记录。</p>
               )}
             </section>
             <p>

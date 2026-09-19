@@ -42,7 +42,7 @@ export default function WitnessMotion({
       {path.map((id, index) => (
         <li key={`${id}-${index}`} className={index === cursor ? "on" : index < cursor ? "done" : ""}>
           <span>{id}</span>
-          {current === id && play ? <em>scan</em> : null}
+          {current === id && play ? <em>定位中</em> : null}
         </li>
       ))}
     </ol>

@@ -101,17 +101,17 @@ export default function HomePage() {
         <section className="vf-home-capabilities" aria-label="核心能力">
           <Link className="vf-home-cap" href="/compose">
             <h2>规格编译</h2>
-            <p className="vf-home-cap-en">Requirement → WorkflowSpec</p>
+            <p className="vf-home-cap-en">自然语言需求 → 工作流规格</p>
             <p>自然语言需求变成可检查约束</p>
           </Link>
           <Link className="vf-home-cap" href="/evidence">
             <h2>证据链</h2>
-            <p className="vf-home-cap-en">Issue → minimized witness</p>
-            <p>每个 FAIL 可追到节点与轨迹</p>
+            <p className="vf-home-cap-en">问题 → 最小反例</p>
+            <p>失败结果可追溯到节点与轨迹</p>
           </Link>
           <Link className="vf-home-cap" href="/report">
             <h2>受约束修复</h2>
-            <p className="vf-home-cap-en">AI Patch → Guard → Re-verify</p>
+            <p className="vf-home-cap-en">AI 补丁 → 守卫 → 再验证</p>
             <p>AI 只能提案，补丁仍需重新验证</p>
           </Link>
         </section>
@@ -162,14 +162,14 @@ export default function HomePage() {
                 <h2 id="home-check">AI 提案 ≠ 最终判定</h2>
                 <ol className="vf-home-steps">
                   <li>AI 解释需求</li>
-                  <li>Verifier 检查约束</li>
-                  <li>AI 提议最小 Patch</li>
-                  <li>Gate 再验证</li>
+                  <li>验证器检查约束</li>
+                  <li>AI 提议最小补丁</li>
+                  <li>发布门禁复核</li>
                 </ol>
                 <p>
-                  <span className="verdict WA">HIGH</span> MISSING_HUMAN_GATE
+                  <span className="verdict WA">高风险</span> MISSING_HUMAN_GATE
                 </p>
-                <p className="caption">AI proposal + ADD_NODE human_gate → guarded check → BLOCKED 或 READY</p>
+                <p className="caption">AI 提议补充人工审题节点 → 守卫检查 → 门禁拦截或放行</p>
                 <div className="vf-home-check-actions">
                   <Link className="btn btn-sm" href="/compose?story=1">
                     体验缺少审题门案例

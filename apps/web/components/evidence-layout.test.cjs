@@ -39,7 +39,9 @@ test('unknown or absent focus has an honest empty state', () => {
 
 test('compact type columns have no gaps and preserve full labels', () => {
   const { layoutEvidence } = mod();
-  const graph = layoutEvidence([{ id: 'i', type: 'Issue', label: 'a'.repeat(100) }, { id: 'a', type: 'Algorithm', label: 'algorithm' }]);
-  assert.equal(graph.nodes[1].position.x - graph.nodes[0].position.x, 220);
+  const graph = layoutEvidence([{ id: 'i', type: 'Issue', label: 'a'.repeat(100) }, { id: 'a', type: 'Algorithm', label: 'algorithm' }], 'i');
+  assert.equal(graph.nodes[0].id, 'i', 'current issue is the visual starting point');
+  const gap = graph.nodes[1].position.x - graph.nodes[0].position.x - graph.nodes[0].style.width;
+  assert.ok(gap > 0 && gap <= 48, 'adjacent columns remain separate without an empty column');
   assert.equal(graph.nodes[0].data.label.length, 100);
 });

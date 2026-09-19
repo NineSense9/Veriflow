@@ -13,19 +13,16 @@ export type Case4Demo = {
 };
 
 export const CASE4_STEPS = [
-  { id: "requirement", label: "Requirement", role: "input" as const },
-  { id: "ai", label: "AI Draft", role: "ai" as const },
-  { id: "spec", label: "WorkflowSpec", role: "verifier" as const },
-  { id: "static", label: "Static Verify", role: "verifier" as const },
-  { id: "runtime", label: "Runtime Trace", role: "verifier" as const },
-  { id: "gate", label: "Gate", role: "verifier" as const },
+  { id: "requirement", label: "需求", role: "input" as const },
+  { id: "ai", label: "AI 草案", role: "ai" as const },
+  { id: "spec", label: "工作流规格", role: "verifier" as const },
+  { id: "static", label: "静态验证", role: "verifier" as const },
+  { id: "runtime", label: "运行轨迹", role: "verifier" as const },
+  { id: "gate", label: "发布门禁", role: "verifier" as const },
 ];
 
 export function case4Gate(demo: Case4Demo) {
-  if (demo.expect_gate) return demo.expect_gate;
-  if (demo.expect_runtime === "FAIL") return "BLOCKED";
-  if (demo.expect_static === "PASS") return "READY";
-  return "BLOCKED";
+  return demo.expect_gate || "UNKNOWN";
 }
 
 export function case4IssueTitle(demo: Case4Demo) {

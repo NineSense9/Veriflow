@@ -42,6 +42,25 @@ async function bounds(page: Page, index = 0) {
   });
 }
 
+test("runtime-only failures explain why static automatic repair is unavailable", async ({ page }) => {
+  await openCase(page, "case4_runtime");
+  await expect(page.getByRole("button", { name: "受约束修复", exact: true })).toBeDisabled();
+  await expect(page.getByText("运行时问题已定位，当前暂不支持自动修复。", { exact: false })).toBeVisible();
+  await expect(page.locator('.vf-verdict [data-status="BLOCKED"]')).toBeVisible();
+});
+
+test("static repair retains the original runtime context in revalidation", async ({ page }) => {
+  await openCase(page, "case1_order");
+  const session = cases.case1_order;
+  await page.route("**/api/verify-repair", route => route.fulfill({ json: {
+    ir: session.ir, improved: false, initial: session.static, final: session.static, steps: [],
+  } }));
+  const request = page.waitForRequest(req => req.url().endsWith("/api/report/session") && req.method() === "POST");
+  await page.getByRole("button", { name: "受约束修复", exact: true }).click();
+  expect((await request).postDataJSON()).toMatchObject({ parent_run_id: session.run_id, skip_after: session.runtime_context.skip_after });
+  await expect(page.getByRole("heading", { name: "修复后", exact: true })).toBeVisible();
+});
+
 for (const name of ["case1_order", "case2_dataflow", "case3_safety", "case4_runtime"]) {
   test(`${name}: selection preserves the complete rail and evidence fits`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

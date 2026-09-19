@@ -48,7 +48,7 @@ from veriflow_verify.result import verify_workflow
 
 SEED = 20260919
 OUT = ROOT / "experiments" / "runs" / "competition"
-PROMPT_VERSION = "competition-llm-judge-v2"
+PROMPT_VERSION = "competition-llm-judge-v3-static"
 MODES = ("structure-only", "no-safety", "no-runtime", "full")
 
 ABLATION_CLOSES = {
@@ -419,11 +419,22 @@ def _llm_payload(case: dict) -> dict:
 def llm_judge(cases: list[dict], repeats: int) -> dict:
     from veriflow_api.llm import complete
 
+    eligible = [case for case in cases if not case.get("expected_runtime_fail") and case.get("category") != "runtime"]
+    scope = {
+        "evaluation_scope": "static-only",
+        "eligible_case_count": len(eligible),
+        "n_clean": sum(case["fault"] == "clean" for case in eligible),
+        "n_faulty": sum(case["fault"] != "clean" for case in eligible),
+        "excluded_runtime_case_count": len(cases) - len(eligible),
+        "scope_reason": "Only requirement and complete workflow JSON are observable; runtime-only faults require an execution trace.",
+        "reference_no_runtime": summarize([evaluate_case(case, "no-runtime") for case in eligible], "no-runtime"),
+    }
     key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
     model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
     provider = "deepseek"
     if not key:
         return {
+            **scope,
             "status": "NOT RUN",
             "reason": "DEEPSEEK_API_KEY unset",
             "provider": provider,
@@ -438,7 +449,7 @@ def llm_judge(cases: list[dict], repeats: int) -> dict:
     records = []
     http_ok = 0
     http_fail = 0
-    for case in cases:
+    for case in eligible:
         payload = _llm_payload(case)
         dumped = json.dumps(payload, ensure_ascii=False)
         gold_label = "PASS" if case["fault"] == "clean" else "FAIL"
@@ -453,7 +464,7 @@ def llm_judge(cases: list[dict], repeats: int) -> dict:
                             "Reply JSON {\"verdict\":\"PASS\"} or {\"verdict\":\"FAIL\"} only."
                         ),
                     },
-                    {"role": "user", "content": dumped[:8000]},
+                    {"role": "user", "content": dumped},
                 ],
                 temperature=0.0,
             )
@@ -461,16 +472,17 @@ def llm_judge(cases: list[dict], repeats: int) -> dict:
             verdict = None
             if result.error:
                 http_fail += 1
-                parse_fail = True
             else:
                 http_ok += 1
                 try:
                     parsed = json.loads(result.text)
+                    if not isinstance(parsed, dict):
+                        raise ValueError("Judge response must be an object")
                     verdict = str(parsed.get("verdict") or parsed.get("status") or "").upper()
                     if verdict not in {"PASS", "FAIL"}:
                         parse_fail = True
                         verdict = None
-                except json.JSONDecodeError:
+                except (ValueError, TypeError):
                     parse_fail = True
                     verdict = None
             records.append(
@@ -481,6 +493,7 @@ def llm_judge(cases: list[dict], repeats: int) -> dict:
                     "runner_call": "FAILED" if result.error else "RAN",
                     "model_verdict": verdict,
                     "parse_failure": parse_fail,
+                    "abstention": verdict is None,
                     "provider": provider,
                     "model": result.model or model,
                     "temperature": 0.0,
@@ -493,18 +506,16 @@ def llm_judge(cases: list[dict], repeats: int) -> dict:
                     "error": result.error,
                 }
             )
-    if http_ok == 0:
-        status = "FAILED"
-        reason = "all LLM calls failed"
-    else:
-        status = "RAN"
-        reason = None
     tp = fp = tn = fn = 0
     parse_n = 0
+    abstention_n = failed_clean = failed_faulty = 0
     by_case: dict[tuple[str, str], list[str]] = {}
     for rec in records:
-        if rec["parse_failure"] or rec["model_verdict"] is None:
-            parse_n += 1
+        parse_n += int(rec["parse_failure"])
+        if rec["model_verdict"] is None:
+            abstention_n += 1
+            failed_clean += int(rec["expected_label"] == "PASS")
+            failed_faulty += int(rec["expected_label"] == "FAIL")
             continue
         key = (rec["gold"], rec["fault"])
         by_case.setdefault(key, []).append(rec["model_verdict"])
@@ -519,16 +530,22 @@ def llm_judge(cases: list[dict], repeats: int) -> dict:
         else:
             fn += 1
     labeled = tp + fp + tn + fn
-    precision = tp / (tp + fp) if (tp + fp) else 0.0
-    recall = tp / (tp + fn) if (tp + fn) else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    precision = (tp / (tp + fp) if (tp + fp) else 0.0) if labeled else None
+    recall = (tp / (tp + fn) if (tp + fn) else 0.0) if labeled else None
+    f1 = (2 * tp / (2 * tp + fp + fn) if (2 * tp + fp + fn) else 0.0) if labeled else None
+    effective_fp, effective_fn = fp + failed_clean, fn + failed_faulty
+    effective_denominator = 2 * tp + effective_fp + effective_fn
+    effective_f1 = (2 * tp / effective_denominator if effective_denominator else 0.0) if labeled else None
+    status = "RAN" if labeled else "FAILED"
+    reason = None if labeled else ("all LLM calls failed" if http_ok == 0 else "no valid verdicts returned")
     agreements = []
     for votes in by_case.values():
-        if not votes:
+        if len(votes) < 2:
             continue
         majority = max(votes.count("PASS"), votes.count("FAIL"))
         agreements.append(majority / len(votes))
     return {
+        **scope,
         "status": status,
         "reason": reason,
         "provider": provider,
@@ -538,11 +555,20 @@ def llm_judge(cases: list[dict], repeats: int) -> dict:
         "repeats": repeats,
         "cases": records,
         "metrics": {
+            "metric_basis": "valid responses only; effective_f1 counts abstentions as FN for faults and FP for clean cases",
             "detection_precision": precision,
             "detection_recall": recall,
             "detection_f1": f1,
-            "false_positive_rate": fp / (fp + tn) if (fp + tn) else 0.0,
-            "parse_failure_rate": parse_n / len(records) if records else None,
+            "valid_response_f1": f1,
+            "effective_f1": effective_f1,
+            "false_positive_rate": fp / (fp + tn) if (fp + tn) else None,
+            "parse_failure_count": parse_n,
+            "parse_failure_rate": parse_n / http_ok if http_ok else None,
+            "abstention_count": abstention_n,
+            "abstention_rate": abstention_n / len(records) if records else None,
+            "attempted_calls": len(records),
+            "valid_confusion": {"tp": tp, "fp": fp, "tn": tn, "fn": fn},
+            "effective_confusion": {"tp": tp, "fp": effective_fp, "tn": tn, "fn": effective_fn},
             "repeated_verdict_agreement": (sum(agreements) / len(agreements)) if agreements else None,
             "http_ok": http_ok,
             "http_fail": http_fail,

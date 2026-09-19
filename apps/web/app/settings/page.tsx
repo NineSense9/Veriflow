@@ -49,7 +49,7 @@ export default function SettingsPage() {
         <header className="page-head">
           <p className="kicker">控制中心</p>
           <h1>设置</h1>
-          <p className="lead">外观与 AI 协助存在本机。判定与沙箱始终在服务器。API Key 不会下发到浏览器。</p>
+          <p className="lead">外观与 AI 协助存在本机。判定与沙箱始终在服务器。接口密钥不会下发到浏览器。</p>
         </header>
         <DualPlane
           ai={{ model: ai.model, configured: ai.configured }}
@@ -151,7 +151,7 @@ export default function SettingsPage() {
           <div className="setting-row">
             <div>
               <h2>显示技术细节</h2>
-              <p className="ghost">算法 id、latency、hash。</p>
+              <p className="ghost">算法编号、耗时和工作流指纹。</p>
             </div>
             <button type="button" className={`btn ${prefs.showTechnical ? "btn-primary" : ""}`} onClick={() => patch({ showTechnical: !prefs.showTechnical })}>
               {prefs.showTechnical ? "显示" : "隐藏"}
@@ -178,7 +178,7 @@ export default function SettingsPage() {
           <div className="setting-row">
             <div>
               <h2>评测</h2>
-              <p className="ghost">浏览器不判题。公网 sandbox 必须是 docker。</p>
+              <p className="ghost">判题在服务器沙箱中执行，公网环境使用 Docker 隔离。</p>
             </div>
             <span className="mono">{sandbox}</span>
           </div>

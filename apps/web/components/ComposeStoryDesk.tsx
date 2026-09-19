@@ -1,5 +1,7 @@
 "use client";
 
+import { statusLabel } from "@/lib/ui-zh";
+
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -190,7 +192,7 @@ export default function ComposeStoryDesk({
               <p className="vf-home-kicker">对比</p>
               <h2>
                 {project.repair
-                  ? `${project.repair.initial.status} → ${project.repair.final.status}`
+                  ? `${statusLabel(project.repair.initial.status)} → ${statusLabel(project.repair.final.status)}`
                   : "还没有修前修后。"}
               </h2>
               {project.repair ? (
@@ -227,7 +229,7 @@ export default function ComposeStoryDesk({
                   <li key={item.name}>
                     <strong>{dimName(item.name)}</strong>
                     <span>
-                      {item.status}
+                      {statusLabel(item.status)}
                       {item.issue_count ? ` · ${item.issue_count} 项` : ""}
                     </span>
                   </li>

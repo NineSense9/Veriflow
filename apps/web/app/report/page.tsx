@@ -42,7 +42,7 @@ function ReportBody() {
           </ol>
         </div>
       </header>
-      <VerificationConsole initialDemo={demo} tour={tour} />
+      <VerificationConsole initialDemo={demo} tour={tour} latestOnOpen={!search.has("demo") && !tour} />
       {train ? (
         <details className="vf-disclosure vf-training"><summary>{TRAIN[0].title}</summary><div className="vf-disclosure-body">
           <dl className="kv">
@@ -62,7 +62,7 @@ function ReportBody() {
 export default function ReportPage() {
   return (
     <Shell>
-      <Suspense fallback={<p className="page ghost">加载 Console…</p>}>
+      <Suspense fallback={<p className="page ghost">加载验证工作台…</p>}>
         <ReportBody />
       </Suspense>
     </Shell>

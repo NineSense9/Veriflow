@@ -1,5 +1,7 @@
 "use client";
 
+import { statusLabel, categoryLabel } from "@/lib/ui-zh";
+
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -79,16 +81,16 @@ function ComposeProjectBody() {
           <span className="pid">#{project.id}</span>
           <h1>验证工坊</h1>
           <span className={`verdict ${status === "PASS" ? "AC" : status === "WARNING" ? "TLE" : "WA"}`}>
-            {status}
+            {statusLabel(status)}
           </span>
           <span
             className={`verdict ${
               project.gate?.ready === "READY" ? "AC" : project.gate?.ready === "REVIEW REQUIRED" ? "TLE" : "WA"
             }`}
           >
-            {project.gate?.ready ?? "GATE"}
+            {statusLabel(project.gate?.ready)}
           </span>
-          <span className="ghost">{verification ? `风险 ${verification.risk_level}` : project.compiler}</span>
+          <span className="ghost">{verification ? `风险：${statusLabel(verification.risk_level)}` : project.compiler}</span>
           <button
             type="button"
             disabled={Boolean(busy)}
@@ -148,7 +150,7 @@ function ComposeProjectBody() {
                 onSelectNode={(id) => {
                   const hit = (verification?.issues ?? []).find((item) => item.affected_nodes?.includes(id));
                   setSelected(hit ?? null);
-                  if (!hit) setMessage(`节点 ${id} 没有 finding。`);
+                  if (!hit) setMessage(`节点 ${id} 没有关联问题。`);
                 }}
               />
             ) : (
@@ -163,30 +165,30 @@ function ComposeProjectBody() {
             <p className="caption">
               {busy
                 ? prefs.aiInterpret
-                  ? "AI workflow proposal requested"
-                  : "Heuristic compile in flight (allow_ai=false)"
+                  ? "正在请求 AI 工作流提案"
+                  : "正在使用启发式规则编译（未调用 AI）"
                 : project.ai_trace
-                  ? `${project.ai_trace.status}${project.ai_trace.fallback_reason ? ` · ${project.ai_trace.fallback_reason}` : ""}`
-                  : "UNKNOWN · provenance unavailable"}
+                  ? `${statusLabel(project.ai_trace.status)}${project.ai_trace.fallback_reason ? ` · ${project.ai_trace.fallback_reason}` : ""}`
+                  : "来源未知 · 历史记录未保存提案来源"}
             </p>
             <dl className="vf-kv compact">
               <div>
-                <dt>NL → IR</dt>
-                <dd>WorkflowIR proposal · {project.compiler || "—"}</dd>
+                <dt>自然语言 → 工作流</dt>
+                <dd>工作流提案 · {project.compiler || "—"}</dd>
               </div>
               <div>
-                <dt>Spec</dt>
-                <dd>Deterministic spec compiler</dd>
+                <dt>规格</dt>
+                <dd>确定性规格编译器</dd>
               </div>
               <div>
-                <dt>IR</dt>
+                <dt>中间表示</dt>
                 <dd>
-                  {project.ir ? `${project.ir.name} · ${project.ir.nodes.length} nodes · ${project.ir.edges.length} edges` : "—"}
+                  {project.ir ? `${project.ir.name} · ${project.ir.nodes.length} 个节点 · ${project.ir.edges.length} 条边` : "—"}
                 </dd>
               </div>
             </dl>
             {project.ai_trace?.status === "UNKNOWN" ? (
-              <p className="caption">legacy row: provenance unavailable (not NOT_USED).</p>
+              <p className="caption">历史记录未保存提案来源，不能据此判断是否使用过 AI。</p>
             ) : null}
             <p className="caption">
               {verification
@@ -214,23 +216,23 @@ function ComposeProjectBody() {
                 }
               >
                 <span className={`verdict ${item.status === "PASS" ? "AC" : item.status === "UNKNOWN" ? "TLE" : "WA"}`}>
-                  {item.status}
+                  {statusLabel(item.status)}
                 </span>
                 <div>
-                  {item.constraint_type} · {item.verification_method}
+                  {categoryLabel(item.constraint_type)} · {item.verification_method}
                 </div>
               </button>
             ))}
             {verification?.dimensions.map((item) => (
               <div key={item.name} className="latest-line">
                 <span className={`verdict ${item.status === "PASS" ? "AC" : item.status === "WARNING" || item.status === "UNKNOWN" ? "TLE" : "WA"}`}>
-                  {item.status}
+                  {statusLabel(item.status)}
                 </span>
-                <span>{item.name === "executable" ? "静态可达" : item.name === "runtime" ? "运行时模拟" : item.name}</span>
+                <span>{item.name === "executable" ? "静态可达" : item.name === "runtime" ? "运行时模拟" : categoryLabel(item.name)}</span>
                 <span className="ghost">{item.issue_count}</span>
               </div>
             ))}
-            <h2>Issues</h2>
+            <h2>问题列表</h2>
             {verification?.issues.length ? (
               verification.issues.map((issue) => (
                 <button
@@ -246,17 +248,17 @@ function ComposeProjectBody() {
                 </button>
               ))
             ) : (
-              <p className="ghost">没有 Issue。</p>
+              <p className="ghost">没有发现问题。</p>
             )}
             {selected ? (
               <>
-                <h2>Inspector</h2>
+                <h2>当前问题详情</h2>
                 <p className="note">{selected.description}</p>
-                <p className="caption">expected: {selected.expected ?? "—"}</p>
-                <p className="caption">actual: {selected.actual ?? "—"}</p>
+                <p className="caption">预期：{selected.expected ?? "—"}</p>
+                <p className="caption">实际：{selected.actual ?? "—"}</p>
                 {selected.witness_path.length ? (
                   <>
-                    <p className="caption">path: {selected.witness_path.join(" → ")}</p>
+                    <p className="caption">见证路径：{selected.witness_path.join(" → ")}</p>
                     <WitnessMotion path={selected.witness_path} play={!busy} />
                   </>
                 ) : null}
@@ -270,7 +272,7 @@ function ComposeProjectBody() {
               <RuntimeReplay events={(traceOverlay || project.trace)!.events} play={Boolean(traceOverlay)} />
             ) : null}
             <p className="caption">
-              {(crossOverlay ?? project.cross)?.pattern ?? "NOT RUN"} · coverage{" "}
+              {(crossOverlay ?? project.cross)?.pattern ?? "未运行"} · 覆盖率{" "}
               {(runtimeOverlay ?? project.runtime)?.constraint_runtime_coverage != null
                 ? `${Math.round(((runtimeOverlay ?? project.runtime)?.constraint_runtime_coverage ?? 0) * 100)}%`
                 : "—"}
@@ -280,7 +282,7 @@ function ComposeProjectBody() {
               <label className="caption">
                 截断运行时
                 <select value={skipAfter} onChange={(event) => setSkipAfter(event.target.value)}>
-                  <option value="">完整 DAG</option>
+                  <option value="">完整工作流</option>
                   {project.ir.nodes.map((node) => (
                     <option key={node.id} value={node.id}>
                       {node.id}
@@ -353,26 +355,26 @@ function ComposeProjectBody() {
             <h2>修复</h2>
             {project.repair ? (
               <>
-                <h2>Timeline</h2>
+                <h2>修复过程</h2>
                 <ol className="caption">
-                  <li>Spec compiled</li>
+                  <li>已编译规格</li>
                   <li>
                     {project.repair.initial.constraints_passed ?? project.repair.initial.requirements_passed}/
-                    {project.repair.initial.constraints?.length ?? project.repair.initial.requirements_total} constraints
+                    {project.repair.initial.constraints?.length ?? project.repair.initial.requirements_total} 项约束
                   </li>
                   {project.repair.steps.map((step) => (
                     <li key={step.iteration}>
-                      iter {step.iteration}: {step.reason}
-                      {step.candidates_evaluated ? ` · ${step.candidates_evaluated} candidates` : ""}
+                      第 {step.iteration} 轮： {step.reason}
+                      {step.candidates_evaluated ? ` · ${step.candidates_evaluated} 个候选` : ""}
                     </li>
                   ))}
                   <li>
-                    Re-verify {project.repair.final.status}
+                    再验证 {project.repair.final.status}
                   </li>
                 </ol>
-                <h2>Repair</h2>
+                <h2>修复结果</h2>
                 <p className="caption">
-                  {project.repair.initial.status} → {project.repair.final.status} · ops {project.repair.patch_operations ?? "—"} · nodes {project.repair.changed_nodes ?? "—"}
+                  {project.repair.initial.status} → {project.repair.final.status} · 补丁操作数 {project.repair.patch_operations ?? "—"} · 改动节点数 {project.repair.changed_nodes ?? "—"}
                 </p>
                 {project.repair.steps.flatMap((step) =>
                   step.patches.map((patch, index) => (
@@ -391,23 +393,23 @@ function ComposeProjectBody() {
             {project.repair ? (
               <>
                 <p className="caption">
-                  Changed nodes: {(project.repair.impact_nodes ?? []).join(", ") || project.repair.changed_nodes}
+                  改动节点： {(project.repair.impact_nodes ?? []).join(", ") || project.repair.changed_nodes}
                 </p>
                 <p className="caption">
-                  Re-evaluated: {project.repair.reevaluated_constraints ?? "—"} / {project.repair.total_constraints ?? "—"}{" "}
-                  constraints
-                  {project.repair.used_full_fallback ? " · full fallback" : " · incremental"}
+                  重新检查： {project.repair.reevaluated_constraints ?? "—"} / {project.repair.total_constraints ?? "—"}{" "}
+                  项约束
+                  {project.repair.used_full_fallback ? " · 回退完整验证" : " · 增量验证"}
                 </p>
                 <p className="caption">
-                  Candidates {project.repair.candidates_generated ?? 0} · guard-reject{" "}
-                  {project.repair.candidates_rejected_guard ?? 0} · incremental-reject{" "}
-                  {project.repair.candidates_rejected_incremental ?? 0} · fully verified{" "}
+                  候选数 {project.repair.candidates_generated ?? 0} · 守卫拒绝{" "}
+                  {project.repair.candidates_rejected_guard ?? 0} · 增量检查拒绝{" "}
+                  {project.repair.candidates_rejected_incremental ?? 0} · 完整验证通过{" "}
                   {project.repair.candidates_fully_verified ?? 0}
                 </p>
-                <p className="caption">Final full verification: {project.repair.final.status}</p>
+                <p className="caption">最终完整验证： {project.repair.final.status}</p>
               </>
             ) : (
-              <p className="ghost">没有 Patch。先修一轮才有对比。</p>
+              <p className="ghost">暂无补丁，完成一轮修复后可查看对比。</p>
             )}
           </section>
           <section className="compose-board">
@@ -418,7 +420,7 @@ function ComposeProjectBody() {
                   project.gate?.ready === "READY" ? "AC" : project.gate?.ready === "REVIEW REQUIRED" ? "TLE" : "WA"
                 }`}
               >
-                {project.gate?.ready ?? "—"}
+                {statusLabel(project.gate?.ready)}
               </span>
               <span className="ghost">
                 {" "}
@@ -429,9 +431,9 @@ function ComposeProjectBody() {
             {Object.entries(project.gate?.dimensions ?? {}).map(([name, status]) => (
               <div key={name} className="latest-line">
                 <span className={`verdict ${status === "PASS" || status === "READY" ? "AC" : status === "WARNING" || status === "UNKNOWN" ? "TLE" : "WA"}`}>
-                  {status}
+                  {statusLabel(status)}
                 </span>
-                <span>{name}</span>
+                <span>{categoryLabel(name)}</span>
               </div>
             ))}
             {(project.gate?.reasons ?? []).map((reason) => (
@@ -451,7 +453,7 @@ function ComposeProjectBody() {
               ))
             )}
             {message ? <p className="err" role="alert">{message}</p> : null}
-            {busy ? <p className="ghost">{busy}…</p> : null}
+            {busy ? <p className="ghost">正在处理…</p> : null}
           </section>
         </div>
       </div>

@@ -22,3 +22,15 @@ test("CASE 4 golden is the only MiniFlow source of expect/issue/witness", () => 
   assert.match(web, /\.demo\("case4_runtime"\)/);
   assert.match(web, /case4Gate/);
 });
+const ts = require("typescript");
+const vm = require("node:vm");
+const compiled = ts.transpileModule(fs.readFileSync(path.resolve(__dirname, "case4-demo.ts"), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } });
+const loaded = { exports: {} };
+vm.runInNewContext(compiled.outputText, { exports: loaded.exports, module: loaded });
+
+test("MiniFlow does not infer a release decision from partial expectations", () => {
+  assert.equal(loaded.exports.case4Gate({ expect_static: "PASS" }), "UNKNOWN");
+  assert.equal(loaded.exports.case4Gate({ expect_runtime: "FAIL" }), "UNKNOWN");
+  assert.equal(loaded.exports.case4Gate({ expect_gate: "BLOCKED" }), "BLOCKED");
+  assert.equal(loaded.exports.case4Gate({ expect_gate: "READY" }), "READY");
+});

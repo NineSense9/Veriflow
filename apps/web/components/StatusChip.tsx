@@ -1,3 +1,4 @@
+import { statusLabel } from "@/lib/ui-zh";
 import { tone } from "@/lib/status";
 
 export default function StatusChip({
@@ -9,9 +10,9 @@ export default function StatusChip({
 }) {
   const text = value || "—";
   return (
-    <span className={`verdict ${tone(text)}`} title={title || text}>
+    <span className={`verdict ${tone(text)}`} title={title || statusLabel(text)} data-status={text}>
       <i className="status-dot" aria-hidden="true" />
-      {text}
+      {statusLabel(text)}
     </span>
   );
 }

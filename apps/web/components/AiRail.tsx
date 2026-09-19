@@ -11,7 +11,7 @@ export function DualPlane({
         <p className="kicker">AI 层</p>
         <h2>{ai.configured ? ai.model || "DeepSeek" : "未配置模型"}</h2>
         <p>
-          {ai.configured ? "已连接" : "未配置"} · 解释 / 提案
+          {ai.configured ? "已配置" : "未配置"} · 解释 / 提案
           {ai.fallback ? " · 回退启发式" : ""}
         </p>
         <p className="caption">不决定通过或失败。</p>
@@ -20,7 +20,7 @@ export function DualPlane({
         <p className="kicker">判定层</p>
         <h2>确定性验证器</h2>
         <p>
-          沙箱 {proof.sandbox || "—"} · 门禁 {proof.gate || "—"} · 运行 {proof.status || "—"}
+          沙箱 {proof.sandbox || "—"} · 门禁 {proof.gate === "deterministic" ? "确定性裁决" : proof.gate || "—"} · 判定 {proof.status === "authority" ? "验证器负责" : proof.status || "—"}
         </p>
         <p className="caption">最终判定权在验证器。</p>
       </article>

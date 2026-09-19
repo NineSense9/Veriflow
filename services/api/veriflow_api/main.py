@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from veriflow_api.auth import create_session, hash_password, revoke_session, user_for_token, verify_password
 from veriflow_api import compose_service
@@ -461,12 +461,12 @@ def _register_routes(application: FastAPI) -> None:
         except KeyError:
             raise HTTPException(status_code=404, detail={"code": "not_found", "message": "demo not found"})
 
-    @application.post("/api/report/session")
-    def api_report_session(body: SessionBody, user=Depends(current_user)):
+    def resolve_report_inputs(body: SessionBody, user: dict):
         from veriflow_api.demos import load_demo
         from veriflow_spec.compiler import compile_spec
-        from veriflow_verify.history import record_session
-        from veriflow_verify.pipeline import run_session
+        from veriflow_spec.models import WorkflowSpec
+        from veriflow_verify.history import get_session
+        from veriflow_verify.pipeline import RuntimeContext
 
         skip = body.skip_after
         nl = body.nl
@@ -476,10 +476,49 @@ def _register_routes(application: FastAPI) -> None:
             nl = nl or demo["nl"]
             skip = skip if skip is not None else demo.get("skip_after")
         elif body.ir:
-            ir = WorkflowIR.model_validate(body.ir)
+            try:
+                ir = WorkflowIR.model_validate(body.ir)
+            except ValidationError:
+                raise HTTPException(status_code=422, detail={"code": "invalid_workflow", "message": "工作流结构无效，请检查节点与连线。"})
         else:
             raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "ir or demo required"})
+        if body.parent_run_id is not None:
+            with connect() as connection:
+                parent = get_session(connection, body.parent_run_id)
+            if not parent or parent.get("user_id") not in (None, user["id"]):
+                raise HTTPException(status_code=404, detail={"code": "not_found", "message": "找不到可访问的原始验证记录"})
+            recorded = parent.get("session") or {}
+            context = recorded.get("runtime_context")
+            if context is None:
+                raise HTTPException(status_code=409, detail={"code": "missing_runtime_context", "message": "该历史记录缺少运行条件，请先重新运行案例，再执行修复。原记录仍可查看和导出。"})
+            try:
+                context = RuntimeContext.model_validate(context)
+                spec = WorkflowSpec.model_validate(recorded.get("spec"))
+            except ValidationError:
+                raise HTTPException(status_code=409, detail={"code": "invalid_runtime_context", "message": "该历史记录的运行条件或规格不完整，请重新运行案例。"})
+            original_stop = next((node for node in (recorded.get("ir") or {}).get("nodes", []) if node.get("id") == context.skip_after), None)
+            updated_stop = next((node.model_dump(mode="json", by_alias=True) for node in ir.nodes if node.id == context.skip_after), None)
+            conflict = (
+                ("skip_after" in body.model_fields_set and body.skip_after != context.skip_after)
+                or (body.nl and body.nl != spec.source_nl)
+                or (ir.domain != spec.domain)
+                or (body.demo and ir.model_dump(mode="json", by_alias=True) != recorded.get("ir"))
+                or (context.skip_after is not None and (original_stop is None or updated_stop != original_stop))
+            )
+            if conflict:
+                raise HTTPException(status_code=409, detail={"code": "changed_run_conditions", "message": "再验证必须保留原需求和运行条件。条件已改变，请作为新实验运行，不能记为原问题已修复。"})
+            return ir, spec, spec.source_nl, context.skip_after
+        if skip is not None and skip not in {node.id for node in ir.nodes}:
+            raise HTTPException(status_code=400, detail={"code": "invalid_skip_node", "message": "运行中断位置不存在于工作流中，请检查节点编号。"})
         spec = compile_spec(nl, ir.domain)
+        return ir, spec, nl, skip
+
+    @application.post("/api/report/session")
+    def api_report_session(body: SessionBody, user=Depends(current_user)):
+        from veriflow_verify.history import record_session
+        from veriflow_verify.pipeline import run_session
+
+        ir, spec, nl, skip = resolve_report_inputs(body, user)
         session = run_session(ir, spec, nl=nl, skip_after=skip)
         with connect() as connection:
             run_id = record_session(connection, user["id"], session, parent_run_id=body.parent_run_id)
@@ -491,23 +530,11 @@ def _register_routes(application: FastAPI) -> None:
 
     @application.post("/api/report/export")
     def api_report_export(body: SessionBody, user=Depends(current_user)):
-        from veriflow_api.demos import load_demo
-        from veriflow_spec.compiler import compile_spec
         from veriflow_verify.export import export_json, export_markdown
         from veriflow_verify.pipeline import run_session
 
-        skip = body.skip_after
-        nl = body.nl
-        if body.demo:
-            demo = load_demo(body.demo)
-            ir = WorkflowIR.model_validate(demo["ir"])
-            nl = nl or demo["nl"]
-            skip = skip if skip is not None else demo.get("skip_after")
-        elif body.ir:
-            ir = WorkflowIR.model_validate(body.ir)
-        else:
-            raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "ir or demo required"})
-        session = run_session(ir, compile_spec(nl, ir.domain), nl=nl, skip_after=skip)
+        ir, spec, nl, skip = resolve_report_inputs(body, user)
+        session = run_session(ir, spec, nl=nl, skip_after=skip)
         return {"markdown": export_markdown(session), "json": export_json(session)}
 
     @application.get("/api/report/history")
@@ -682,6 +709,10 @@ def _register_routes(application: FastAPI) -> None:
                 "status": llm_status,
                 "label": "LLM-as-judge",
                 "detection_f1": (llm_metrics or {}).get("detection_f1") if isinstance(llm_metrics, dict) else None,
+                "effective_f1": (llm_metrics or {}).get("effective_f1") if isinstance(llm_metrics, dict) else None,
+                "evaluation_scope": llm_judge.get("evaluation_scope"),
+                "eligible_case_count": llm_judge.get("eligible_case_count"),
+                "reference_no_runtime": llm_judge.get("reference_no_runtime"),
                 "reason": (
                     llm_judge.get("reason")
                     if isinstance(llm_judge, dict)

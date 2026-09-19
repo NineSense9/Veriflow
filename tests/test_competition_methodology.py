@@ -1,5 +1,9 @@
 import importlib.util
+import json
 from pathlib import Path
+
+import pytest
+from veriflow_api.llm import LLMResult
 
 from veriflow_ir.workflow import WorkflowIR
 from veriflow_spec.compiler import compile_spec
@@ -89,3 +93,84 @@ def test_seed_is_not_used_as_fake_rng():
     src = (ROOT / "scripts/competition_benchmark.py").read_text(encoding="utf-8")
     assert "deterministic enumeration" in src.lower() or "Deterministic enumeration" in src
     assert "random.Random" not in src
+
+
+def _mock_judge(monkeypatch, responses):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key-no-network")
+    iterator = iter(responses)
+    monkeypatch.setattr("veriflow_api.llm.complete", lambda *args, **kwargs: next(iterator))
+
+
+def test_llm_only_scores_observable_static_cases_with_matching_reference(monkeypatch):
+    cases = bench.build_cases()
+    eligible = [case for case in cases if not case.get("expected_runtime_fail")]
+    _mock_judge(monkeypatch, [LLMResult(text='{"verdict":"PASS"}')] * len(cases))
+    result = bench.llm_judge(cases, 1)
+    assert len(result["cases"]) == 50
+    assert result["evaluation_scope"] == "static-only"
+    assert result["eligible_case_count"] == 50
+    assert result["n_clean"] == 5
+    assert result["n_faulty"] == 45
+    assert result["excluded_runtime_case_count"] == 5
+    reference = bench.summarize([bench.evaluate_case(c, "no-runtime") for c in eligible], "no-runtime")
+    assert result["reference_no_runtime"]["detection_f1"] == reference["detection_f1"]
+    assert result["reference_no_runtime"]["n_faulty"] == 45
+
+
+def test_llm_not_run_still_records_scope_without_calls(monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.setattr("veriflow_api.llm.complete", lambda *a, **kw: pytest.fail("No request expected"))
+    result = bench.llm_judge(bench.build_cases(), 3)
+    assert result["status"] == "NOT RUN"
+    assert result["metrics"] is None
+    assert result["excluded_runtime_case_count"] == 5
+    assert result["eligible_case_count"] == 50
+
+
+def test_llm_failed_calls_count_against_effective_f1_without_inflating_parse_failures(monkeypatch):
+    cases = bench.build_cases()
+    clean = next(c for c in cases if c["fault"] == "clean")
+    faulty = next(c for c in cases if c["fault"] != "clean")
+    _mock_judge(monkeypatch, [
+        LLMResult(text='{"verdict":"FAIL"}'),
+        LLMResult(text='not json'),
+        LLMResult(error="timeout"),
+    ])
+    result = bench.llm_judge([faulty, faulty, clean], 1)
+    metrics = result["metrics"]
+    assert metrics["valid_response_f1"] == 1.0
+    assert metrics["effective_f1"] == 0.5  # TP=1, FN=1, FP=1
+    assert metrics["detection_f1"] == metrics["valid_response_f1"]
+    assert metrics["http_ok"] == 2
+    assert metrics["http_fail"] == 1
+    assert metrics["parse_failure_count"] == 1
+    assert metrics["parse_failure_rate"] == 0.5  # denominator: HTTP successes
+    assert metrics["abstention_count"] == 2
+    assert metrics["scored_calls"] == 1
+    assert result["cases"][-1]["parse_failure"] is False
+    assert metrics["repeated_verdict_agreement"] is None  # no pair of valid votes
+
+
+@pytest.mark.parametrize("response", ['[]', 'null', '42', '"PASS"', '{"verdict":"UNKNOWN"}', '{'])
+def test_llm_no_valid_responses_have_null_scores_and_do_not_crash(monkeypatch, response):
+    _mock_judge(monkeypatch, [LLMResult(text=response)])
+    result = bench.llm_judge(bench.build_cases()[:1], 1)
+    assert result["status"] == "FAILED"
+    assert result["metrics"]["scored_calls"] == 0
+    assert result["metrics"]["parse_failure_count"] == 1
+    for name in ("detection_f1", "valid_response_f1", "effective_f1", "detection_precision", "detection_recall", "false_positive_rate"):
+        assert result["metrics"][name] is None
+
+
+def test_llm_receives_complete_workflow_json(monkeypatch):
+    case = dict(bench.build_cases()[0])
+    case["requirement"] += "完整工作流" * 2000
+    captured = []
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key-no-network")
+    def complete(messages, **kwargs):
+        captured.append(messages[-1]["content"])
+        return LLMResult(text='{"verdict":"PASS"}')
+    monkeypatch.setattr("veriflow_api.llm.complete", complete)
+    bench.llm_judge([case], 1)
+    assert captured == [json.dumps(bench._llm_payload(case), ensure_ascii=False)]
+    assert json.loads(captured[0])["workflow"] == case["ir"].model_dump(mode="json")

@@ -34,7 +34,7 @@ def test_verify_workflow_structure_only_skips_safety():
 def test_miniflow_does_not_hardcode_witness_path():
     text = (ROOT / "apps/web/components/home/VerificationMiniFlow.tsx").read_text(encoding="utf-8")
     assert "if_pay → terminate" not in text
-    assert '"BLOCKED"' not in text
+    assert 'const gate = demo ? case4Gate(demo)' in text
     assert '.demo("case4_runtime")' in text or ".demo('case4_runtime')" in text
     css = (ROOT / "apps/web/app/globals.css").read_text(encoding="utf-8")
     assert "var(--ok, #15803d)" not in css

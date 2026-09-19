@@ -132,6 +132,7 @@ export type AlgorithmRecord = {
 export type VerifySession = {
   run_id?: number;
   parent_run_id?: number;
+  runtime_context?: { engine: "mock"; take_true_branch: true; skip_after: string | null } | null;
   status: string;
   latency_ms: number;
   spec: {

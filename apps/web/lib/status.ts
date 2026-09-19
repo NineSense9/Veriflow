@@ -4,7 +4,7 @@ export const DIM_META: Record<string, { label: string; hint: string }> = {
   dataflow: { label: "数据流", hint: "绑定、类型、缺失参数" },
   executable: { label: "静态可达", hint: "从图结构判断节点能否被走到。不是模拟运行。" },
   safety: { label: "安全", hint: "密钥、webhook、策略风险" },
-  runtime: { label: "运行时模拟", hint: "Mock trace 的时序与约束监视。与静态可达独立。" },
+  runtime: { label: "运行时模拟", hint: "模拟轨迹的时序与约束监视。与静态可达独立。" },
 };
 
 export function dimLabel(name: string) {
@@ -43,10 +43,10 @@ export function tone(status: string | null | undefined): ChipTone {
 
 export function gateWhy(executable: string | undefined, runtime: string | undefined, ready: string | undefined) {
   if (executable === "PASS" && runtime === "FAIL") {
-    return "静态可达满足，但运行时模拟失败。Gate 以运行时为准（RUNTIME_FAIL → BLOCKED）。";
+    return "静态可达满足，但运行时模拟失败。发布门禁因运行时失败而拦截。";
   }
-  if (ready === "BLOCKED") return "存在阻断条件。见 Gate reasons。";
-  if (ready === "REVIEW REQUIRED") return "存在 UNKNOWN，需人工审题。";
+  if (ready === "BLOCKED") return "存在阻断条件，请查看门禁原因。";
+  if (ready === "REVIEW REQUIRED") return "存在未确定的检查项，需人工审题。";
   if (ready === "READY") return "静态与运行时均未阻断，可以入库。";
   return "";
 }

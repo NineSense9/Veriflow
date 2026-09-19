@@ -21,7 +21,7 @@ for (const width of [1440, 1280, 768, 390]) for (const theme of ["light", "dark"
     await page.goto("/algorithms");
     await expect(page.locator(".chroma-card")).toHaveCount(3);
     await expect(page.locator(".chroma-overlay, .chroma-fade")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Graph integrity" })).toHaveAttribute("href", "/algorithms/graph.integrity");
+    await expect(page.getByRole("link", { name: "图结构完整性" })).toHaveAttribute("href", "/algorithms/graph.integrity");
     const contrast = await page.locator(".chroma-card").evaluateAll(cards => cards.map(card => {
       const parse = (value:string) => (value.match(/[\d.]+/g) || []).slice(0,3).map(Number).map(v => v/255).map(v => v <= .04045 ? v/12.92 : ((v+.055)/1.055)**2.4);
       const lum = (value:string) => { const rgb=parse(value); return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722; };

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime, timezone
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -44,6 +45,15 @@ class PipelineStep(BaseModel):
     evidence: list[str] = Field(default_factory=list)
 
 
+class RuntimeContext(BaseModel):
+    """Inputs needed to repeat the same deterministic mock experiment."""
+
+    model_config = ConfigDict(extra="forbid")
+    engine: Literal["mock"] = "mock"
+    take_true_branch: Literal[True] = True
+    skip_after: str | None = None
+
+
 class VerificationSession(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -67,6 +77,7 @@ class VerificationSession(BaseModel):
     ambiguity: AmbiguityReport | None = None
     runtime_findings: list[dict] = Field(default_factory=list)
     traceability: Traceability | None = None
+    runtime_context: RuntimeContext | None = None
 
 
 def _step(sid, name, status, t0, **kwargs) -> PipelineStep:
@@ -107,7 +118,7 @@ def run_session(
             t,
             algorithm_id="graph.integrity",
             checks_executed=1,
-            input_summary=f"{len(ir.nodes)} nodes / {len(ir.edges)} edges",
+            input_summary=f"{len(ir.nodes)} 个节点 / {len(ir.edges)} 条连线",
             output_summary="WorkflowIR",
         )
     )
@@ -122,7 +133,7 @@ def run_session(
             algorithm_id="spec.compile",
             checks_executed=len(spec.required_actions) + len(spec.ordering_constraints),
             input_summary=(nl or spec.source_nl)[:80],
-            output_summary=f"{len(spec.temporal_constraints)} temporal + {len(spec.required_actions)} actions",
+            output_summary=f"{len(spec.temporal_constraints)} 条时序约束 + {len(spec.required_actions)} 个动作",
         )
     )
     t = time.perf_counter()
@@ -147,7 +158,7 @@ def run_session(
             t,
             algorithm_id="graph.integrity",
             checks_executed=len(struct_errors) or 7,
-            output_summary=f"{len(struct_errors)} structural issues",
+            output_summary=f"{len(struct_errors)} 个结构问题",
             evidence=[item.code for item in struct_errors[:8]],
         )
     )
@@ -161,7 +172,7 @@ def run_session(
             t,
             algorithm_id="semantic.constraint",
             checks_executed=len(spec.required_actions) + len(spec.ordering_constraints),
-            output_summary=f"{len(sem)} semantic issues",
+            output_summary=f"{len(sem)} 个语义问题",
             evidence=[item.code for item in sem[:8]],
         )
     )
@@ -176,7 +187,7 @@ def run_session(
             t,
             algorithm_id="dataflow.slice",
             checks_executed=len(spec.data_dependencies) + type_n,
-            output_summary=f"type mismatches {type_n}",
+            output_summary=f"类型不匹配 {type_n}",
         )
     )
     t = time.perf_counter()
@@ -189,7 +200,7 @@ def run_session(
             t,
             algorithm_id="safety.policy",
             checks_executed=len(spec.safety_policies),
-            output_summary=f"{len(safe)} safety issues",
+            output_summary=f"{len(safe)} 个安全问题",
             evidence=[item.code for item in safe[:8]],
         )
     )
@@ -207,7 +218,7 @@ def run_session(
             t,
             algorithm_id="runtime.temporal",
             checks_executed=runtime.total,
-            output_summary=f"{runtime.status} · align cost {alignment.alignment_cost}",
+            output_summary=f"{runtime.status} · 对齐代价 {alignment.alignment_cost}",
             evidence=[item.constraint_id for item in runtime.issues if item.status == "FAIL"][:8],
         )
     )
@@ -219,7 +230,7 @@ def run_session(
             algorithm_id="repair.selection",
             kind="deterministic",
             cache_status="n/a",
-            input_summary="run verify-repair to fill",
+            input_summary="执行受约束修复后显示结果",
             output_summary="",
         )
     )
@@ -256,7 +267,7 @@ def run_session(
             "detected_by": "runtime.temporal",
             "algorithm_version": "1.0",
             "verification_method": "RUNTIME",
-            "repair_hint": "对照 Expected 与 Observed alignment",
+            "repair_hint": "对照预期事件与实际观测轨迹，检查未发生的步骤",
         }
         for item in runtime.issues
         if item.status == "FAIL"
@@ -282,4 +293,5 @@ def run_session(
         ambiguity=ambiguity,
         runtime_findings=runtime_findings,
         traceability=build_traceability(spec, ir, static, runtime_findings, ambiguity),
+        runtime_context=RuntimeContext(skip_after=skip_after),
     )

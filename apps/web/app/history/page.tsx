@@ -90,7 +90,7 @@ export default function HistoryPage() {
           </div>
         ) : !filtered.length ? (
           <div className="empty">
-            <p>{runs.length ? "没有符合筛选的记录。" : "还没有验证 run。"}</p>
+            <p>{runs.length ? "没有符合筛选的记录。" : "还没有验证记录。"}</p>
             <Link className="btn" href="/report?demo=case4_runtime">
               打开验证
             </Link>
@@ -101,13 +101,13 @@ export default function HistoryPage() {
               <thead>
                 <tr>
                   <th className="num">#</th>
-                  <th>Workflow</th>
-                  <th>Run</th>
-                  <th>Gate</th>
+                  <th>工作流</th>
+                  <th>综合判定</th>
+                  <th>发布门禁</th>
                   <th>运行时</th>
-                  <th className="num">Issues</th>
-                  <th className="num">ms</th>
-                  <th>Created</th>
+                  <th className="num">问题数</th>
+                  <th className="num">耗时（毫秒）</th>
+                  <th>创建时间</th>
                 </tr>
               </thead>
               <tbody>
@@ -131,9 +131,9 @@ export default function HistoryPage() {
                     <td>
                       <StatusChip value={row.runtime_status} />
                     </td>
-                    <td className="num" title={`static ${row.issue_static ?? "—"} + runtime ${row.issue_runtime ?? "—"}`}>
+                    <td className="num" title={`静态 ${row.issue_static ?? "—"} + 运行时 ${row.issue_runtime ?? "—"}`}>
                       {row.issue_count}
-                      {row.issue_runtime ? <span className="caption"> ·rt{row.issue_runtime}</span> : null}
+                      {row.issue_runtime ? <span className="caption"> · 运行时 {row.issue_runtime}</span> : null}
                     </td>
                     <td className="num">{Number(row.latency_ms).toFixed(1)}</td>
                     <td className="mono">{row.created_at?.slice(0, 19).replace("T", " ") || "—"}</td>
@@ -144,7 +144,7 @@ export default function HistoryPage() {
           </div>
         )}
         <p className="caption">
-          最多 {runs.length} 条。Run=静态总判，Gate=能否入库，运行时=Mock trace。parent_run_id 链在 Workflow 列。History 不跑 GridScan/Scanner。
+          共读取 {runs.length} 条记录。综合判定汇总静态与运行时检查；门禁决定是否允许入库。运行时数据来自模拟轨迹，工作流列的箭头指向原始运行。
         </p>
       </main>
     </Shell>

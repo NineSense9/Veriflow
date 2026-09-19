@@ -23,10 +23,10 @@ export default function StoredRunPage() {
       <main className="page vf-page">
         <header className="page-head tight">
           <h1>Run #{params.id}</h1>
-          <p className="lead">从 SQLite 读取的持久化 session。刷新后仍在。</p>
+          <p className="lead">已保存的验证记录，刷新后仍可查看。</p>
         </header>
         {error ? <p className="err">{error}</p> : null}
-        {error ? null : session ? <VerificationConsole initialSession={session} /> : <p className="ghost">加载 run…</p>}
+        {error ? null : session ? <VerificationConsole initialSession={session} /> : <p className="ghost">加载验证记录…</p>}
       </main>
     </Shell>
   );

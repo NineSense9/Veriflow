@@ -1,5 +1,8 @@
 "use client";
 
+import { algorithmCopy } from "@/lib/algorithm-copy-zh";
+import { categoryLabel } from "@/lib/ui-zh";
+
 import { useEffect, useMemo, useState } from "react";
 import Shell from "@/components/Shell";
 import { AlgorithmTable } from "@/components/VerificationConsole";
@@ -21,11 +24,11 @@ function chromaItem(algo: AlgorithmRecord): ChromaItem {
   const ai = algo.kind === "ai_assisted" || !algo.deterministic;
   const border = ai ? "var(--accent)" : /repair|incremental/i.test(algo.algorithm_id) ? "var(--warning)" : "var(--info)";
   return {
-    title: algo.name,
-    subtitle: algo.category,
+    title: algorithmCopy(algo.name),
+    subtitle: categoryLabel(algo.category),
     handle: algo.algorithm_id,
-    location: algo.complexity || algo.kind,
-    badge: algo.kind === "ai_assisted" ? "AI" : "DET",
+    location: algorithmCopy(algo.complexity) || categoryLabel(algo.kind),
+    badge: algo.kind === "ai_assisted" ? "AI 辅助" : "确定性",
     borderColor: border,
     url: `/algorithms/${encodeURIComponent(algo.algorithm_id)}`,
   };
@@ -86,7 +89,7 @@ export default function AlgorithmsPage() {
               </div>
               <div>
                 <dt>基准</dt>
-                <dd>{data.benchmark_version ? data.benchmark_version.slice(0, 19) : "NOT RUN"}</dd>
+                <dd>{data.benchmark_version ? data.benchmark_version.slice(0, 19) : "未运行"}</dd>
               </div>
             </dl>
             <ChromaGrid items={items} columns={3} radius={240} />

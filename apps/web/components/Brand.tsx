@@ -27,7 +27,7 @@ export default function Brand({ href = "/" }: { href?: string | null }) {
       <BrandMark />
       <span className="brand-text">
         <strong>VeriFlow</strong>
-        <span>AI Reliability</span>
+        <span>AI 工作流验证</span>
       </span>
     </>
   );
