@@ -52,10 +52,10 @@ export default function EvidencePage() {
           <p className="ghost">读取最近 run…</p>
         ) : (
           <>
-            <section>
+            <section className="vf-evidence-span">
               <h2>提案与判定</h2>
-              <p className="caption">左边是提案来源，右边是验证器裁决。</p>
-              <div className="table-wrap">
+              <p className="caption">阶段 / 提案方 / 裁决方。</p>
+              <div className="table-wrap vf-evidence-table-wrap">
                 <table className="table tight">
                   <thead>
                     <tr>
@@ -126,14 +126,18 @@ export default function EvidencePage() {
             </p>
             <section>
               <h2>维度（验证器裁决）</h2>
-              <ul className="action-list">
+              <ul className="vf-dim-grid">
                 {dims.map((dim) => (
-                  <li key={dim.name}>
-                    <StatusChip value={dim.status} /> {dimLabel(dim.name)} · 问题 {dim.issue_count}
+                  <li key={dim.name} className="vf-dim-card">
+                    <span className="vf-dim-name">{dimLabel(dim.name)}</span>
+                    <StatusChip value={dim.status} />
+                    <span className="caption">{dim.issue_count} issues</span>
                   </li>
                 ))}
-                <li>
-                  <StatusChip value={session.runtime?.status} /> 运行时模拟
+                <li className="vf-dim-card">
+                  <span className="vf-dim-name">运行时</span>
+                  <StatusChip value={session.runtime?.status} />
+                  <span className="caption">{(session.runtime_findings ?? session.runtime?.issues ?? []).length} issues</span>
                 </li>
               </ul>
             </section>

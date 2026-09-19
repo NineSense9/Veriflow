@@ -11,6 +11,7 @@ export function irToFlow(
   errors: ComposeError[],
   highlight?: { nodes: string[]; path: string[] },
   failing?: string[],
+  traceBreakFrom?: string | null,
 ): { nodes: Node[]; edges: Edge[] } {
   const errorIds = new Set(
     [
@@ -79,17 +80,29 @@ export function irToFlow(
     };
   });
   const witnessEdges = new Set((highlight?.path || []).slice(1).map((id, i) => `${highlight!.path[i]}\u0000${id}`));
-  const edges: Edge[] = ir.edges.filter((edge) => indeg.has(edge.from) && indeg.has(edge.to)).map((edge, index) => ({
-    id: `e${index}`,
-    source: edge.from,
-    target: edge.to,
-    type: "smoothstep",
-    markerEnd: { type: "arrowclosed" as import("@xyflow/react").MarkerType, color: "var(--graph-edge)" },
-    style:
-      witnessEdges.has(`${edge.from}\u0000${edge.to}`)
-        ? { stroke: "var(--accent)", strokeWidth: 2.5 }
-        : { stroke: "var(--graph-edge)", strokeWidth: 1.5, opacity: selected.size || pathSet.size ? 0.65 : 1 },
-  }));
+  const observed = new Set(highlight?.path || []);
+  const edges: Edge[] = ir.edges.filter((edge) => indeg.has(edge.from) && indeg.has(edge.to)).map((edge, index) => {
+    const broke = Boolean(traceBreakFrom) && edge.from === traceBreakFrom;
+    return {
+      id: `e${index}`,
+      source: edge.from,
+      target: edge.to,
+      type: "smoothstep",
+      label: broke ? "× 轨迹在此终止" : undefined,
+      labelStyle: broke ? { fill: "var(--error)", fontSize: 10 } : undefined,
+      markerEnd: {
+        type: "arrowclosed" as import("@xyflow/react").MarkerType,
+        color: broke ? "var(--error)" : "var(--graph-edge)",
+      },
+      style: broke
+        ? { stroke: "var(--error)", strokeWidth: 2, strokeDasharray: "5 4" }
+        : witnessEdges.has(`${edge.from}\u0000${edge.to}`)
+          ? { stroke: "var(--accent)", strokeWidth: 2.5 }
+          : { stroke: "var(--graph-edge)", strokeWidth: 1.5, opacity: selected.size || pathSet.size ? 0.65 : 1 },
+      className: broke ? "vf-trace-break" : undefined,
+      data: { observed: observed.has(edge.to) },
+    };
+  });
   return { nodes, edges };
 }
 

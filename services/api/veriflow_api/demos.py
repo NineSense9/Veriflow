@@ -53,6 +53,7 @@ def load_demo(demo_id: str) -> dict:
         "skip_after": payload.get("skip_after"),
         "expect_static": payload.get("expect_static") or payload.get("expect_fail"),
         "expect_runtime": payload.get("expect_runtime"),
+        "expect_gate": payload.get("expect_gate"),
         "expect_pattern": payload.get("expect_pattern"),
         "story": payload.get("story") or "",
         "issue": payload.get("issue"),

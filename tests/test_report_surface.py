@@ -22,8 +22,13 @@ def test_bench_latest_flattens_metrics(api_client):
     assert body["metrics"]["n"] == body["n"]
     assert str(body.get("source", "")).endswith("metrics.json")
     assert body.get("detection_f1") is not None
-    assert body["baselines"]["llm_as_judge"]["status"] == "NOT RUN"
-    assert body["baselines"]["veriflow_hybrid"]["detection_f1"] == body["detection_f1"]
+    assert body["baselines"]["llm_as_judge"]["status"] in {"NOT RUN", "RAN", "FAILED"}
+    assert "incremental.impact" not in str(body["baselines"]["veriflow_hybrid"].get("note") or "")
+    if str(body.get("source", "")).endswith("competition/metrics.json"):
+        assert isinstance(body.get("cases"), list)
+        assert body["cases"], "competition cases.json must be loaded"
+        static = (body.get("ablation") or {}).get("no-runtime") or {}
+        assert body["baselines"]["deterministic_static"]["detection_f1"] == static.get("detection_f1")
     source = Path(body["source"])
     assert source.as_posix() in {
         "experiments/runs/competition/metrics.json",

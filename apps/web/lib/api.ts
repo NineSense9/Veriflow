@@ -192,6 +192,21 @@ export type VerifySession = {
   };
   ambiguity?: { status: string; method: string; items: { ambiguity_id: string; status: string; reason: string; snippet: string; suggested_clarification: string }[] };
   runtime_findings?: VerifyIssue[];
+  ai_trace?: {
+    provider?: string | null;
+    model?: string | null;
+    used?: boolean;
+    requested?: boolean;
+    fallback_reason?: string | null;
+    prompt_version?: string | null;
+    status?: string;
+  };
+  repair?: {
+    improved?: boolean;
+    iterations?: number;
+    final_decision?: string | null;
+    selected_candidate_id?: string | null;
+  };
   traceability?: {
     covered: number;
     failed: number;
@@ -629,6 +644,7 @@ export const api = {
       skip_after?: string | null;
       expect_static?: string;
       expect_runtime?: string;
+      expect_gate?: string;
       expect_pattern?: string;
       story?: string;
       issue?: { code?: string; severity?: string; title?: string };

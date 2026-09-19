@@ -100,16 +100,19 @@ export default function HomePage() {
 
         <section className="vf-home-capabilities" aria-label="核心能力">
           <Link className="vf-home-cap" href="/compose">
-            <h2>Specification</h2>
-            <p>自然语言 → 可检查约束</p>
+            <h2>规格编译</h2>
+            <p className="vf-home-cap-en">Requirement → WorkflowSpec</p>
+            <p>自然语言需求变成可检查约束</p>
           </Link>
           <Link className="vf-home-cap" href="/evidence">
-            <h2>Evidence</h2>
-            <p>Issue → minimized witness</p>
+            <h2>证据链</h2>
+            <p className="vf-home-cap-en">Issue → minimized witness</p>
+            <p>每个 FAIL 可追到节点与轨迹</p>
           </Link>
           <Link className="vf-home-cap" href="/report">
-            <h2>Guarded Repair</h2>
-            <p>AI Patch → verifier accept/reject</p>
+            <h2>受约束修复</h2>
+            <p className="vf-home-cap-en">AI Patch → Guard → Re-verify</p>
+            <p>AI 只能提案，补丁仍需重新验证</p>
           </Link>
         </section>
 

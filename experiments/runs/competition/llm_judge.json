@@ -3,7 +3,10 @@
   "reason": "DEEPSEEK_API_KEY unset",
   "provider": "deepseek",
   "model": "deepseek-chat",
-  "prompt_version": "competition-llm-judge-v1",
+  "temperature": 0.0,
+  "prompt_version": "competition-llm-judge-v2",
   "repeats": 0,
-  "cases": []
+  "cases": [],
+  "metrics": null,
+  "note": "LLM-as-judge baseline only. Never used as Gate."
 }

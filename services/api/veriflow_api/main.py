@@ -635,13 +635,24 @@ def _register_routes(application: FastAPI) -> None:
         }
         ablation_path = path.parent / "ablation.json"
         llm_path = path.parent / "llm_judge.json"
+        cases_path = path.parent / "cases.json"
+        ablation = json.loads(ablation_path.read_text(encoding="utf-8")) if ablation_path.exists() else {}
+        llm_judge = json.loads(llm_path.read_text(encoding="utf-8")) if llm_path.exists() else {}
+        cases = json.loads(cases_path.read_text(encoding="utf-8")) if cases_path.exists() else []
         if ablation_path.exists():
-            payload["ablation"] = json.loads(ablation_path.read_text(encoding="utf-8"))
+            payload["ablation"] = ablation
         if llm_path.exists():
-            payload["llm_judge"] = json.loads(llm_path.read_text(encoding="utf-8"))
+            payload["llm_judge"] = llm_judge
+        payload["cases"] = cases
+        payload["repair_failures"] = metrics.get("repair_failures") or []
+        payload["category_counts"] = metrics.get("category_counts") or {}
         for key, value in metrics.items():
             if key not in payload:
                 payload[key] = value
+        static_row = ablation.get("no-runtime") if isinstance(ablation, dict) else None
+        full_row = ablation.get("full") if isinstance(ablation, dict) else None
+        llm_status = llm_judge.get("status") if isinstance(llm_judge, dict) else payload.get("llm_judge_baseline") or "NOT RUN"
+        llm_metrics = llm_judge.get("metrics") if isinstance(llm_judge, dict) else None
         payload["baselines"] = {
             "accept_without_verifier": {
                 "status": "ok",
@@ -652,28 +663,28 @@ def _register_routes(application: FastAPI) -> None:
             },
             "deterministic_static": {
                 "status": "ok",
-                "label": "确定性静态验证",
-                "detection_f1": payload.get("detection_f1"),
-                "detection_recall": payload.get("detection_recall"),
+                "label": "确定性静态验证（no-runtime ablation）",
+                "detection_f1": (static_row or {}).get("detection_f1"),
+                "detection_recall": (static_row or {}).get("detection_recall"),
                 "n": payload.get("n"),
-                "note": "verify_workflow。判定不来自 LLM。",
+                "note": "verify_workflow 全静态，不含 runtime monitor。判定不来自 LLM。",
             },
             "veriflow_hybrid": {
                 "status": "ok",
-                "label": "VeriFlow Hybrid",
-                "detection_f1": payload.get("detection_f1"),
+                "label": "VeriFlow full",
+                "detection_f1": (full_row or payload).get("detection_f1") if isinstance(full_row, dict) else payload.get("detection_f1"),
                 "repair_success_rate": payload.get("repair_success_rate"),
                 "fault_localization_accuracy": payload.get("fault_localization_accuracy"),
-                "note": "static + repair.guard + incremental.impact + patch selection。",
+                "diagnosis_accuracy": payload.get("diagnosis_accuracy"),
+                "note": "static + runtime + guarded repair。incremental speedup NOT MEASURED.",
             },
             "llm_as_judge": {
-                "status": (payload.get("llm_judge") or {}).get("status")
-                if isinstance(payload.get("llm_judge"), dict)
-                else payload.get("llm_judge_baseline") or "NOT RUN",
+                "status": llm_status,
                 "label": "LLM-as-judge",
+                "detection_f1": (llm_metrics or {}).get("detection_f1") if isinstance(llm_metrics, dict) else None,
                 "reason": (
-                    (payload.get("llm_judge") or {}).get("reason")
-                    if isinstance(payload.get("llm_judge"), dict)
+                    llm_judge.get("reason")
+                    if isinstance(llm_judge, dict)
                     else "未执行模型打分（无评测 Key 或不允许用 LLM 当裁判）。禁止填假数。"
                 ),
             },

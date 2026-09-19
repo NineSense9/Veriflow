@@ -6,13 +6,16 @@ import { api, unwrapBench } from "@/lib/api";
 
 type CaseRow = {
   gold?: string;
+  topology?: string;
   fault?: string;
   difficulty?: string;
   category?: string;
   expected?: string;
   detected?: boolean;
+  diagnosed?: boolean;
   localized?: boolean;
   repaired?: boolean;
+  repair_applicable?: boolean;
   repair_reason?: string;
   codes?: string[];
 };
@@ -23,6 +26,14 @@ function fmt(value: unknown, digits = 3) {
   }
   return "—";
 }
+
+function yn(value: unknown) {
+  if (value === true) return "Y";
+  if (value === false) return "N";
+  return "—";
+}
+
+const ABLATION_ORDER = ["structure-only", "no-safety", "no-runtime", "full"];
 
 export default function BenchmarkPage() {
   const [raw, setRaw] = useState<Record<string, unknown> | null>(null);
@@ -38,23 +49,32 @@ export default function BenchmarkPage() {
       .catch((err: Error) => setError(err.message));
   }, []);
 
+  const allCases = useMemo(
+    () => (Array.isArray(data?.cases) ? (data?.cases as CaseRow[]) : []),
+    [data],
+  );
+
   const cases = useMemo(() => {
-    const rows = Array.isArray(data?.cases) ? (data?.cases as CaseRow[]) : [];
     const query = q.trim().toLowerCase();
-    return rows.filter((row) => {
+    return allCases.filter((row) => {
       if (category !== "all" && (row.category || "") !== category) return false;
       if (!query) return true;
-      return [row.fault, row.gold, row.expected, row.repair_reason, ...(row.codes || [])]
+      return [row.fault, row.gold, row.expected, row.repair_reason, row.topology, ...(row.codes || [])]
         .join(" ")
         .toLowerCase()
         .includes(query);
     });
-  }, [data, q, category]);
+  }, [allCases, q, category]);
 
-  const failures = Array.isArray(data?.repair_failures) ? (data?.repair_failures as { gold?: string; fault?: string; reason?: string }[]) : [];
-  const categories = Array.from(
-    new Set((Array.isArray(data?.cases) ? (data?.cases as CaseRow[]) : []).map((row) => row.category).filter(Boolean)),
-  ) as string[];
+  const failures = Array.isArray(data?.repair_failures)
+    ? (data?.repair_failures as { gold?: string; fault?: string; reason?: string }[])
+    : [];
+  const categories = Array.from(new Set(allCases.map((row) => row.category).filter(Boolean))) as string[];
+  const ablation =
+    data?.ablation && typeof data.ablation === "object"
+      ? (data.ablation as Record<string, Record<string, unknown>>)
+      : {};
+  const ablationRows = ABLATION_ORDER.filter((mode) => ablation[mode]).map((mode) => [mode, ablation[mode]] as const);
 
   return (
     <Shell>
@@ -62,7 +82,8 @@ export default function BenchmarkPage() {
         <header className="page-head tight">
           <h1>基准评测</h1>
           <p className="lead">
-            仓库内 gold IR 的故障注入，不是外部竞赛榜。n 小的时候禁止写成 SOTA。
+            Synthetic mutation benchmark · 仓库内 gold IR 故障注入。不是公开榜，不是 SOTA。n
+            必须和指标同屏出现。
           </p>
         </header>
         {error ? <p className="err">{error}</p> : null}
@@ -70,45 +91,48 @@ export default function BenchmarkPage() {
           <>
             <dl className="vf-strip">
               <div>
-                <dt>套件</dt>
-                <dd>{String(data.suite ?? "—")}</dd>
+                <dt>N total</dt>
+                <dd>{fmt(data.total ?? (Number(data.n_clean || 0) + Number(data.n || 0)), 0)}</dd>
               </div>
               <div>
-                <dt>故障数</dt>
-                <dd>{fmt(data.n, 0)}</dd>
+                <dt>clean</dt>
+                <dd>{fmt(data.n_clean, 0)}</dd>
               </div>
               <div>
-                <dt>TP / FP / TN / FN</dt>
+                <dt>faulty</dt>
+                <dd>{fmt(data.n_faulty ?? data.n, 0)}</dd>
+              </div>
+              <div>
+                <dt>base / topology</dt>
                 <dd>
-                  {fmt(data.tp, 0)}/{fmt(data.fp, 0)}/{fmt(data.tn, 0)}/{fmt(data.fn, 0)}
+                  {fmt(data.base_workflow_count, 0)} / {fmt(data.base_topology_count, 0)}
                 </dd>
               </div>
               <div>
-                <dt>F1</dt>
+                <dt>detection F1</dt>
                 <dd>{fmt(data.detection_f1)}</dd>
               </div>
               <div>
-                <dt>修复率</dt>
-                <dd>{fmt(data.repair_success_rate)}</dd>
-              </div>
-              <div>
-                <dt>定位</dt>
-                <dd>{fmt(data.fault_localization_accuracy)}</dd>
+                <dt>diagnosis</dt>
+                <dd>{fmt(data.diagnosis_accuracy)}</dd>
               </div>
             </dl>
             <p className="caption">
-              源文件 {String(data.source || "—")} · clean {fmt(data.n_clean, 0)} · bases{" "}
-              {fmt(data.base_workflow_count, 0)} · 复现 {String(data.reproduce || data.command || "python scripts/competition_benchmark.py")}
-              · LLM-judge {String((data.llm_judge as { status?: string } | undefined)?.status || data.llm_judge_baseline || "NOT RUN")}
+              {String(data.dataset || data.suite || "competition")} · 源文件 {String(data.source || "—")} · runtime
+              faults {fmt(data.runtime_fault_count, 0)} · 复现{" "}
+              {String(data.reproduce || data.command || "python scripts/competition_benchmark.py")} · sampling{" "}
+              {String(data.sampling || "deterministic_enumeration")} · LLM-judge{" "}
+              {String((data.llm_judge as { status?: string } | undefined)?.status || data.llm_judge_baseline || "NOT RUN")}
             </p>
-            {data.ablation && typeof data.ablation === "object" ? (
+            {ablationRows.length ? (
               <section>
-                <h2>Ablation（同一 dataset / seed）</h2>
+                <h2>Ablation（同一 dataset / 同一 case 顺序）</h2>
                 <div className="table-wrap">
                   <table className="table tight">
                     <thead>
                       <tr>
                         <th>模式</th>
+                        <th>关闭什么</th>
                         <th>F1</th>
                         <th>召回</th>
                         <th>FP 率</th>
@@ -116,9 +140,10 @@ export default function BenchmarkPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(data.ablation as Record<string, Record<string, unknown>>).map(([mode, row]) => (
+                      {ablationRows.map(([mode, row]) => (
                         <tr key={mode}>
                           <td>{mode}</td>
+                          <td className="caption">{String(row.closes || "—")}</td>
                           <td>{fmt(row.detection_f1)}</td>
                           <td>{fmt(row.detection_recall)}</td>
                           <td>{fmt(row.false_positive_rate)}</td>
@@ -164,9 +189,14 @@ export default function BenchmarkPage() {
                 </div>
               </section>
             ) : null}
-            {failures.length ? (
-              <section>
-                <h2>修复失败</h2>
+            <section>
+              <h2>修复</h2>
+              <p className="caption">
+                适用 {fmt(data.repair_applicable_count, 0)} · 成功 {fmt(data.repair_success_count, 0)} · 失败{" "}
+                {fmt(data.repair_failure_count, 0)} · 成功率 {fmt(data.repair_success_rate)}
+                。runtime-only fault 不计入分母。
+              </p>
+              {failures.length ? (
                 <div className="table-wrap">
                   <table className="table tight">
                     <thead>
@@ -187,12 +217,16 @@ export default function BenchmarkPage() {
                     </tbody>
                   </table>
                 </div>
-              </section>
-            ) : (
-              <p className="caption">当前 metrics 未列出 repair_failures，或本套件修复全部接受。</p>
-            )}
+              ) : (
+                <p className="caption">
+                  {Number(data.repair_failure_count || 0) === 0 && Number(data.repair_applicable_count || 0) > 0
+                    ? "适用的 static repair case 全部被接受。"
+                    : "没有适用的 static repair case。"}
+                </p>
+              )}
+            </section>
             <section>
-              <h2>用例</h2>
+              <h2>Case Explorer</h2>
               <div className="filter-bar">
                 <input
                   className="input"
@@ -217,27 +251,38 @@ export default function BenchmarkPage() {
                 <table className="table">
                   <thead>
                     <tr>
+                      <th>Base</th>
                       <th>Fault</th>
-                      <th>Cat</th>
-                      <th>Diff</th>
+                      <th>Category</th>
+                      <th>Expected</th>
                       <th>Detected</th>
+                      <th>Diagnosis</th>
                       <th>Localized</th>
-                      <th>Repaired</th>
-                      <th>Reason</th>
+                      <th>Repair</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cases.map((row, index) => (
-                      <tr key={`${row.fault}-${index}`}>
-                        <td>{row.fault || "—"}</td>
-                        <td>{row.category || "—"}</td>
-                        <td>{row.difficulty || "—"}</td>
-                        <td>{row.detected ? "Y" : "N"}</td>
-                        <td>{row.localized ? "Y" : "N"}</td>
-                        <td>{row.repaired ? "Y" : "N"}</td>
-                        <td className="mono">{row.repair_reason || "—"}</td>
+                    {cases.length ? (
+                      cases.map((row, index) => (
+                        <tr key={`${row.gold}-${row.fault}-${index}`}>
+                          <td>{row.gold || "—"}</td>
+                          <td>{row.fault || "—"}</td>
+                          <td>{row.category || "—"}</td>
+                          <td className="mono">{row.expected || "—"}</td>
+                          <td>{yn(row.detected)}</td>
+                          <td>{yn(row.diagnosed)}</td>
+                          <td>{yn(row.localized)}</td>
+                          <td className="mono">
+                            {row.repair_applicable === false ? "n/a" : yn(row.repaired)}
+                            {row.repair_reason ? ` · ${row.repair_reason}` : ""}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={8}>没有可显示的 competition cases。确认 experiments/runs/competition/cases.json 已生成。</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -245,7 +290,7 @@ export default function BenchmarkPage() {
           </>
         ) : data ? (
           <div className="empty">
-            <p>还没有 bench 文件。在仓库根目录运行 `python -m veriflow_cli bench --suite smoke`。</p>
+            <p>还没有 bench 文件。在仓库根目录运行 `python scripts/competition_benchmark.py`。</p>
           </div>
         ) : (
           <p className="ghost">读取 /api/bench/latest…</p>

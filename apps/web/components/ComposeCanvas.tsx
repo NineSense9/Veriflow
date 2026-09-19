@@ -21,9 +21,12 @@ const nodeTypes = { kind: KindNode };
 
 const ComposeCanvas = forwardRef<GraphHandle, {
   ir: WorkflowIR; errors: ComposeError[]; highlight?: { nodes: string[]; path: string[] }; failing?: string[];
-  onSelectNode?: (id: string) => void; height?: number;
-}>(function ComposeCanvas({ ir, errors, highlight, failing, onSelectNode, height }, ref) {
-  const { nodes, edges } = useMemo(() => irToFlow(ir, errors, highlight, failing), [ir, errors, highlight, failing]);
+  onSelectNode?: (id: string) => void; height?: number; traceBreakFrom?: string | null;
+}>(function ComposeCanvas({ ir, errors, highlight, failing, onSelectNode, height, traceBreakFrom }, ref) {
+  const { nodes, edges } = useMemo(
+    () => irToFlow(ir, errors, highlight, failing, traceBreakFrom),
+    [ir, errors, highlight, failing, traceBreakFrom],
+  );
   // Selection is deliberately absent: it must never change the viewport.
   const layoutKey = JSON.stringify([ir.name, ir.nodes.map((node) => [node.id, node.kind, node.tool, node.expr]), ir.edges]);
   return <GraphSurface ref={ref} nodes={nodes} edges={edges} nodeTypes={nodeTypes} layoutKey={layoutKey}

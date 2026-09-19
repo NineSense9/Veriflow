@@ -24,6 +24,14 @@ const ir = { nodes: [
   { from: 'notify', to: 'review' }, { from: 'review', to: 'pub' },
 ] };
 
+test('marks the outgoing edge after a truncated trace', () => {
+  const { irToFlow } = mod();
+  const { edges } = irToFlow(ir, [], undefined, undefined, 'branch');
+  const broke = edges.filter((edge) => edge.source === 'branch');
+  assert.equal(broke.length, 1);
+  assert.match(String(broke[0].label), /轨迹在此终止/);
+});
+
 test('places a linear workflow on one horizontal rail', () => {
   const { irToFlow, dagFrameHeight } = mod();
   const { nodes } = irToFlow(ir, []);

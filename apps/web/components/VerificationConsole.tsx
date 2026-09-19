@@ -232,6 +232,15 @@ export default function VerificationConsole({
   }, [selected, session]);
 
   const ir: WorkflowIR | null = session?.ir ?? null;
+  const traceBreakFrom = (() => {
+    if (!ir) return null;
+    const events = session?.trace?.events;
+    if (!Array.isArray(events) || events.length === 0) return null;
+    const seen = events.map((event) => event.node_id).filter(Boolean);
+    const last = seen[seen.length - 1];
+    if (!last) return null;
+    return ir.edges.some((edge) => edge.from === last && !seen.includes(edge.to)) ? last : null;
+  })();
   const issues: VerifyIssue[] = [
     ...(session?.static.issues ?? []),
     ...((session?.runtime_findings ?? []) as VerifyIssue[]),
@@ -497,6 +506,7 @@ export default function VerificationConsole({
                     errors={[]}
                     highlight={highlight}
                     failing={issues.flatMap((item) => item.affected_nodes || [])}
+                    traceBreakFrom={traceBreakFrom}
                     onSelectNode={(id) => {
                       const hit = issues.find(
                         (item) => matchingIssueNodes(item, ir.nodes).includes(id),

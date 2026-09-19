@@ -13,6 +13,7 @@ def test_case4_demo_exposes_golden_issue_and_witness():
     golden = (ROOT / "examples/golden/case4_runtime.json").read_text(encoding="utf-8")
     assert demo["expect_static"] == "PASS"
     assert demo["expect_runtime"] == "FAIL"
+    assert demo["expect_gate"] == "BLOCKED"
     assert demo["skip_after"] == "if_pay"
     assert demo["issue"]["title"]
     assert demo["witness"][0] == "if_pay"
@@ -33,4 +34,8 @@ def test_verify_workflow_structure_only_skips_safety():
 def test_miniflow_does_not_hardcode_witness_path():
     text = (ROOT / "apps/web/components/home/VerificationMiniFlow.tsx").read_text(encoding="utf-8")
     assert "if_pay → terminate" not in text
+    assert '"BLOCKED"' not in text
     assert '.demo("case4_runtime")' in text or ".demo('case4_runtime')" in text
+    css = (ROOT / "apps/web/app/globals.css").read_text(encoding="utf-8")
+    assert "var(--ok, #15803d)" not in css
+    assert "var(--fail, #b91c1c)" not in css

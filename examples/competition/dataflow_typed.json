@@ -1,0 +1,44 @@
+{
+  "ir_version": "1.0",
+  "domain": "compose",
+  "name": "dataflow_typed",
+  "nodes": [
+    {
+      "id": "gen",
+      "kind": "tool",
+      "tool": "test_generator",
+      "in_type": { "type": "object", "required": ["spec"] },
+      "out_type": { "type": "object", "required": ["tests"] }
+    },
+    {
+      "id": "pack",
+      "kind": "transform",
+      "in_type": { "type": "object", "required": ["tests"] },
+      "out_type": { "type": "object", "required": ["tests"] }
+    },
+    {
+      "id": "g_bounds",
+      "kind": "guard",
+      "expr": "spec.n_min >= 1 && spec.n_max <= 100000",
+      "on_fail": "reject",
+      "in_type": { "type": "object" }
+    },
+    {
+      "id": "review",
+      "kind": "human_gate",
+      "assignee_role": "problemsetter",
+      "on_fail": "reject"
+    },
+    {
+      "id": "pub",
+      "kind": "tool",
+      "tool": "publish_problem"
+    }
+  ],
+  "edges": [
+    { "from": "gen", "to": "pack" },
+    { "from": "pack", "to": "g_bounds" },
+    { "from": "g_bounds", "to": "review" },
+    { "from": "review", "to": "pub" }
+  ]
+}

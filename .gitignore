@@ -20,6 +20,10 @@ node_modules/
 apps/web/out/
 apps/web/tsconfig.tsbuildinfo
 output/
+.playwright-mcp/
+apps/web/.playwright-cli/
+test-results/
+apps/web/test-results/
 deploy/remote_*.py
 .DS_Store
 Thumbs.db

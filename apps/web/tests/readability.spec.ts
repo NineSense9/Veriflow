@@ -34,7 +34,7 @@ for (const width of [1440, 1280, 768, 390]) for (const theme of ["light", "dark"
     await page.goto("/architecture");
     await expect(page.locator(".architecture-band")).toHaveCount(5);
     await expect(page.locator(".architecture-module")).toHaveCount(20);
-    await page.getByRole("button", { name:/Graph integrity/ }).click();
+    await page.getByRole("button", { name: /图完整性|Graph integrity/ }).click();
     await expect(page.getByRole("region", { name:"模块详情" })).toBeVisible();
     await page.getByRole("button", { name:"关闭详情" }).click();
     await page.screenshot({ path:path.join(output, `architecture-${width}-${theme}.png`), fullPage:true });

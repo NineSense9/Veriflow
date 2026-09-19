@@ -1,30 +1,87 @@
 {
   "mode": "full",
-  "n_clean": 3,
-  "n_faulty": 28,
-  "tp": 28,
+  "closes": "Full static pipeline plus runtime monitor.",
+  "n_clean": 5,
+  "n_faulty": 50,
+  "tp": 50,
   "fp": 0,
-  "tn": 3,
+  "tn": 5,
   "fn": 0,
   "detection_precision": 1.0,
   "detection_recall": 1.0,
   "detection_f1": 1.0,
   "false_positive_rate": 0.0,
-  "fault_localization_accuracy": 0.6785714285714286,
-  "average_static_ms": 0.314,
-  "timestamp": "2026-09-18T18:14:04.711006+00:00",
+  "diagnosis_accuracy": 1.0,
+  "fault_localization_accuracy": 0.7,
+  "average_static_ms": 0.175,
+  "average_runtime_ms": 0.114,
+  "repair_applicable_count": 45,
+  "repair_success_count": 38,
+  "repair_failure_count": 7,
+  "repair_success_rate": 0.8444444444444444,
+  "repair_failures": [
+    {
+      "gold": "merge_dual",
+      "fault": "missing_branch",
+      "reason": "REPAIR_REJECTED_NO_IMPROVEMENT"
+    },
+    {
+      "gold": "merge_dual",
+      "fault": "broken_binding",
+      "reason": "REPAIR_REJECTED_NO_IMPROVEMENT"
+    },
+    {
+      "gold": "dataflow_typed",
+      "fault": "missing_branch",
+      "reason": "REPAIR_REJECTED_NO_IMPROVEMENT"
+    },
+    {
+      "gold": "dataflow_typed",
+      "fault": "broken_binding",
+      "reason": "REPAIR_REJECTED_NO_IMPROVEMENT"
+    },
+    {
+      "gold": "safety_env",
+      "fault": "missing_branch",
+      "reason": "REPAIR_REJECTED_NO_IMPROVEMENT"
+    },
+    {
+      "gold": "branch_notify",
+      "fault": "missing_branch",
+      "reason": "REPAIR_REJECTED_NO_IMPROVEMENT"
+    },
+    {
+      "gold": "branch_notify",
+      "fault": "broken_binding",
+      "reason": "REPAIR_REJECTED_INVALID_PATCH"
+    }
+  ],
+  "timestamp": "2026-09-19T07:02:56.046349+00:00",
   "suite": "competition",
   "seed": 20260919,
-  "dataset": "competition-v1",
+  "seed_role": "provenance_only",
+  "sampling": "deterministic_enumeration",
+  "dataset": "competition-v2",
   "command": "python scripts/competition_benchmark.py",
   "base_workflows": [
-    "valid_lis",
-    "commit_a",
-    "case4_runtime"
+    "linear_compose",
+    "merge_dual",
+    "dataflow_typed",
+    "safety_env",
+    "branch_notify"
   ],
-  "base_workflow_count": 3,
-  "n": 28,
-  "total": 31,
+  "base_workflow_count": 5,
+  "topology_families": [
+    "branch",
+    "dataflow",
+    "linear",
+    "merge",
+    "safety"
+  ],
+  "base_topology_count": 5,
+  "n": 50,
+  "total": 55,
+  "runtime_fault_count": 5,
   "categories": [
     "branch",
     "dataflow",
@@ -36,23 +93,18 @@
     "structural"
   ],
   "category_counts": {
-    "structural": 6,
-    "semantic": 3,
-    "ordering": 3,
-    "branch": 3,
-    "parameter": 3,
-    "dataflow": 3,
-    "safety": 6,
-    "runtime": 1
+    "structural": 10,
+    "semantic": 5,
+    "ordering": 5,
+    "branch": 5,
+    "parameter": 5,
+    "dataflow": 5,
+    "safety": 10,
+    "runtime": 5
   },
-  "repair_success_rate": 0.9285714285714286,
-  "repair_regression_rate": 0.05357142857142857,
-  "average_patch_operations": 1.9642857142857142,
-  "average_changed_nodes": 0.6071428571428571,
-  "incremental_verification_latency": "N/A",
-  "full_verification_latency_ms": 0.314,
-  "speedup": "N/A",
-  "incremental_full_disagreement_count": "N/A",
+  "incremental_verification_latency": "NOT MEASURED",
+  "speedup": "NOT MEASURED",
+  "incremental_full_disagreement_count": "NOT MEASURED",
   "llm_judge_baseline": "NOT RUN",
-  "note": "Measured by scripts/competition_benchmark.py. Not a public leaderboard. Not SOTA."
+  "note": "Synthetic mutation benchmark. Repository-internal. Not a public leaderboard. Not SOTA."
 }
