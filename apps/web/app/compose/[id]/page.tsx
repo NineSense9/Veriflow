@@ -12,6 +12,7 @@ import { useEffects } from "@/lib/effects";
 import WitnessMotion from "@/components/WitnessMotion";
 import RuntimeReplay from "@/components/RuntimeReplay";
 import ComposeStoryDesk from "@/components/ComposeStoryDesk";
+import ProblemPackagePanel from "@/components/ProblemPackagePanel";
 
 const ComposeCanvas = dynamic(() => import("@/components/ComposeCanvas"), { ssr: false });
 
@@ -62,11 +63,11 @@ function ComposeProjectBody() {
   }, [selected]);
 
   if (!project) {
-    return <p className="page ghost">画布展开中…</p>;
+    return <div className="page">{message ? <p className="err" role="alert">{message} <button type="button" onClick={() => { setMessage(""); api.composeGet(id).then(apply).catch(() => setMessage("项目加载失败")); }}>重试</button></p> : <p className="ghost">画布展开中…</p>}</div>;
   }
 
   if (story) {
-    return <ComposeStoryDesk project={project} onProject={apply} />;
+    return <><ComposeStoryDesk project={project} onProject={apply} /><div className="page"><ProblemPackagePanel project={project} onProject={apply} /></div></>;
   }
 
   const verification = project.verification;
@@ -109,7 +110,7 @@ function ComposeProjectBody() {
           </button>
           <button
             type="button"
-            disabled={Boolean(busy) || project.errors.length > 0}
+            disabled={Boolean(busy) || project.errors.length > 0 || !project.problem_package?.ready || Boolean(project.published_problem_id)}
             onClick={() => run("gate", () => api.composeGate(id, "approved"))}
           >
             审题通过
@@ -130,6 +131,7 @@ function ComposeProjectBody() {
             入库
           </button>
         </div>
+        <ProblemPackagePanel project={project} onProject={apply} />
         <div className="compose-req">
           <label htmlFor="compose-nl-edit">出题要求</label>
           <textarea

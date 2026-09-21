@@ -78,6 +78,9 @@ class VerificationSession(BaseModel):
     runtime_findings: list[dict] = Field(default_factory=list)
     traceability: Traceability | None = None
     runtime_context: RuntimeContext | None = None
+    repair: dict | None = None
+    repair_origin: dict | None = None
+    ai_trace: dict | None = None
 
 
 def _step(sid, name, status, t0, **kwargs) -> PipelineStep:

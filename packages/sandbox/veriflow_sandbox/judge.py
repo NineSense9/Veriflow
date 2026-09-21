@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from veriflow_compare.tokens import outputs_equal
 from veriflow_sandbox.types import Lang, Sandbox
+from veriflow_sandbox.resources import cleanup_artifacts
 
 
 @dataclass
@@ -37,72 +38,81 @@ def judge_submission(
     time_limit_ms: int,
     memory_limit_mb: int,
 ) -> JudgeResult:
-    compile_result = sandbox.compile(lang, source)
-    if not compile_result.ok:
-        return JudgeResult(
-            verdict="CE",
-            stage="compiling",
-            time_ms=compile_result.time_ms,
-            compile_log=compile_result.log,
-            sandbox=sandbox.name,
-        )
-    ordered = _smallest_first(tests)
-    public = [case for case in ordered if case.visibility == "public"]
-    hidden = [case for case in ordered if case.visibility == "hidden"]
-    passed = 0
-    total_time = compile_result.time_ms
-    for stage, group in (("running_public", public), ("running_hidden", hidden)):
-        for case in group:
-            run = sandbox.run(
-                lang,
-                compile_result.artifact or "",
-                case.stdin,
-                time_limit_ms,
-                memory_limit_mb,
+    if not tests or any(case.visibility not in ("public", "hidden") for case in tests):
+        return JudgeResult(verdict="SYSTEM_ERROR", stage="validation", time_ms=0,
+                           detail="missing_tests", sandbox=sandbox.name)
+    artifacts: list[str] = []
+    try:
+        compile_result = sandbox.compile(lang, source)
+        if compile_result.artifact:
+            artifacts.append(compile_result.artifact)
+        if not compile_result.ok:
+            return JudgeResult(
+                verdict="CE",
+                stage="compiling",
+                time_ms=compile_result.time_ms,
+                compile_log=compile_result.log,
+                sandbox=sandbox.name,
             )
-            total_time += run.time_ms
-            event = {
-                "stage": stage,
-                "name": case.name,
-                "visibility": case.visibility,
-                "verdict": run.verdict,
-                "time_ms": run.time_ms,
-            }
-            if run.verdict != "OK":
-                return JudgeResult(
-                    verdict=run.verdict,
-                    stage=stage,
-                    time_ms=total_time,
-                    memory_kb=run.memory_kb,
-                    counterexample=_counterexample(case, run.stdout, run.verdict),
-                    detail=run.detail,
-                    sandbox=sandbox.name,
-                    tests_passed=passed,
-                    tests_run=passed + 1,
-                    trace=[event],
+        ordered = _smallest_first(tests)
+        public = [case for case in ordered if case.visibility == "public"]
+        hidden = [case for case in ordered if case.visibility == "hidden"]
+        passed = 0
+        total_time = compile_result.time_ms
+        for stage, group in (("running_public", public), ("running_hidden", hidden)):
+            for case in group:
+                run = sandbox.run(
+                    lang,
+                    compile_result.artifact or "",
+                    case.stdin,
+                    time_limit_ms,
+                    memory_limit_mb,
                 )
-            if not outputs_equal(run.stdout, case.stdout):
-                event["verdict"] = "WA"
-                return JudgeResult(
-                    verdict="WA",
-                    stage=stage,
-                    time_ms=total_time,
-                    memory_kb=run.memory_kb,
-                    counterexample=_counterexample(case, run.stdout, "WA"),
-                    sandbox=sandbox.name,
-                    tests_passed=passed,
-                    tests_run=passed + 1,
-                    trace=[event],
-                )
-            passed += 1
-    return JudgeResult(
-        verdict="AC",
-        stage="accepted",
-        time_ms=total_time,
-        sandbox=sandbox.name,
-        tests_passed=passed,
-        tests_run=passed,
-    )
+                total_time += run.time_ms
+                event = {
+                    "stage": stage,
+                    "name": case.name,
+                    "visibility": case.visibility,
+                    "verdict": run.verdict,
+                    "time_ms": run.time_ms,
+                }
+                if run.verdict != "OK":
+                    return JudgeResult(
+                        verdict=run.verdict,
+                        stage=stage,
+                        time_ms=total_time,
+                        memory_kb=run.memory_kb,
+                        counterexample=_counterexample(case, run.stdout, run.verdict),
+                        detail=run.detail,
+                        sandbox=sandbox.name,
+                        tests_passed=passed,
+                        tests_run=passed + 1,
+                        trace=[event],
+                    )
+                if not outputs_equal(run.stdout, case.stdout):
+                    event["verdict"] = "WA"
+                    return JudgeResult(
+                        verdict="WA",
+                        stage=stage,
+                        time_ms=total_time,
+                        memory_kb=run.memory_kb,
+                        counterexample=_counterexample(case, run.stdout, "WA"),
+                        sandbox=sandbox.name,
+                        tests_passed=passed,
+                        tests_run=passed + 1,
+                        trace=[event],
+                    )
+                passed += 1
+        return JudgeResult(
+            verdict="AC",
+            stage="accepted",
+            time_ms=total_time,
+            sandbox=sandbox.name,
+            tests_passed=passed,
+            tests_run=passed,
+        )
+    finally:
+        cleanup_artifacts(sandbox, artifacts)
 
 
 def _smallest_first(tests: list[Case]) -> list[Case]:

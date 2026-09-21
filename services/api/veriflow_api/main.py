@@ -192,6 +192,8 @@ def grade_submission(user_id: int, problem_id: str, lang: str, source: str) -> d
         raise HTTPException(
             status_code=404, detail={"code": "not_found", "message": "problem not found"}
         )
+    if not tests or any(row["visibility"] not in {"public", "hidden"} for row in tests):
+        raise HTTPException(status_code=409, detail={"code": "missing_tests", "message": "题目缺少有效评测数据，暂不能提交。"})
     spec = json.loads(problem["spec_json"])
     job_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -223,16 +225,14 @@ def grade_submission(user_id: int, problem_id: str, lang: str, source: str) -> d
     ]
     try:
         sandbox = get_sandbox()
-    except SandboxUnavailable as exc:
-        raise HTTPException(status_code=503, detail={"code": "sandbox_down", "message": str(exc)}) from exc
-    result = judge_submission(
-        sandbox,
-        lang,
-        source,
-        cases,
-        spec.get("time_limit_ms", 1000),
-        spec.get("memory_limit_mb", 256),
-    )
+        result = judge_submission(sandbox, lang, source, cases, spec.get("time_limit_ms", 1000), spec.get("memory_limit_mb", 256))
+    except Exception as exc:
+        code = "sandbox_down" if isinstance(exc, SandboxUnavailable) else "evaluation_unavailable"
+        with connect() as connection:
+            connection.execute("UPDATE submissions SET verdict = 'SYSTEM_ERROR' WHERE id = ?", (submission_id,))
+            connection.execute("UPDATE jobs SET status = 'failed', error = ? WHERE id = ?", (code, job_id))
+            connection.commit()
+        raise HTTPException(status_code=503, detail={"code": code, "message": "评测暂不可用，本次提交已标记为系统错误，可稍后重试。", "job_id": job_id}) from exc
     counterexample = json.dumps(result.counterexample, ensure_ascii=False) if result.counterexample else None
     trace = json.dumps(result.trace, ensure_ascii=False)
     with connect() as connection:
@@ -253,7 +253,7 @@ def grade_submission(user_id: int, problem_id: str, lang: str, source: str) -> d
         )
         connection.execute(
             "UPDATE jobs SET status = ?, error = ? WHERE id = ?",
-            ("completed", result.detail, job_id),
+            ("failed" if result.verdict == "SYSTEM_ERROR" else "completed", result.detail, job_id),
         )
         connection.commit()
     kill = ensure_kill_rate(problem_id) if result.verdict == "AC" else None
@@ -309,6 +309,10 @@ def _user_stats(connection, user_id: int) -> tuple[int, int]:
 
 
 def _register_routes(application: FastAPI) -> None:
+    @application.exception_handler(PermissionError)
+    async def state_conflict(_request, _exc):
+        return JSONResponse(status_code=409, content={"detail": {"code": "state_conflict", "message": "草稿已更新或已发布，当前操作不能继续。请刷新后重试；已发布内容需创建新草稿。"}})
+
     @application.get("/api/version")
     def api_version() -> dict[str, object]:
         from veriflow_verify.version import version_payload
@@ -435,7 +439,7 @@ def _register_routes(application: FastAPI) -> None:
 
         ir = WorkflowIR.model_validate(body.ir)
         spec = compile_spec(body.nl, ir.domain)
-        return json.loads(evaluate_gate(ir, spec).model_dump_json())
+        return json.loads(evaluate_gate(ir, spec, skip_after=body.skip_after).model_dump_json())
 
     @application.get("/api/integrations/n8n")
     def api_n8n_status(user=Depends(current_user)):
@@ -537,6 +541,34 @@ def _register_routes(application: FastAPI) -> None:
         session = run_session(ir, spec, nl=nl, skip_after=skip)
         return {"markdown": export_markdown(session), "json": export_json(session)}
 
+    @application.post("/api/report/runs/{run_id}/repair")
+    def repair_recorded_run(run_id: int, body: AllowAiBody, user=Depends(current_user)):
+        from veriflow_repair.loop import verify_repair_loop
+        from veriflow_verify.history import get_session, record_session
+        from veriflow_verify.pipeline import run_session
+
+        with connect() as connection:
+            parent = get_session(connection, run_id)
+        if not parent or parent.get("user_id") not in (None, user["id"]) or not parent.get("session"):
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "找不到可访问的原始验证记录"})
+        recorded = parent["session"]
+        ir, spec, nl, skip = resolve_report_inputs(SessionBody(ir=recorded["ir"], parent_run_id=run_id), user)
+        if not recorded.get("static", {}).get("issues") and recorded.get("runtime", {}).get("status") == "FAIL":
+            raise HTTPException(status_code=409, detail={"code": "runtime_repair_unsupported", "message": "当前运行时问题不支持自动修复；原门禁继续有效。"})
+        report = verify_repair_loop(ir, spec, max_iterations=body.max_iterations, allow_ai=body.allow_ai)
+        repaired_ir, spec, nl, skip = resolve_report_inputs(SessionBody(ir=report.ir.model_dump(mode="json", by_alias=True), parent_run_id=run_id), user)
+        session = run_session(repaired_ir, spec, nl=nl, skip_after=skip)
+        session.repair = report.model_dump(mode="json")
+        session.ai_trace = report.ai_trace.model_dump(mode="json") if report.ai_trace else None
+        session.repair_origin = {**recorded, "run_id": run_id}
+        # Keep a single comparison origin; do not recursively embed entire ancestry.
+        session.repair_origin.pop("repair_origin", None)
+        session.repair_origin.pop("repair", None)
+        with connect() as connection:
+            child_id = record_session(connection, user["id"], session, parent_run_id=run_id)
+            stored = get_session(connection, child_id)["session"]
+        return {**stored, "run_id": child_id, "parent_run_id": run_id}
+
     @application.get("/api/report/history")
     def api_report_history(user=Depends(current_user), limit: int = Query(30)):
         from veriflow_verify.history import list_sessions
@@ -550,7 +582,7 @@ def _register_routes(application: FastAPI) -> None:
 
         with connect() as connection:
             row = get_session(connection, run_id)
-        if row is None:
+        if row is None or row.get("user_id") not in (None, user["id"]):
             raise HTTPException(status_code=404, detail={"code": "not_found", "message": "run not found"})
         session = row.get("session")
         if not session:
@@ -562,13 +594,12 @@ def _register_routes(application: FastAPI) -> None:
 
     @application.post("/api/report/compare")
     def api_report_compare(body: CompareBody, user=Depends(current_user)):
-        del user
         from veriflow_verify.history import compare_sessions, get_session
 
         with connect() as connection:
             left = get_session(connection, body.left_id)
             right = get_session(connection, body.right_id)
-        if not left or not right:
+        if not left or not right or any(row.get("user_id") not in (None, user["id"]) for row in (left, right)):
             raise HTTPException(status_code=404, detail={"code": "not_found", "message": "run not found"})
         return compare_sessions(left, right)
 
@@ -819,7 +850,7 @@ def _register_routes(application: FastAPI) -> None:
     def get_problem(problem_id: str):
         with connect() as connection:
             row = connection.execute(
-                "SELECT id, spec_json, statement, difficulty, tags, kill_rate FROM problems WHERE id = ?",
+                "SELECT id, spec_json, statement, difficulty, tags, kill_rate FROM problems WHERE id = ? AND published = 1",
                 (problem_id,),
             ).fetchone()
             public_tests = connection.execute(
@@ -1196,7 +1227,7 @@ def _register_routes(application: FastAPI) -> None:
                     "SELECT * FROM submissions WHERE id = ? AND user_id = ?",
                     (job["submission_id"], user["id"]),
                 ).fetchone()
-        if job is None:
+        if job is None or submission is None:
             raise HTTPException(
                 status_code=404, detail={"code": "not_found", "message": "job not found"}
             )
@@ -1252,6 +1283,24 @@ def _register_routes(application: FastAPI) -> None:
             )
         return payload
 
+    @application.get("/api/compose/{project_id}/package")
+    def compose_package_get(project_id: int, user=Depends(current_user)):
+        if compose_service.get_project(user["id"], project_id) is None:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "找不到该草稿"})
+        return {"package": compose_service.get_problem_package(user["id"], project_id)}
+
+    @application.post("/api/compose/{project_id}/package")
+    def compose_package_save(project_id: int, body: dict, user=Depends(current_user)):
+        try:
+            payload = compose_service.save_problem_package(user["id"], project_id, body)
+        except (ValueError, ValidationError):
+            raise HTTPException(status_code=422, detail={"code": "invalid_package", "message": "题包格式无效：请填写题面、输入输出、公开与隐藏测试、参考解和资源限制。"})
+        except PermissionError as exc:
+            raise HTTPException(status_code=409, detail={"code": "package_validation_failed", "message": "题包未通过校验，请检查参考解与测试输出；已发布题包不能直接改写。"}) from exc
+        if payload is None:
+            raise HTTPException(status_code=404, detail={"code": "not_found", "message": "找不到该草稿"})
+        return payload
+
     @application.post("/api/compose/{project_id}/repair")
     def compose_repair(project_id: int, body: ComposeNL, user=Depends(current_user)):
         payload = compose_service.repair(user["id"], project_id, body.nl, allow_ai=body.allow_ai)
@@ -1281,7 +1330,7 @@ def _register_routes(application: FastAPI) -> None:
         except PermissionError:
             raise HTTPException(
                 status_code=409,
-                detail={"code": "blocked", "message": "静态错误未清，不能过审"},
+                detail={"code": "blocked", "message": "工作流或题包尚未满足审核条件，请检查门禁与参考解测试结果。"},
             )
         if payload is None:
             raise HTTPException(
@@ -1299,6 +1348,8 @@ def _register_routes(application: FastAPI) -> None:
                 "static errors": "静态检查未通过",
                 "gate": "审题门尚未通过",
                 "weak_tests": "弱测资攻击未解除，不能入库",
+                "problem package required": "请先导入完整题包并验证参考解，再审核入库。",
+                "approval stale": "工作流或题包已改变，请重新审核。",
             }
             raise HTTPException(
                 status_code=409,

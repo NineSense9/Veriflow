@@ -28,6 +28,7 @@ import { matchingIssueNodes } from "./verification-selection";
 import { categoryLabel, demoTitle, pipelineLabel } from "@/lib/ui-zh";
 import { algorithmCopy } from "@/lib/algorithm-copy-zh";
 import { evidenceKindLabel } from "@/lib/evidence-layout";
+import { downloadSessionEvidence } from "@/lib/evidence-export";
 import { shouldLoadDemoWhenOpening } from "@/lib/session-selection";
 import { evidenceEntityAction } from "./evidence-interaction";
 import "./verification-workbench.css";
@@ -142,8 +143,8 @@ export default function VerificationConsole({
     setFocused("");
     setCandidateId("");
     if (!opts?.keepOrigin) {
-      setOrigin(next);
-      setRepair(null);
+      setOrigin(next.repair_origin ?? next);
+      setRepair(next.repair ?? null);
     }
     setCompare(null);
     setNodeNote(firstIssue && !matchingIssueNodes(firstIssue, next.ir.nodes).length ? "当前问题没有匹配的工作流节点；请查看预期、实际和证据。" : "");
@@ -371,14 +372,7 @@ export default function VerificationConsole({
             disabled={Boolean(busy)}
             onClick={async () => {
               try {
-                const markdown = `# VeriFlow Evidence\n\nRun: ${session.run_id ?? "unrecorded"}\n\nWorkflow: ${session.ir.name}\n\nStatus: ${session.status}\n\nGate: ${session.gate.ready}\n\n## Recorded session\n\n\`\`\`json\n${JSON.stringify(session, null, 2)}\n\`\`\`\n`;
-                const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = `veriflow-evidence-${session.run_id ?? "session"}.md`;
-                link.click();
-                URL.revokeObjectURL(url);
+                downloadSessionEvidence(session, "md");
               } catch (err) {
                 setError((err as Error).message);
               }
@@ -399,15 +393,9 @@ export default function VerificationConsole({
               setScan(true);
               setAmbientActivity("executing");
               try {
-                const report = await api.verifyRepair(session.ir, nl, prefs.aiRepair);
-                const next = await api.reportSession({
-                  ir: report.ir,
-                  nl,
-                  parent_run_id: session.run_id,
-                  skip_after: session.runtime_context?.skip_after,
-                });
-                apply(next, { keepOrigin: true });
-                setRepair(report);
+                const next = await api.repairReportRun(session.run_id!, prefs.aiRepair);
+                apply(next);
+                setHistory((await api.reportHistory(20)).runs);
                 setView("repair");
               } catch (err) {
                 setError((err as Error).message);

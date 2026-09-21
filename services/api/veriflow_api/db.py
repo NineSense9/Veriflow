@@ -115,6 +115,15 @@ CREATE TABLE IF NOT EXISTS verification_runs (
   summary_json TEXT NOT NULL,
   payload_json TEXT
 );
+CREATE TABLE IF NOT EXISTS compose_repair_runs (
+  id INTEGER PRIMARY KEY,
+  project_id INTEGER NOT NULL,
+  before_ir_json TEXT NOT NULL,
+  after_ir_json TEXT NOT NULL,
+  source_nl TEXT NOT NULL,
+  report_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 """
 
 
@@ -140,6 +149,12 @@ def init_db() -> None:
         compose_cols = [row[1] for row in connection.execute("PRAGMA table_info(compose_projects)").fetchall()]
         if compose_cols and "ai_trace_json" not in compose_cols:
             connection.execute("ALTER TABLE compose_projects ADD COLUMN ai_trace_json TEXT")
+        for name, kind in {
+            "package_json": "TEXT", "package_hash": "TEXT", "package_provenance_json": "TEXT",
+            "package_validation_json": "TEXT", "approved_version_hash": "TEXT", "current_repair_run_id": "INTEGER",
+        }.items():
+            if name not in compose_cols:
+                connection.execute(f"ALTER TABLE compose_projects ADD COLUMN {name} {kind}")
         contrast_cols = [row[1] for row in connection.execute("PRAGMA table_info(contrast_logs)").fetchall()]
         if contrast_cols and "payload_json" not in contrast_cols:
             connection.execute("ALTER TABLE contrast_logs ADD COLUMN payload_json TEXT")

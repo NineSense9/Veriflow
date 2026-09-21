@@ -6,6 +6,14 @@ from typing import Literal, Protocol
 Lang = Literal["python3", "cpp17"]
 
 
+class SandboxError(RuntimeError):
+    """Infrastructure failure; callers must terminate the job as a system error."""
+
+    def __init__(self, detail: str):
+        self.detail = detail
+        super().__init__(detail)
+
+
 @dataclass
 class CompileResult:
     ok: bool

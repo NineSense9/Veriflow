@@ -27,8 +27,7 @@ test("home MiniFlow uses CASE 4 demo without creating a report run", async ({ pa
 test("repaired PASS remains the latest report after reopening and reload", async ({ page }) => {
   await signIn(page);
   const original = await (await page.request.post('/api/report/session', { data: { demo: 'case1_order' } })).json();
-  const repaired = await (await page.request.post('/api/verify-repair', { data: { ir: original.ir, nl: original.spec.source_nl, allow_ai: false } })).json();
-  const response = await page.request.post('/api/report/session', { data: { ir: repaired.ir, parent_run_id: original.run_id } });
+  const response = await page.request.post(`/api/report/runs/${original.run_id}/repair`, { data: { allow_ai: false } });
   expect(response.ok()).toBe(true);
   const passed = await response.json();
   expect(passed.gate.ready).toBe('READY');
@@ -39,5 +38,7 @@ test("repaired PASS remains the latest report after reopening and reload", async
   await page.reload();
   await expect(page.locator('.vf-verdict [data-status="READY"]')).toBeVisible();
   await expect(page.locator('.vf-verdict .kicker')).toContainText(String(passed.run_id).padStart(4, '0'));
+  await page.getByText('受约束修复记录', { exact: false }).click();
+  await expect(page.getByRole('heading', { name: '修复后', exact: true })).toBeVisible();
   expect(writes).toBe(0);
 });

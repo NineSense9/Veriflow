@@ -8,17 +8,13 @@ from veriflow_spec.models import WorkflowSpec
 
 def _hits(trace: ExecutionTrace, selector: str) -> list[int]:
     found: list[int] = []
-    seen_nodes: set[str] = set()
     for event in trace.events:
-        if event.status in {"blocked", "error", "skipped"}:
+        if event.status not in {"success", "mocked"}:
             continue
         if selector not in {event.node_id, event.node_type, event.operation}:
             continue
-        # Count a node at most once even if start/success were both logged.
-        key = f"{event.node_id}:{selector}"
-        if key in seen_nodes:
-            continue
-        seen_nodes.add(key)
+        # Every completed event is an execution. The trace schema has no start
+        # events, so deduplicating by node would hide retries and repeated writes.
         found.append(event.event_index)
     return found
 
@@ -115,14 +111,16 @@ def _check(trace: ExecutionTrace, rule: MonitorRule) -> ConformanceIssue:
     if rule.kind == "IF_EXECUTED_THEN":
         if not a:
             return _ok(rule, "A not executed")
-        if b and max(b) >= min(a):
+        last_b = max(b) if b else None
+        unmet = [index for index in a if last_b is None or index >= last_b]
+        if not unmet:
             return _ok(rule, "obligation met")
         return _fail(
             trace,
             rule,
             f"if {rule.a} then {rule.b}",
             "B missing after A",
-            a[0],
+            min(unmet),
             [rule.a, rule.b or ""],
             expected_predecessor=rule.a,
         )
@@ -131,7 +129,8 @@ def _check(trace: ExecutionTrace, rule: MonitorRule) -> ConformanceIssue:
         branches = [
             event
             for event in trace.events
-            if event.branch == wanted
+            if event.status in {"success", "mocked"}
+            and event.branch == wanted
             and (
                 event.node_id == rule.a
                 or event.operation == rule.a
@@ -146,14 +145,22 @@ def _check(trace: ExecutionTrace, rule: MonitorRule) -> ConformanceIssue:
                 observed="branch not observed",
                 method="RUNTIME",
             )
-        if b:
+        # Each trigger creates an eventual obligation. One later consequence
+        # may discharge several pending obligations, but never a later trigger.
+        last_b = max(b) if b else None
+        unmet = [
+            event.event_index
+            for event in branches
+            if last_b is None or event.event_index >= last_b
+        ]
+        if not unmet:
             return _ok(rule, "then-event seen")
         return _fail(
             trace,
             rule,
             f"if branch {wanted} then {rule.b}",
-            "then-event missing",
-            branches[0].event_index,
+            "then-event missing after branch",
+            min(unmet),
             [rule.b or ""],
         )
     if rule.kind == "DATA_FROM":

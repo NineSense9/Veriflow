@@ -49,15 +49,16 @@ test("runtime-only failures explain why static automatic repair is unavailable",
   await expect(page.locator('.vf-verdict [data-status="BLOCKED"]')).toBeVisible();
 });
 
-test("static repair retains the original runtime context in revalidation", async ({ page }) => {
+test("static repair uses the recorded run and renders its saved comparison", async ({ page }) => {
   await openCase(page, "case1_order");
   const session = cases.case1_order;
-  await page.route("**/api/verify-repair", route => route.fulfill({ json: {
-    ir: session.ir, improved: false, initial: session.static, final: session.static, steps: [],
+  await page.route(`**/api/report/runs/${session.run_id}/repair`, route => route.fulfill({ json: {
+    ...session, run_id: 999, parent_run_id: session.run_id, repair_origin: session,
+    repair: { improved: false, initial: session.static, final: session.static, steps: [] },
   } }));
-  const request = page.waitForRequest(req => req.url().endsWith("/api/report/session") && req.method() === "POST");
+  const request = page.waitForRequest(req => req.url().endsWith(`/api/report/runs/${session.run_id}/repair`) && req.method() === "POST");
   await page.getByRole("button", { name: "受约束修复", exact: true }).click();
-  expect((await request).postDataJSON()).toMatchObject({ parent_run_id: session.run_id, skip_after: session.runtime_context.skip_after });
+  expect((await request).postDataJSON()).not.toHaveProperty('ir');
   await expect(page.getByRole("heading", { name: "修复后", exact: true })).toBeVisible();
 });
 

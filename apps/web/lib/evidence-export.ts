@@ -53,6 +53,9 @@ export function sessionEvidenceJson(session: VerifySession) {
     not_a_formal_proof: true,
     timestamp: session.created_at || new Date().toISOString(),
     run_id: session.run_id ?? null,
+    parent_run_id: session.parent_run_id ?? null,
+    runtime_context: session.runtime_context ?? null,
+    workflow: session.ir,
     workflow_hash: session.workflow_hash,
     source_requirement: session.spec?.source_nl ?? "",
     spec: {
@@ -75,14 +78,8 @@ export function sessionEvidenceJson(session: VerifySession) {
       witness: runtimeWitness.length ? runtimeWitness : null,
       trace: session.trace ?? null,
     },
-    repair: session.repair
-      ? {
-          improved: session.repair.improved,
-          iterations: session.repair.iterations,
-          final_decision: session.repair.final_decision ?? null,
-          selected_candidate_id: session.repair.selected_candidate_id ?? null,
-        }
-      : null,
+    repair: session.repair ?? null,
+    repair_origin: session.repair_origin ?? null,
     ai_provenance: aiProvenance(session),
     latency_ms: session.latency_ms,
   };
@@ -111,7 +108,7 @@ export function sessionEvidenceMarkdown(session: VerifySession) {
     .join("\n");
   const ai = pack.ai_provenance;
   return [
-    "# VeriFlow evidence",
+    "# VeriFlow 验证证据",
     "",
     `- run: ${pack.run_id ?? "unsaved"}`,
     `- hash: ${pack.workflow_hash}`,
@@ -142,7 +139,11 @@ export function sessionEvidenceMarkdown(session: VerifySession) {
     `- prompt_version: ${ai.prompt_version ?? "unavailable"}`,
     `- fallback_reason: ${ai.fallback_reason ?? "unavailable"}`,
     "",
-    "Secrets are not included. This pack is not a formal proof.",
+    "## 完整记录（含运行条件、修复候选和再验证来源）",
+    "```json",
+    JSON.stringify(pack, null, 2),
+    "```",
+    "证据来自记录的验证过程，不构成形式化证明。",
     "",
   ].join("\n");
 }

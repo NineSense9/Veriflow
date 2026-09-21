@@ -107,10 +107,11 @@ def get_session(connection, run_id: int) -> dict | None:
 def compare_sessions(left: dict, right: dict) -> dict:
     def codes(item: dict) -> set[str]:
         if item.get("summary") and isinstance(item["summary"], dict):
-            return set(item["summary"].get("issue_codes") or [])
+            return set(item["summary"].get("issue_codes") or []) | set(item["summary"].get("runtime_codes") or [])
         raw = item.get("summary_json")
         if isinstance(raw, str):
-            return set(json.loads(raw).get("issue_codes") or [])
+            summary = json.loads(raw)
+            return set(summary.get("issue_codes") or []) | set(summary.get("runtime_codes") or [])
         return set(item.get("issue_codes") or [])
 
     a, b = codes(left), codes(right)

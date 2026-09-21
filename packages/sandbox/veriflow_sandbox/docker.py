@@ -2,157 +2,116 @@ from __future__ import annotations
 
 import os
 import subprocess
-import tempfile
+import threading
 import time
+import uuid
 from pathlib import Path
 
-from veriflow_sandbox.types import CompileResult, Lang, RunResult
+from veriflow_sandbox.resources import OutputLimitExceeded, OwnedWorkspaces, run_bounded
+from veriflow_sandbox.types import CompileResult, Lang, RunResult, SandboxError
 
 IMAGE = os.environ.get("VERIFLOW_SANDBOX_IMAGE", "veriflow-sandbox:latest")
 OUTPUT_LIMIT = 2 * 1024 * 1024
+SLOT_WAIT_SECONDS = 5.0
+# A single operation keeps the sandbox budget below 512 MiB on the shared host.
+_DOCKER_SLOTS = threading.BoundedSemaphore(1)
 
 
-class DockerSandbox:
+class DockerSandbox(OwnedWorkspaces):
     name = "docker"
 
     def compile(self, lang: Lang, source: str) -> CompileResult:
-        work = Path(tempfile.mkdtemp(prefix="vf-docker-"))
+        if lang not in ("python3", "cpp17"):
+            return CompileResult(False, None, "unknown language", 0)
+        work = self._workspace("vf-docker-")
+        # The compiler runs as nobody; only its own private build directory is writable.
+        source_path = work / ("main.py" if lang == "python3" else "main.cpp")
+        artifact = source_path if lang == "python3" else work / "main"
+        keep = False
         started = time.perf_counter()
-        if lang == "python3":
-            source_path = work / "main.py"
+        try:
+            work.chmod(0o777)
             source_path.write_text(source, encoding="utf-8")
-            completed = _docker(
-                [
-                    "run",
-                    "--rm",
-                    "--network=none",
-                    "-v",
-                    f"{work}:/work",
-                    "-w",
-                    "/work",
-                    IMAGE,
-                    "python3",
-                    "-m",
-                    "py_compile",
-                    "main.py",
-                ],
-                timeout=30,
-            )
-            elapsed = int((time.perf_counter() - started) * 1000)
-            if completed.returncode != 0:
-                return CompileResult(
-                    ok=False,
-                    artifact=None,
-                    log=completed.stderr or completed.stdout,
-                    time_ms=elapsed,
-                )
-            return CompileResult(
-                ok=True, artifact=str(source_path), log="", time_ms=elapsed
-            )
+            source_path.chmod(0o644)
+            # Validate without creating a nobody-owned __pycache__ on the host mount.
+            inner = (["python3", "-c", "from pathlib import Path; compile(Path('main.py').read_bytes(), 'main.py', 'exec')"] if lang == "python3"
+                     else ["g++", "-std=c++17", "-O2", "-o", "main", "main.cpp"])
+            try:
+                completed = _container(work, inner, timeout=30, memory_mb=512, writable=True)
+            except subprocess.TimeoutExpired:
+                return CompileResult(False, None, "compile timeout", _elapsed(started))
+            except OutputLimitExceeded:
+                return CompileResult(False, None, "compile output_limit", _elapsed(started))
+            if completed.returncode != 0 or not artifact.exists():
+                return CompileResult(False, None, completed.stderr or completed.stdout, _elapsed(started))
+            keep = True
+            return CompileResult(True, str(artifact), "", _elapsed(started))
+        finally:
+            if not keep:
+                self.cleanup(str(artifact))
 
-        source_path = work / "main.cpp"
-        source_path.write_text(source, encoding="utf-8")
-        completed = _docker(
-            [
-                "run",
-                "--rm",
-                "--network=none",
-                "-v",
-                f"{work}:/work",
-                "-w",
-                "/work",
-                IMAGE,
-                "g++",
-                "-std=c++17",
-                "-O2",
-                "-o",
-                "main",
-                "main.cpp",
-            ],
-            timeout=30,
-        )
-        elapsed = int((time.perf_counter() - started) * 1000)
-        binary = work / "main"
-        if completed.returncode != 0 or not binary.exists():
-            return CompileResult(
-                ok=False,
-                artifact=None,
-                log=completed.stderr or completed.stdout,
-                time_ms=elapsed,
-            )
-        return CompileResult(ok=True, artifact=str(binary), log="", time_ms=elapsed)
-
-    def run(
-        self,
-        lang: Lang,
-        artifact: str,
-        stdin: str,
-        time_limit_ms: int,
-        memory_limit_mb: int,
-    ) -> RunResult:
+    def run(self, lang: Lang, artifact: str, stdin: str,
+            time_limit_ms: int, memory_limit_mb: int) -> RunResult:
         work = Path(artifact).resolve().parent
-        timeout = max(time_limit_ms / 1000.0, 0.05) + 1.0
         inner = ["python3", "main.py"] if lang == "python3" else ["./main"]
         started = time.perf_counter()
         try:
-            completed = _docker(
-                [
-                    "run",
-                    "--rm",
-                    "--network=none",
-                    "--read-only",
-                    f"--memory={memory_limit_mb}m",
-                    "--memory-swap",
-                    f"{memory_limit_mb}m",
-                    "--tmpfs",
-                    "/tmp:rw,size=32m",
-                    "-v",
-                    f"{work}:/work:ro",
-                    "-w",
-                    "/work",
-                    "-i",
-                    IMAGE,
-                    *inner,
-                ],
-                timeout=timeout,
-                stdin=stdin,
+            completed = _container(
+                work, inner, timeout=max(time_limit_ms / 1000.0, 0.05) + 1.0,
+                memory_mb=max(16, min(memory_limit_mb, 512)), stdin=stdin,
             )
         except subprocess.TimeoutExpired:
-            elapsed = int((time.perf_counter() - started) * 1000)
-            return RunResult(verdict="TLE", stdout="", stderr="", time_ms=elapsed)
-        elapsed = int((time.perf_counter() - started) * 1000)
-        stdout = completed.stdout
-        stderr = completed.stderr
-        if "OOM" in stderr or completed.returncode == 137:
-            return RunResult(
-                verdict="MLE",
-                stdout=stdout,
-                stderr=stderr,
-                time_ms=elapsed,
-            )
-        if len(stdout.encode("utf-8", errors="replace")) > OUTPUT_LIMIT:
-            return RunResult(
-                verdict="RE",
-                stdout=stdout[:8192],
-                stderr=stderr,
-                time_ms=elapsed,
-                detail="output_limit",
-            )
+            return RunResult("TLE", "", "", _elapsed(started))
+        except OutputLimitExceeded as exc:
+            return RunResult("RE", exc.stdout, exc.stderr, _elapsed(started), detail="output_limit")
+        elapsed = _elapsed(started)
+        if completed.returncode == 137:
+            return RunResult("MLE", completed.stdout, completed.stderr, elapsed)
         if completed.returncode != 0:
-            return RunResult(
-                verdict="RE", stdout=stdout, stderr=stderr, time_ms=elapsed
-            )
-        return RunResult(verdict="OK", stdout=stdout, stderr=stderr, time_ms=elapsed)
+            return RunResult("RE", completed.stdout, completed.stderr, elapsed)
+        return RunResult("OK", completed.stdout, completed.stderr, elapsed)
 
 
-def _docker(
-    args: list[str], timeout: float, stdin: str | None = None
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["docker", *args],
-        input=stdin,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
+def _elapsed(started: float) -> int:
+    return int((time.perf_counter() - started) * 1000)
+
+
+def _container(work: Path, inner: list[str], *, timeout: float, memory_mb: int,
+               writable: bool = False, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
+    if not _DOCKER_SLOTS.acquire(timeout=SLOT_WAIT_SECONDS):
+        raise SandboxError("sandbox_busy")
+    name = f"vf-sandbox-{uuid.uuid4().hex}"
+    args = [
+        "run", "--rm", "--name", name, "--network=none", "--read-only",
+        "--cpus=1", "--pids-limit=64", "--cap-drop=ALL",
+        "--security-opt=no-new-privileges", "--user=65534:65534",
+        f"--memory={memory_mb}m", f"--memory-swap={memory_mb}m",
+        "--ulimit", "fsize=67108864:67108864",
+        "--tmpfs", "/tmp:rw,noexec,nosuid,size=32m", "-v",
+        f"{work}:/work" + ("" if writable else ":ro"),
+        "-w", "/work", "-i", IMAGE, *inner,
+    ]
+    try:
+        try:
+            try:
+                completed = _docker(args, timeout=timeout, stdin=stdin)
+            except OSError as exc:
+                raise SandboxError("sandbox_unavailable") from exc
+            if completed.returncode in (125, 126, 127):
+                raise SandboxError("sandbox_unavailable")
+            return completed
+        finally:
+            # Killing the Docker CLI alone does not stop its container.
+            # Force removal also covers a daemon-side run surviving a CLI error.
+            try:
+                removed = _docker(["rm", "-f", name], timeout=5)
+            except (OSError, subprocess.TimeoutExpired, OutputLimitExceeded) as exc:
+                raise SandboxError("sandbox_cleanup_failed") from exc
+            if removed.returncode != 0 and "No such container" not in removed.stderr:
+                raise SandboxError("sandbox_cleanup_failed")
+    finally:
+        _DOCKER_SLOTS.release()
+
+
+def _docker(args: list[str], timeout: float, stdin: str | None = None) -> subprocess.CompletedProcess[str]:
+    return run_bounded(["docker", *args], stdin=stdin, timeout=timeout, output_limit=OUTPUT_LIMIT)

@@ -202,12 +202,8 @@ export type VerifySession = {
     prompt_version?: string | null;
     status?: string;
   };
-  repair?: {
-    improved?: boolean;
-    iterations?: number;
-    final_decision?: string | null;
-    selected_candidate_id?: string | null;
-  };
+  repair?: ComposeProject["repair"] | null;
+  repair_origin?: VerifySession | null;
   traceability?: {
     covered: number;
     failed: number;
@@ -288,6 +284,10 @@ export type ComposeProject = {
   published_problem_id: string | null;
   compiler: string | null;
   updated_at: string;
+  problem_package?: { ready: boolean; title?: string; reasons: string[]; hash?: string; public_test_count: number; hidden_test_count: number; provenance?: { label?: string }; validation?: { verdict: string; tests_passed: number; tests_run: number; sandbox: string } };
+  repair_history?: { id: number; created_at: string; before_ir: WorkflowIR; after_ir: WorkflowIR; report: NonNullable<ComposeProject["repair"]> }[];
+  compiler_ai_trace?: AIInvocationTrace;
+  repair_ai_trace?: AIInvocationTrace;
   ai_trace?: AIInvocationTrace;
   spec?: { goal: string; compiler: string };
   verification?: Verification;
@@ -599,6 +599,8 @@ export const api = {
     }),
   composeList: () => request<{ projects: ComposeSummary[] }>("/api/compose"),
   composeGet: (id: number) => request<ComposeProject>(`/api/compose/${id}`),
+  composePackage: (id: number, body: Record<string, unknown>) => request<ComposeProject>(`/api/compose/${id}/package`, { method: "POST", body: JSON.stringify(body) }),
+  composePackageGet: (id: number) => request<{ package: Record<string, unknown> | null }>(`/api/compose/${id}/package`),
   composeSaveIr: (id: number, ir: WorkflowIR) =>
     request<ComposeProject>(`/api/compose/${id}/ir`, {
       method: "POST",
@@ -655,6 +657,7 @@ export const api = {
   reportSession: (body: { demo?: string; ir?: WorkflowIR; nl?: string; skip_after?: string | null; parent_run_id?: number }) =>
     request<VerifySession>("/api/report/session", { method: "POST", body: JSON.stringify(body) }),
   reportRun: (id: number) => request<VerifySession>(`/api/report/runs/${id}`),
+  repairReportRun: (id: number, allow_ai = true) => request<VerifySession>(`/api/report/runs/${id}/repair`, { method: "POST", body: JSON.stringify({ allow_ai }) }),
   benchLatest: () => request<Record<string, unknown>>("/api/bench/latest"),
   reportExport: (body: { demo?: string; ir?: WorkflowIR; nl?: string; skip_after?: string | null }) =>
     request<{ markdown: string; json: Record<string, unknown> }>("/api/report/export", {

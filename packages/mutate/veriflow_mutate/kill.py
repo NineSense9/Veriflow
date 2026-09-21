@@ -3,6 +3,7 @@ from __future__ import annotations
 from veriflow_compare.tokens import outputs_equal
 from veriflow_mutate.ops import mutate_source
 from veriflow_sandbox.process import ProcessSandbox
+from veriflow_sandbox.resources import cleanup_artifacts
 
 
 def kill_rate(
@@ -19,19 +20,22 @@ def kill_rate(
     operators: list[dict] = []
     for name, source in mutants:
         compiled = sandbox.compile("python3", source)
-        dead = not compiled.ok
-        if not dead:
-            for stdin, expected in tests:
-                run = sandbox.run(
-                    "python3",
-                    compiled.artifact or "",
-                    stdin,
-                    time_limit_ms,
-                    memory_limit_mb,
-                )
-                if run.verdict != "OK" or not outputs_equal(run.stdout, expected):
-                    dead = True
-                    break
+        try:
+            dead = not compiled.ok
+            if not dead:
+                for stdin, expected in tests:
+                    run = sandbox.run(
+                        "python3",
+                        compiled.artifact or "",
+                        stdin,
+                        time_limit_ms,
+                        memory_limit_mb,
+                    )
+                    if run.verdict != "OK" or not outputs_equal(run.stdout, expected):
+                        dead = True
+                        break
+        finally:
+            cleanup_artifacts(sandbox, [compiled.artifact] if compiled.artifact else [])
         if dead:
             killed += 1
         operators.append({"name": name, "killed": dead})
