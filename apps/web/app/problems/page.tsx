@@ -103,7 +103,9 @@ export default function ProblemsPage() {
                   <th className="num">难度</th>
                   <th>标签</th>
                   <th className="num">通过率</th>
-                  <th className="num">变异杀死率</th>
+                  <th className="num" title="变异测试评估：测试用例集对潜在逻辑缺陷代码的击杀率，反映测资防 Hack 强度">
+                    测资强度 (击杀率)
+                  </th>
                 </tr>
               </thead>
               <tbody>

@@ -214,15 +214,16 @@ export default function ProblemPage() {
               <option value="cpp17">C++17</option>
             </select>
             {problem?.has_brute ? (
-              <Link href={`/stress?id=${id}`}>对拍</Link>
+              <Link href={`/stress?id=${id}`}>智能对拍</Link>
             ) : (
-              <span className="dead" title="本题不提供暴力解">
-                对拍
+              <span className="dead" title="本题暂不提供内置暴力解">
+                智能对拍
               </span>
             )}
             <button
               type="button"
               disabled={busy}
+              title="生成基线参考实现代码"
               onClick={async () => {
                 setBusy(true);
                 setError("");
@@ -232,13 +233,13 @@ export default function ProblemPage() {
                   if (next.source) setSource(next.source);
                   setResult(next);
                 } catch (err) {
-                  setError((err as Error).message || "起草失败");
+                  setError((err as Error).message || "生成草稿失败");
                 } finally {
                   setBusy(false);
                 }
               }}
             >
-              起草
+              参考草稿
             </button>
             <button type="button" disabled={!canTutor || contrastBusy} onClick={() => askContrast(false)}>
               {contrastBusy ? "对照中…" : contrast?.reference_source ? "摊开对照" : "沙箱对照"}
@@ -247,7 +248,7 @@ export default function ProblemPage() {
               {coachBusy ? "启发中…" : "启发教练 (防剧透)"}
             </button>
             <button className="primary" type="button" disabled={busy} onClick={submit}>
-              {busy ? "判定中" : "提交"}
+              {busy ? "沙箱评测中…" : "提交评测"}
             </button>
           </div>
         </div>

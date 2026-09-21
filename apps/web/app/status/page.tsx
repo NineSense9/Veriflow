@@ -18,7 +18,7 @@ export default function StatusPage() {
       .submissions()
       .then((data) => setRows(data.submissions))
       .catch((err: { status?: number }) => {
-        if (err.status !== 401) setError("状态页读不到提交。");
+        if (err.status !== 401) setError("无法加载评测记录，请检查网络或服务连接。");
       })
       .finally(() => setLoaded(true));
   }, []);
@@ -32,8 +32,8 @@ export default function StatusPage() {
     <Shell>
       <main className="page wide">
         <header className="page-head">
-          <h1>提交记录</h1>
-          <p className="lead">点「看代码」打开当时交上去的源码。耗时来自沙箱实测。</p>
+          <h1>沙箱判题记录</h1>
+          <p className="lead">实时监控与回溯 Docker 沙箱判题结果，毫秒级捕获运行耗时、内存占用与失败反例。点击任意记录可查阅源码与测试点详情。</p>
         </header>
         {error ? <p className="err" role="alert">{error}</p> : null}
         <div className="filters" aria-label="判定筛选">
@@ -56,9 +56,9 @@ export default function StatusPage() {
           </div>
         ) : !visible.length ? (
           <div className="empty">
-            <p>这一栏是空的。</p>
+            <p>暂无符合筛选条件的判题记录。</p>
             <Link className="btn" href="/problems">
-              去题库
+              前往题库训练
             </Link>
           </div>
         ) : (
@@ -66,20 +66,20 @@ export default function StatusPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th className="num">#</th>
-                  <th>题号</th>
-                  <th>语言</th>
-                  <th>判定</th>
-                  <th className="num">耗时</th>
-                  <th>时间</th>
-                  <th></th>
+                  <th className="num">评测 ID</th>
+                  <th>题目编号</th>
+                  <th>提交语言</th>
+                  <th>判题结果</th>
+                  <th className="num">沙箱耗时</th>
+                  <th>提交时间</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
                 {visible.map((row) => (
                   <tr key={row.id}>
                     <td className="num">
-                      <Link href={`/status/${row.id}`}>{row.id}</Link>
+                      <Link href={`/status/${row.id}`}>#{row.id}</Link>
                     </td>
                     <td>
                       <Link href={`/status/${row.id}`}>{row.problem_id}</Link>
@@ -93,7 +93,7 @@ export default function StatusPage() {
                     <td className="num">{row.time_ms ?? "—"} ms</td>
                     <td>{row.created_at.replace("T", " ").slice(0, 19)}</td>
                     <td>
-                      <Link href={`/status/${row.id}`}>看代码</Link>
+                      <Link href={`/status/${row.id}`} style={{ fontSize: "13px" }}>查看详情 →</Link>
                     </td>
                   </tr>
                 ))}

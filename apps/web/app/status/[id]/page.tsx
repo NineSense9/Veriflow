@@ -15,13 +15,13 @@ export default function SubmissionPage() {
 
   useEffect(() => {
     if (!Number.isFinite(id)) {
-      setError("编号不对。");
+      setError("评测编号格式无效。");
       return;
     }
     api
       .submission(id)
       .then(setRow)
-      .catch(() => setError("没有这条提交，或不是你的。"));
+      .catch(() => setError("未找到该条评测记录，或当前用户无权访问。"));
   }, [id]);
 
   return (
@@ -29,14 +29,14 @@ export default function SubmissionPage() {
       <main className="page wide">
         <p className="vf-home-more" style={{ marginTop: 0 }}>
           <Link href="/account">个人中心</Link>
-          <Link href="/status">提交记录</Link>
+          <Link href="/status">沙箱判题记录</Link>
         </p>
         {error ? <p className="err" role="alert">{error}</p> : null}
-        {!row && !error ? <p className="ghost">正在读取代码…</p> : null}
+        {!row && !error ? <p className="ghost">正在读取沙箱评测数据…</p> : null}
         {row ? (
           <>
             <header className="page-head">
-              <p className="kicker">提交 #{row.id}</p>
+              <p className="kicker">沙箱评测详情 · #{row.id}</p>
               <h1>
                 <Link href={`/problems/${row.problem_id}`}>{row.problem_id}</Link>
               </h1>
@@ -50,25 +50,25 @@ export default function SubmissionPage() {
               </p>
             </header>
             <div className="sample-head" style={{ marginBottom: 8 }}>
-              <span>当时提交的代码</span>
+              <span>提交源码回溯</span>
               <span className="vf-home-more" style={{ margin: 0 }}>
                 <CopyButton text={row.source || ""} label="复制代码" />
-                <Link href={`/problems/${row.problem_id}?sub=${row.id}`}>载入编辑器</Link>
+                <Link href={`/problems/${row.problem_id}?sub=${row.id}`}>载入编辑器重试</Link>
               </span>
             </div>
             {row.source ? (
               <pre className="vf-account-source">{row.source}</pre>
             ) : (
-              <p className="ghost">这条记录没有存下源码。</p>
+              <p className="ghost">此评测记录未持久化源码。</p>
             )}
             {row.counterexample ? (
-              <section>
-                <h2>反例</h2>
-                <p className="caption">输入</p>
+              <section style={{ marginTop: 24 }}>
+                <h2>沙箱捕获失败测试用例 (最小反例)</h2>
+                <p className="caption">输入测试数据 (stdin)</p>
                 <pre className="vf-account-source">{row.counterexample.stdin}</pre>
-                <p className="caption">期望</p>
+                <p className="caption">期望标准输出 (expected)</p>
                 <pre className="vf-account-source">{row.counterexample.expected}</pre>
-                <p className="caption">你的输出</p>
+                <p className="caption">实际程序输出 (actual)</p>
                 <pre className="vf-account-source">{row.counterexample.actual}</pre>
               </section>
             ) : null}

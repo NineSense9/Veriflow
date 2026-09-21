@@ -11,9 +11,27 @@ import { useEffects } from "@/lib/effects";
 import styles from "../entry.module.css";
 
 const EXAMPLES = [
-  { name: "missing_gate", label: "缺少审题门", description: "观察没有人工审题步骤时，工作流如何被阻断。" },
-  { name: "missing_bounds", label: "缺少范围守卫", description: "检查输入范围缺失对验证与测试的影响。" },
-  { name: "valid_lis", label: "完整出题工作流", description: "从完整示例了解生成、检查、审题与入库。" },
+  {
+    name: "missing_gate",
+    label: "缺少审题门",
+    tag: "预期拦截 · BLOCKED",
+    tagTone: "WA",
+    description: "观察没有人工审题步骤时，时序守卫如何阻断未授权发布。",
+  },
+  {
+    name: "missing_bounds",
+    label: "缺少范围守卫",
+    tag: "预期告警 · WARNING",
+    tagTone: "TLE",
+    description: "检查输入数据范围缺失对变异测资与测试强度的影响。",
+  },
+  {
+    name: "valid_lis",
+    label: "完整出题工作流",
+    tag: "预期合规 · READY",
+    tagTone: "AC",
+    description: "体验规范的生成、边界检查、人工审题与安全入库全流程。",
+  },
 ];
 
 function DraftStatus({ value }: { value: string }) {
@@ -107,7 +125,32 @@ function ComposeIndexPage() {
 
           <aside className={styles.composeAside} aria-labelledby="examples-title">
             <div className={styles.asideIntro}><span className={styles.asideIndex}>需求 → 编译 → 验证</span><h2 id="examples-title">预置场景示例</h2><p>选择典型场景载入出题需求，体验不同缺陷的捕获与门禁拦截机制。</p></div>
-            <div className={styles.exampleList}>{EXAMPLES.map((item, index) => <button className={styles.exampleButton} key={item.name} type="button" disabled={busy} onClick={() => loadExample(item.name)}><span className={styles.caseNumber}>0{index + 1}</span><span><strong>{item.label}</strong><small>{item.description}</small></span><span aria-hidden="true">↗</span></button>)}</div>
+            <div className={styles.exampleList}>
+              {EXAMPLES.map((item, index) => (
+                <button
+                  className={styles.exampleButton}
+                  key={item.name}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => loadExample(item.name)}
+                >
+                  <span className={styles.caseNumber}>0{index + 1}</span>
+                  <span className={styles.caseBody}>
+                    <span className={styles.caseHeader}>
+                      <strong>{item.label}</strong>
+                      <span
+                        className={`verdict ${item.tagTone}`}
+                        style={{ fontSize: "11px", padding: "1px 6px", lineHeight: "1.3" }}
+                      >
+                        {item.tag}
+                      </span>
+                    </span>
+                    <small>{item.description}</small>
+                  </span>
+                  <span aria-hidden="true">↗</span>
+                </button>
+              ))}
+            </div>
             <p className={styles.verifierNote}><span aria-hidden="true">✓</span> 生成的 IR 结构将经由连通性、语义时序与数据流验证器综合评定。</p>
           </aside>
         </div>
