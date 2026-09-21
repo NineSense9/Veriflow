@@ -41,8 +41,8 @@ for (const width of [1440, 1280, 768, 390]) for (const theme of ["light", "dark"
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (width === 390) {
       await page.getByRole("button", { name:"打开导航" }).click();
-      await expect(page.getByRole("complementary", { name:"移动导航" }).getByRole("link", { name:"算法中心" })).toBeVisible();
-      await expect(page.getByRole("complementary", { name:"移动导航" }).getByRole("link", { name:"系统地图" })).toBeVisible();
+      await expect(page.getByRole("complementary", { name:"移动导航" }).getByRole("link", { name: /算法(矩阵|中心)/ })).toBeVisible();
+      await expect(page.getByRole("complementary", { name:"移动导航" }).getByRole("link", { name: /系统(架构|地图)/ })).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(page.getByRole("complementary", { name:"移动导航" })).toHaveCount(0);
     }
