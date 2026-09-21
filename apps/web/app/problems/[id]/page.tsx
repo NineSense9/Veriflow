@@ -57,6 +57,7 @@ export default function ProblemPage() {
   const [contrast, setContrast] = useState<ContrastResult | null>(null);
   const [contrastBusy, setContrastBusy] = useState(false);
   const [contrastOpen, setContrastOpen] = useState(false);
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
 
   useEffect(() => {
     api
@@ -101,9 +102,12 @@ export default function ProblemPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!contrastOpen) return;
+    if (!contrastOpen && !submitModalOpen) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setContrastOpen(false);
+      if (event.key === "Escape") {
+        setContrastOpen(false);
+        setSubmitModalOpen(false);
+      }
     };
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
@@ -111,7 +115,7 @@ export default function ProblemPage() {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", onKey);
     };
-  }, [contrastOpen]);
+  }, [contrastOpen, submitModalOpen]);
 
   const monacoLang = lang === "python3" ? "python" : "cpp";
   const stages = useMemo(() => {
@@ -141,6 +145,7 @@ export default function ProblemPage() {
     setCoach("");
     setContrast(null);
     setContrastOpen(false);
+    setSubmitModalOpen(true);
     try {
       const next = await api.submit(id, lang, source);
       setResult(next);
@@ -207,14 +212,27 @@ export default function ProblemPage() {
               onChange={(event) => {
                 const next = event.target.value as Lang;
                 setLang(next);
-                setSource(next === "python3" ? PYTHON_STUB : CPP_STUB);
+                const nextSource = next === "python3" ? PYTHON_STUB : CPP_STUB;
+                setSource(nextSource);
+                try {
+                  sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang: next, source: nextSource }));
+                } catch {}
               }}
             >
               <option value="python3">Python3</option>
               <option value="cpp17">C++17</option>
             </select>
             {problem?.has_brute ? (
-              <Link href={`/stress?id=${id}`}>智能对拍</Link>
+              <Link
+                href={`/stress?id=${id}&lang=${lang}`}
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang, source }));
+                  } catch {}
+                }}
+              >
+                智能对拍
+              </Link>
             ) : (
               <span className="dead" title="本题暂不提供内置暴力解">
                 智能对拍
@@ -273,7 +291,16 @@ export default function ProblemPage() {
             ) : null}
           </section>
           <section className="editor-pane">
-            <CodeEditor language={monacoLang} value={source} onChange={setSource} />
+            <CodeEditor
+              language={monacoLang}
+              value={source}
+              onChange={(next) => {
+                setSource(next);
+                try {
+                  sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang, source: next }));
+                } catch {}
+              }}
+            />
           </section>
           <aside className="side">
             <h2>公开样例</h2>
@@ -371,7 +398,12 @@ export default function ProblemPage() {
           </aside>
         </div>
         <div className="verdict-bar" aria-live="polite">
-          <span className={`verdict ${result?.verdict ?? (busy ? "running" : "")}`}>
+          <span
+            className={`verdict ${result?.verdict ?? (busy ? "running" : "")}`}
+            style={{ cursor: "pointer" }}
+            title="点击展开评测弹窗详情"
+            onClick={() => setSubmitModalOpen(true)}
+          >
             {busy ? "RUN" : result?.verdict ?? "IDLE"}
           </span>
           <div className="stages">
@@ -430,6 +462,225 @@ export default function ProblemPage() {
               </p>
             ) : null}
           </footer>
+        </div>
+      ) : null}
+      {submitModalOpen ? (
+        <div
+          className="vf-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="vf-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSubmitModalOpen(false);
+          }}
+        >
+          <div className="vf-modal-card">
+            <header className="vf-modal-header">
+              <h3 id="vf-modal-title">
+                {busy ? "Docker 沙箱裁判 · 评测中" : `沙箱评测详情 · ${problem?.id ?? ""}`}
+              </h3>
+              <button
+                type="button"
+                className="vf-modal-close"
+                aria-label="关闭弹窗"
+                onClick={() => setSubmitModalOpen(false)}
+              >
+                ✕
+              </button>
+            </header>
+
+            <div className="vf-modal-body">
+              {/* Progress Bar */}
+              <div className="vf-modal-progress-wrap">
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--muted)" }}>
+                  <span>
+                    {busy
+                      ? "正在隔离沙箱中编译并执行测试点…"
+                      : result?.verdict === "AC"
+                      ? "全部测试点通过 (100%)"
+                      : `评测完成 (${result?.verdict ?? ""})`}
+                  </span>
+                  <span style={{ fontWeight: 600 }}>
+                    {busy ? "评测中…" : "100%"}
+                  </span>
+                </div>
+                <div className="vf-modal-progress-bar">
+                  <div
+                    className={`vf-modal-progress-fill ${
+                      busy
+                        ? "running"
+                        : result?.verdict === "AC"
+                        ? "ok"
+                        : result?.verdict === "TLE"
+                        ? "warn"
+                        : "bad"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Judging state vs Verdict state */}
+              {busy ? (
+                <div style={{ padding: "16px 0", textAlign: "center" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: "14px", fontWeight: 500 }}>
+                    安全沙箱正在运行，测试点高频校验中…
+                  </p>
+                  <p className="caption" style={{ margin: 0 }}>
+                    Docker 裁判环境：C++17 (g++ -O2) / Python3 · 毫秒级防挂保护
+                  </p>
+                </div>
+              ) : result ? (
+                <>
+                  {/* Verdict Banner */}
+                  <div
+                    className={`vf-modal-verdict-banner ${
+                      result.verdict === "AC"
+                        ? "ac"
+                        : result.verdict === "TLE"
+                        ? "tle"
+                        : result.verdict === "CE"
+                        ? "ce"
+                        : "wa"
+                    }`}
+                  >
+                    <div
+                      className={`vf-modal-verdict-title ${
+                        result.verdict === "AC"
+                          ? "ac"
+                          : result.verdict === "TLE"
+                          ? "tle"
+                          : result.verdict === "CE"
+                          ? "ce"
+                          : "wa"
+                      }`}
+                    >
+                      {result.verdict === "AC" && <span>🎉 Accepted · 全部通过</span>}
+                      {result.verdict === "WA" && <span>❌ Wrong Answer · 答案错误</span>}
+                      {result.verdict === "TLE" && <span>⏳ Time Limit Exceeded · 运行超时</span>}
+                      {result.verdict === "CE" && <span>⚠️ Compile Error · 编译错误</span>}
+                      {result.verdict === "RE" && <span>💥 Runtime Error · 运行时异常</span>}
+                      {!["AC", "WA", "TLE", "CE", "RE"].includes(result.verdict) && (
+                        <span>{result.verdict}</span>
+                      )}
+                    </div>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", fontWeight: 600 }}>
+                      {result.time_ms != null ? `${result.time_ms} ms` : ""}
+                    </span>
+                  </div>
+
+                  {/* Performance stats */}
+                  <div className="vf-modal-stats">
+                    <div className="vf-modal-stat-item">
+                      <div className="vf-modal-stat-label">运行耗时</div>
+                      <div className="vf-modal-stat-value">{result.time_ms ?? 0} ms</div>
+                    </div>
+                    <div className="vf-modal-stat-item">
+                      <div className="vf-modal-stat-label">评测语言</div>
+                      <div className="vf-modal-stat-value">{result.lang || lang}</div>
+                    </div>
+                    <div className="vf-modal-stat-item">
+                      <div className="vf-modal-stat-label">裁判沙箱</div>
+                      <div className="vf-modal-stat-value" style={{ fontSize: "12px" }}>
+                        {result.sandbox || "Docker"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Counterexample if WA */}
+                  {result.counterexample ? (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <strong style={{ fontSize: "13px" }}>沙箱捕获失败测试用例 (最小反例)</strong>
+                        <CopyButton
+                          text={`输入:\n${result.counterexample.stdin}\n期望:\n${result.counterexample.expected}\n实际:\n${result.counterexample.actual}`}
+                          label="复制反例"
+                        />
+                      </div>
+                      <div className="vf-modal-counter-wrap">
+                        <div className="vf-modal-counter-box">
+                          <div className="vf-modal-counter-label">输入 (stdin)</div>
+                          <pre>{result.counterexample.stdin}</pre>
+                        </div>
+                        <div className="vf-modal-counter-box">
+                          <div className="vf-modal-counter-label">期望输出 (expected)</div>
+                          <pre>{result.counterexample.expected}</pre>
+                        </div>
+                        <div className="vf-modal-counter-box actual">
+                          <div className="vf-modal-counter-label" style={{ color: "var(--wa)" }}>实际输出 (actual)</div>
+                          <pre>{result.counterexample.actual}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {result.verdict === "AC" ? (
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--text-2)", lineHeight: 1.6 }}>
+                      恭喜！你的解法已顺利通过该题目的全部公开用例与隐藏评测点。
+                    </p>
+                  ) : null}
+                </>
+              ) : error ? (
+                <div className="err" role="alert" style={{ margin: 0 }}>
+                  {error}
+                </div>
+              ) : null}
+            </div>
+
+            <footer className="vf-modal-actions">
+              {result?.verdict === "AC" ? (
+                <>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={() => setSubmitModalOpen(false)}
+                  >
+                    继续做题
+                  </button>
+                  {result.submission_id ? (
+                    <Link className="btn" href={`/status/${result.submission_id}`}>
+                      查看提交详情 →
+                    </Link>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  {canTutor ? (
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      disabled={coachBusy}
+                      onClick={() => {
+                        setSubmitModalOpen(false);
+                        askCoach();
+                      }}
+                    >
+                      {coachBusy ? "启发中…" : "🤖 苏格拉底启发教练"}
+                    </button>
+                  ) : null}
+                  {problem?.has_brute ? (
+                    <Link
+                      className="btn"
+                      href={`/stress?id=${id}&lang=${lang}`}
+                      onClick={() => {
+                        try {
+                          sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang, source }));
+                        } catch {}
+                      }}
+                    >
+                      ⚡ 智能对拍找反例
+                    </Link>
+                  ) : null}
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() => setSubmitModalOpen(false)}
+                  >
+                    关闭继续调试
+                  </button>
+                </>
+              )}
+            </footer>
+          </div>
         </div>
       ) : null}
     </Shell>
