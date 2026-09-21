@@ -117,6 +117,10 @@ function StressInner() {
             {busy ? "对拍中" : "开拍"}
           </button>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", background: "var(--surface-2)", borderBottom: "1px solid var(--border-subtle)", fontSize: "12px", color: "var(--text-2)" }}>
+          <span style={{ fontWeight: 600, color: "var(--accent)", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "4px" }}>对拍机制说明</span>
+          <span>选手无需自写脚本：系统已加载该题预置测资生成器与暴力验证标程，点击「开拍」即在隔离沙箱中高频对比 50~200 轮，秒级捕捉极端边界反例。</span>
+        </div>
         {disabled ? (
           <p className="ghost" style={{ padding: 16 }}>
             本题不提供暴力解，对拍按钮禁用。

@@ -241,10 +241,10 @@ export default function ProblemPage() {
               起草
             </button>
             <button type="button" disabled={!canTutor || contrastBusy} onClick={() => askContrast(false)}>
-              {contrastBusy ? "对照中" : contrast?.reference_source ? "摊开对照" : "对照"}
+              {contrastBusy ? "对照中…" : contrast?.reference_source ? "摊开对照" : "沙箱对照"}
             </button>
             <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
-              {coachBusy ? "追问中" : "教练"}
+              {coachBusy ? "启发中…" : "启发教练 (防剧透)"}
             </button>
             <button className="primary" type="button" disabled={busy} onClick={submit}>
               {busy ? "判定中" : "提交"}
@@ -297,6 +297,9 @@ export default function ProblemPage() {
             <h2>最小反例</h2>
             {result?.counterexample ? (
               <>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--error)", background: "var(--wa-soft)", padding: "2px 8px", borderRadius: "4px", marginBottom: "8px" }}>
+                  <span>⚠️ 沙箱捕获错误边界 · 提取最小反例</span>
+                </div>
                 <div className="sample-head">
                   <span>{result.verdict} · 第一条反例</span>
                   <CopyButton
@@ -323,7 +326,7 @@ export default function ProblemPage() {
                 </div>
               </>
             ) : (
-              <p className="ghost">提交后若 WA，三列会停在这里。有反例才能请教。</p>
+              <p className="ghost">提交后若 WA/RE，沙箱将自动抓取挂掉的最短测试用例，在此三列（输入/期望/实际）并排呈现。</p>
             )}
             <h2>对照</h2>
             {contrast?.reference_source ? (
@@ -346,16 +349,21 @@ export default function ProblemPage() {
             ) : (
               <p className="ghost">
                 {canTutor
-                  ? contrast?.note || "点顶栏「对照」：先用沙箱验证一份能过这组反例的代码，再并排看差异。"
-                  : "先交一发带反例的 WA。"}
+                  ? contrast?.note || "点顶栏「沙箱对照」：先用沙箱验证一份能过这组反例的代码，再并排看差异。"
+                  : "提交产生带反例的未通过记录后即可对照。"}
               </p>
             )}
-            <h2>教练</h2>
+            <h2>启发教练</h2>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--accent)", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "4px", marginBottom: "8px" }}>
+              <span>🛡️ 苏格拉底启发 · 严禁直接给出代码</span>
+            </div>
             {coach ? (
-              <p className="note">{coach}</p>
+              <div style={{ padding: "10px 12px", background: "var(--surface-2)", borderRadius: "6px", borderLeft: "3px solid var(--accent)", margin: "4px 0 8px" }}>
+                <p className="note" style={{ margin: 0, fontWeight: 500 }}>{coach}</p>
+              </div>
             ) : (
               <p className="ghost">
-                {canTutor ? "只问不讲。点顶栏「教练」。" : "先交一发失败的。"}
+                {canTutor ? "已自动捕获最小反例！点击顶栏「启发教练」，AI 将针对反例进行追问，引导你自主纠错。" : "当提交遇到 WA 且提取出最小反例后，可在此开启引导式启发思考。"}
               </p>
             )}
             {error ? <p className="err" role="alert">{error}</p> : null}

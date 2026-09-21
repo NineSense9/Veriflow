@@ -47,24 +47,26 @@ export default function HomePage() {
       <main className="page wide vf-home">
         <section className="vf-home-hero vf-home-hero-split" aria-label="验流">
           <div className="vf-home-hero-copy">
-            <p className="vf-home-kicker">AI 可靠性验证平台{name ? ` · ${name}` : ""}</p>
+            <p className="vf-home-kicker">可验证算法训练平台 · AI 出题质检门禁{name ? ` · ${name}` : ""}</p>
             <h1>
               让 AI 出题，
               <br />
               但不让 AI 当裁判。
             </h1>
             <p className="lead">
-              AI 负责需求理解与候选生成；形式化规格、反例路径、时序仿真与发布门禁由确定性验证器裁决。
+              对外是算法竞赛训练站，内核是「编译—对抗—环境裁判」。选手享受 Docker 沙箱真实评测、三列最小反例与启发式教练；AI 出题流水线在入库前经由确定性时序仿真与门禁熔断，严防脏题。
             </p>
             <div className="vf-home-ctas">
-              <Link className="btn btn-primary" href="/report?demo=case4_runtime&tour=1">
-                3 分钟核心验证演示
+              <Link className="btn btn-primary" href="/problems">
+                🏆 进入题库训练
               </Link>
-              <Link className="btn" href="/compose">
-                需求编译工作坊
+              <Link className="btn" href="/report?demo=case4_runtime&tour=1">
+                🛡️ 3 分钟 AI 出题质检演示
               </Link>
             </div>
-            <p className="vf-home-secondary">基于规格编译、静态检查与时序沙箱，实现确定性安全放行。</p>
+            <p className="vf-home-secondary">
+              快捷通道：<Link href="/stress" style={{ textDecoration: "underline" }}>智能对拍对抗</Link> · <Link href="/compose" style={{ textDecoration: "underline" }}>需求编译出题</Link> · <Link href="/status" style={{ textDecoration: "underline" }}>沙箱判题记录</Link>
+            </p>
           </div>
           <VerificationMiniFlow />
         </section>
@@ -90,20 +92,25 @@ export default function HomePage() {
         </section>
 
         <section className="vf-home-capabilities" aria-label="核心能力">
-          <Link className="vf-home-cap" href="/compose">
-            <h2>规格编译</h2>
-            <p className="vf-home-cap-en">自然语言需求 → 形式化规格约束</p>
-            <p>自动抽取操作边界、前置依赖与门禁条件</p>
+          <Link className="vf-home-cap" href="/problems/VF1001">
+            <h2>沙箱裁判与最小反例</h2>
+            <p className="vf-home-cap-en">Docker 真实评测 → 三列对比精准定位</p>
+            <p>拒绝冰冷 WA；输入、期望与实际输出并排高亮，毫秒级抓取边界挂点</p>
           </Link>
-          <Link className="vf-home-cap" href="/evidence">
-            <h2>证据链分析</h2>
-            <p className="vf-home-cap-en">缺陷溯源 → 最小反例执行轨迹</p>
-            <p>沙箱捕获执行偏差，毫秒级定位异常节点</p>
+          <Link className="vf-home-cap" href="/stress">
+            <h2>智能对抗与沙箱对拍</h2>
+            <p className="vf-home-cap-en">生成器 + 暴力解 → 极端边界高频扫荡</p>
+            <p>无需编写脚本，预置标程在沙箱内 50~200 轮自动并发对拍抓 Bug</p>
           </Link>
-          <Link className="vf-home-cap" href="/report">
-            <h2>受约束修复</h2>
-            <p className="vf-home-cap-en">补丁提案 → 守卫复验 → 门禁放行</p>
-            <p>继承原运行时条件，全量核验后安全发布</p>
+          <Link className="vf-home-cap" href="/problems/VF1001">
+            <h2>启发式防剧透教练</h2>
+            <p className="vf-home-cap-en">苏格拉底追问 → 严禁剧透完整代码</p>
+            <p>针对最小反例启发算法思维，大模型受限只引导思路、保护思考深度</p>
+          </Link>
+          <Link className="vf-home-cap" href="/report?demo=case4_runtime">
+            <h2>AI 出题时序质检门禁</h2>
+            <p className="vf-home-cap-en">自然语言编译 → 拓扑检查与沙箱防跳步</p>
+            <p>大模型出题先过规格编译与时序模拟；缺少审题门强制熔断，防止垃圾题</p>
           </Link>
         </section>
 
