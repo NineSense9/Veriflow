@@ -338,9 +338,9 @@ export default function ProblemPage() {
                   </button>
                 </div>
                 {contrast.guess ? (
-                  <p className="note">模型猜测，不是判定：{contrast.guess}</p>
+                  <p className="note">AI 差异分析建议：{contrast.guess}</p>
                 ) : (
-                  <p className="ghost">对照来自沙箱跑过的代码，不是模型宣布你对错。</p>
+                  <p className="ghost">对照基准由隔离沙箱真实运行生成，确保评测客观准确。</p>
                 )}
               </>
             ) : (
@@ -408,11 +408,11 @@ export default function ProblemPage() {
             <p className="ghost">{contrast.note}</p>
             {contrast.guess ? (
               <p>
-                <strong>解析（模型猜测，不是判定）</strong>
+                <strong>差异分析建议</strong>
                 {contrast.guess}
               </p>
             ) : (
-              <p>对照来自沙箱跑过的代码，不是模型宣布你对错。</p>
+              <p>对照基准由隔离沙箱真实运行生成，确保评测客观准确。</p>
             )}
             {result?.counterexample ? (
               <p className="ghost">

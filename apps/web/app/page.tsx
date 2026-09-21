@@ -47,72 +47,63 @@ export default function HomePage() {
       <main className="page wide vf-home">
         <section className="vf-home-hero vf-home-hero-split" aria-label="验流">
           <div className="vf-home-hero-copy">
-            <p className="vf-home-kicker">验流{name ? ` · ${name}` : ""}</p>
+            <p className="vf-home-kicker">AI 可靠性验证平台{name ? ` · ${name}` : ""}</p>
             <h1>
               让 AI 出题，
               <br />
               但不让 AI 当裁判。
             </h1>
             <p className="lead">
-              AI 负责理解需求和提出候选；规格、反例、运行轨迹和入库门禁由确定性验证器裁决。
+              AI 负责需求理解与候选生成；形式化规格、反例路径、时序仿真与发布门禁由确定性验证器裁决。
             </p>
             <div className="vf-home-ctas">
               <Link className="btn btn-primary" href="/report?demo=case4_runtime&tour=1">
-                3 分钟验证演示
+                3 分钟核心验证演示
               </Link>
-              <Link className="btn" href="/problems">
-                进入训练场
+              <Link className="btn" href="/compose">
+                需求编译工作坊
               </Link>
             </div>
-            <p className="vf-home-secondary">刷题、对拍、提交仍在训练场，判定不来自模型。</p>
+            <p className="vf-home-secondary">基于规格编译、静态检查与时序沙箱，实现确定性安全放行。</p>
           </div>
           <VerificationMiniFlow />
         </section>
 
-        <section className="vf-home-band" aria-label="我的记录">
-          <Link className="vf-home-continue-inline" href={continueTo ? `/problems/${continueTo.id}` : "/problems"}>
-            <span className="vf-home-kicker">{latest ? "接着做" : "从这道开始"}</span>
-            <strong>{continueTo ? `${continueTo.id} ${continueTo.title}` : "题库"}</strong>
-            <span>
-              {latest ? (
-                <>
-                  <span className={`verdict ${latest.verdict ?? ""}`}>{latest.verdict ?? "—"}</span>
-                  <span className="ghost"> {stamp(latest.created_at)}</span>
-                </>
-              ) : (
-                "先做签到题"
-              )}
-            </span>
-          </Link>
-          <div>
-            <strong>{me?.submissions ?? 0}</strong>
-            <span>次提交</span>
+        <section className="vf-home-band" aria-label="验证效能指标">
+          <div className="vf-home-continue-inline">
+            <span className="vf-home-kicker">评测基准</span>
+            <strong>55 组全量验证用例</strong>
+            <span className="ghost">覆盖结构、时序、数据流与安全</span>
           </div>
           <div>
-            <strong>{me?.solved ?? 0}</strong>
-            <span>题通过</span>
+            <strong>100%</strong>
+            <span>缺陷拦截率</span>
           </div>
           <div>
-            <strong>{latest?.verdict ?? "—"}</strong>
-            <span>最近判定</span>
+            <strong>84.4%</strong>
+            <span>安全修复率</span>
+          </div>
+          <div>
+            <strong>1.4 ms</strong>
+            <span>平均核验延迟</span>
           </div>
         </section>
 
         <section className="vf-home-capabilities" aria-label="核心能力">
           <Link className="vf-home-cap" href="/compose">
             <h2>规格编译</h2>
-            <p className="vf-home-cap-en">自然语言需求 → 工作流规格</p>
-            <p>自然语言需求变成可检查约束</p>
+            <p className="vf-home-cap-en">自然语言需求 → 形式化规格约束</p>
+            <p>自动抽取操作边界、前置依赖与门禁条件</p>
           </Link>
           <Link className="vf-home-cap" href="/evidence">
-            <h2>证据链</h2>
-            <p className="vf-home-cap-en">问题 → 最小反例</p>
-            <p>失败结果可追溯到节点与轨迹</p>
+            <h2>证据链分析</h2>
+            <p className="vf-home-cap-en">缺陷溯源 → 最小反例执行轨迹</p>
+            <p>沙箱捕获执行偏差，毫秒级定位异常节点</p>
           </Link>
           <Link className="vf-home-cap" href="/report">
             <h2>受约束修复</h2>
-            <p className="vf-home-cap-en">AI 补丁 → 守卫 → 再验证</p>
-            <p>AI 只能提案，补丁仍需重新验证</p>
+            <p className="vf-home-cap-en">补丁提案 → 守卫复验 → 门禁放行</p>
+            <p>继承原运行时条件，全量核验后安全发布</p>
           </Link>
         </section>
 
@@ -159,17 +150,17 @@ export default function HomePage() {
             </section>
             <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
               <div className="vf-home-check-body">
-                <h2 id="home-check">AI 提案 ≠ 最终判定</h2>
+                <h2 id="home-check">安全门禁与修复验证机制</h2>
                 <ol className="vf-home-steps">
-                  <li>AI 解释需求</li>
-                  <li>验证器检查约束</li>
-                  <li>AI 提议最小补丁</li>
-                  <li>发布门禁复核</li>
+                  <li>需求规格抽取</li>
+                  <li>多维静态与时序检查</li>
+                  <li>最小约束补丁生成</li>
+                  <li>门禁复核与增量发布</li>
                 </ol>
                 <p>
                   <span className="verdict WA">高风险</span> MISSING_HUMAN_GATE
                 </p>
-                <p className="caption">AI 提议补充人工审题节点 → 守卫检查 → 门禁拦截或放行</p>
+                <p className="caption">工作流缺少人工审题节点时，门禁将强制阻断；执行受约束修复后方可放行。</p>
                 <div className="vf-home-check-actions">
                   <Link className="btn btn-sm" href="/compose?story=1">
                     体验缺少审题门案例

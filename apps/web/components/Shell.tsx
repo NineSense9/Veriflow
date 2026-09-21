@@ -13,27 +13,25 @@ import CardNav from "@/components/reactbits/CardNav";
 import StaggeredMenu from "@/components/reactbits/StaggeredMenu";
 
 const CORE = [
-  { href: "/", label: "首页" },
-  { href: "/problems", label: "题库" },
-  { href: "/stress", label: "对拍" },
-  { href: "/status", label: "提交" },
+  { href: "/", label: "控制台" },
+  { href: "/report", label: "工作流验证" },
+  { href: "/compose", label: "需求编译" },
+  { href: "/evidence", label: "证据链分析" },
+  { href: "/benchmark", label: "评测基准" },
 ];
 
-const CHECK_LINKS = [
-  { href: "/report", label: "检查结果", description: "题进库前的核验" },
-  { href: "/compose", label: "需求编译", description: "AI 出题草案" },
-  { href: "/evidence", label: "证据", description: "判定依据" },
+const LAB_LINKS = [
+  { href: "/algorithms", label: "算法矩阵", description: "确定性验证器与监控器" },
+  { href: "/history", label: "历史记录", description: "历史核验与复验报告" },
+  { href: "/architecture", label: "系统架构", description: "模块交互与数据流向地图" },
 ];
 
-const EVAL_LINKS = [
-  { href: "/history", label: "历史", description: "运行记录" },
-  { href: "/benchmark", label: "基准", description: "评测实验室" },
-  { href: "/algorithms", label: "算法中心", description: "验证器注册表" },
-  { href: "/architecture", label: "系统地图", description: "仓库内架构图" },
-  { href: "/sets", label: "题单", description: "题目分组" },
+const SANDBOX_LINKS = [
+  { href: "/problems", label: "题目库", description: "已验证题目集" },
+  { href: "/stress", label: "沙箱对拍", description: "生成器与暴力解验证" },
+  { href: "/status", label: "提交记录", description: "代码提交沙箱判题" },
+  { href: "/sets", label: "题目分组", description: "竞赛题单集合" },
 ];
-
-const EVAL_ITEMS = EVAL_LINKS;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -149,20 +147,20 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const drawer = useMemo(
     () => (
       <nav className="drawer-nav" id="site-nav">
-        <p className="nav-group-label">训练</p>
+        <p className="nav-group-label">核心功能</p>
         {CORE.map((link) => (
           <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
             {link.label}
           </Link>
         ))}
-        <p className="nav-group-label">入库检查</p>
-        {CHECK_LINKS.map((link) => (
+        <p className="nav-group-label">算法实验室</p>
+        {LAB_LINKS.map((link) => (
           <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
             {link.label}
           </Link>
         ))}
-        <p className="nav-group-label">评估</p>
-        {EVAL_ITEMS.map((link) => (
+        <p className="nav-group-label">评测沙箱</p>
+        {SANDBOX_LINKS.map((link) => (
           <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
             {link.label}
           </Link>
@@ -207,8 +205,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         onClose={() => setNavOpen(false)}
         items={[
           ...CORE.map((item) => ({ label: item.label, link: item.href })),
-          ...CHECK_LINKS.map((item) => ({ label: item.label, link: item.href })),
-          ...EVAL_LINKS.map((item) => ({ label: item.label, link: item.href })),
+          ...LAB_LINKS.map((item) => ({ label: item.label, link: item.href })),
+          ...SANDBOX_LINKS.map((item) => ({ label: item.label, link: item.href })),
           { label: "个人中心", link: "/account" },
           { label: "设置", link: "/settings" },
           ...(role === "admin" ? [{ label: "后台", link: "/admin" }] : []),
@@ -231,8 +229,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </button>
         <nav className="top-nav" aria-label="主导航" ref={navRef}>
           <PillNav items={CORE} activeHref={pathname} className="desktop-pill" />
-          <CardDrop label="入库检查" items={CHECK_LINKS} pathname={pathname} open={drop === "check"} onToggle={() => setDrop(drop === "check" ? null : "check")} onClose={() => setDrop(null)} />
-          <CardDrop label="评估" items={EVAL_LINKS} pathname={pathname} open={drop === "eval"} onToggle={() => setDrop(drop === "eval" ? null : "eval")} onClose={() => setDrop(null)} />
+          <CardDrop label="算法实验室" items={LAB_LINKS} pathname={pathname} open={drop === "lab"} onToggle={() => setDrop(drop === "lab" ? null : "lab")} onClose={() => setDrop(null)} />
+          <CardDrop label="评测沙箱" items={SANDBOX_LINKS} pathname={pathname} open={drop === "sandbox"} onToggle={() => setDrop(drop === "sandbox" ? null : "sandbox")} onClose={() => setDrop(null)} />
         </nav>
         <div className="top-meta">
           <span className="sandbox" title={`评测沙箱：${sandbox}`}>
@@ -270,8 +268,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </header>
       <div id="main">{children}</div>
       <footer className="footer">
-        <span>AI 提出候选，验流给出判定。判定不来自模型。</span>
-        <span>C++17 / Python3</span>
+        <span>VeriFlow · 面向 AI 工作流的确定性验证与门禁系统</span>
+        <span>沙箱运行环境 · C++17 / Python3</span>
       </footer>
     </div>
   );

@@ -125,14 +125,14 @@ export default function ComposeStoryDesk({
                   ))}
                 </ul>
               ) : (
-                <p className="ghost">没有需要修的项。仍以门禁为准，能不能进库要看验流。</p>
+                <p className="ghost">当前未检出待修复项；发布状态以全量门禁结果为准。</p>
               )}
               <div className="vf-story-actions">
                 <button className="btn btn-primary" type="button" disabled={Boolean(busy)} onClick={repair}>
-                  {busy ? "正在修…" : "试着修一次"}
+                  {busy ? "正在修复…" : "执行受约束修复"}
                 </button>
                 <button className="btn btn-ghost" type="button" onClick={() => setAct("compose")}>
-                  回出题
+                  返回需求
                 </button>
               </div>
             </>
@@ -223,7 +223,7 @@ export default function ComposeStoryDesk({
             <>
               <p className="vf-home-kicker">验流</p>
               <h2>{gatePlain(project.gate?.ready)}</h2>
-              <p>整条检查看的是记录，不是模型自己说修好了。</p>
+              <p>全链路核验基于可执行轨迹与规格约束，确保修复真实有效。</p>
               <ul className="vf-story-findings">
                 {(project.verification?.dimensions ?? []).map((item) => (
                   <li key={item.name}>
@@ -247,16 +247,16 @@ export default function ComposeStoryDesk({
                   <Link href={`/problems/${project.published_problem_id}`}>{project.published_problem_id}</Link>
                 </p>
               ) : project.gate?.ready === "READY" ? (
-                <p className="ghost">检查过了。还没有入库，题库里还没有这道题。</p>
+                <p className="ghost">已通过全部核验，待确认后发布入库。</p>
               ) : (
-                <p className="ghost">这一题现在还不能进库。模型说修好了也不自动放行。</p>
+                <p className="ghost">当前工作流未通过门禁要求，已自动阻断发布。</p>
               )}
               <div className="vf-story-actions">
                 <Link className="btn" href={`/compose/${project.id}`}>
-                  打开完整工坊
+                  打开工作坊
                 </Link>
                 <Link className="btn btn-ghost" href="/problems">
-                  回题库
+                  题目库
                 </Link>
               </div>
             </>

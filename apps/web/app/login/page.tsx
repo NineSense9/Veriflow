@@ -12,10 +12,10 @@ import FadeContent from "@/components/reactbits/FadeContent";
 import styles from "../entry.module.css";
 
 const PIPE = [
-  { label: "题库", hint: "选题、看题、按标签筛选" },
-  { label: "对拍", hint: "生成器、暴力和解对照" },
-  { label: "提交", hint: "沙箱实测，不是模型自评" },
-  { label: "入库检查", hint: "AI 出题进库前必须过验证器" },
+  { label: "规格编译", hint: "自然语言抽取为可执行约束与 IR DAG" },
+  { label: "多维验证", hint: "结构无环、语义对齐、时序与数据流" },
+  { label: "证据追溯", hint: "沙箱模拟异常轨迹与最小反例高亮" },
+  { label: "闭环门禁", hint: "受约束增量修复，确认后安全放行" },
 ];
 
 export default function LoginPage() {
@@ -63,16 +63,16 @@ export default function LoginPage() {
         <BrandAmbient variant="rays" className={styles.loginAmbient} />
         <FadeContent className={styles.loginIntroContent}>
           <Brand href={null} />
-          <p className={styles.eyebrow}>训练评测</p>
-          <h1>题库、对拍、提交。<br /><span>进库前要过检查。</span></h1>
-          <p className={styles.introDescription}>刷题和对拍在训练场。<br />AI 可以帮忙出题，但不能自己说能进库。</p>
+          <p className={styles.eyebrow}>AI 可靠性工程 · 验证工作台</p>
+          <h1>让 AI 生成的工作流，<br /><span>经得起确定性验证。</span></h1>
+          <p className={styles.introDescription}>面向大模型出题与复杂自动化流水线的验证与门禁系统。<br />毫秒级缺陷捕获、反例执行轨迹回溯与受约束增量修复。</p>
         </FadeContent>
       </section>
       <section className={styles.loginPanel} aria-labelledby="login-title">
         <div className={styles.loginCard}>
-          <p className={styles.eyebrow}>进入训练场</p>
-          <h2 id="login-title">欢迎使用 VeriFlow</h2>
-          <p className={styles.loginDescription}>登录后先到首页。题库、对拍、提交在顶栏。</p>
+          <p className={styles.eyebrow}>控制台访问</p>
+          <h2 id="login-title">登录 VeriFlow</h2>
+          <p className={styles.loginDescription}>面向评委与开发者的 AI 可靠性验证工作台。</p>
           <form onSubmit={onSubmit} aria-busy={busy}>
             <div className="field">
               <label htmlFor="user">用户名</label>
@@ -148,7 +148,7 @@ export default function LoginPage() {
             </li>
           ))}
         </ol>
-        <p className={styles.loginPrinciple}><span aria-hidden="true">✓</span> 训练在题库和对拍；进库前由验证器检查，不是模型说了算。</p>
+        <p className={styles.loginPrinciple}><span aria-hidden="true">✓</span> 基于形式化规格约束与沙箱模拟执行，实现确定性安全放行。</p>
       </section>
     </div>
   );

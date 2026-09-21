@@ -10,8 +10,8 @@ import { useEffects } from "@/lib/effects";
 import ElasticSlider from "@/components/reactbits/ElasticSlider";
 
 const LEVELS: { id: EffectsLevel; label: string; hint: string }[] = [
-  { id: "full", label: "完整", hint: "背景、指针跟随、扫描与见证路径" },
-  { id: "balanced", label: "平衡", hint: "背景减弱，保留流水线与见证" },
+  { id: "full", label: "完整", hint: "背景氛围、指针聚焦、扫描与反例轨迹动画" },
+  { id: "balanced", label: "平衡", hint: "背景减弱，保留流水线与反例轨迹" },
   { id: "reduced", label: "减弱", hint: "无循环背景；短渐变" },
   { id: "off", label: "关闭", hint: "可选动效关闭；保留加载、焦点与对话框" },
 ];

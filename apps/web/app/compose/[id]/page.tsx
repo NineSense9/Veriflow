@@ -260,7 +260,7 @@ function ComposeProjectBody() {
                 <p className="caption">实际：{selected.actual ?? "—"}</p>
                 {selected.witness_path.length ? (
                   <>
-                    <p className="caption">见证路径：{selected.witness_path.join(" → ")}</p>
+                    <p className="caption">反例路径：{selected.witness_path.join(" → ")}</p>
                     <WitnessMotion path={selected.witness_path} play={!busy} />
                   </>
                 ) : null}

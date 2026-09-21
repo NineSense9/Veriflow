@@ -414,7 +414,7 @@ export default function VerificationConsole({
       {session && issues.length ? (
         <p className="caption vf-repair-hint">
           {tour ? "演示第三步：" : ""}
-          {runtimeOnly ? "运行时问题已定位，当前暂不支持自动修复。可切换「顺序失败」案例体验静态补丁与再验证；本次运行仍被门禁拦截。" : !canRepair ? "该历史记录缺少运行条件，请先重新运行案例，再执行修复。" : "「受约束修复」会让 AI 或规则提补丁，再过守卫，并保留原运行条件完成再验证。模型说修好了也不会自动进库。"}
+          {runtimeOnly ? "运行时问题已定位，当前暂不支持自动修复。可切换「顺序失败」案例体验静态补丁与再验证；本次运行仍被门禁拦截。" : !canRepair ? "该历史记录缺少运行条件，请先重新运行案例，再执行修复。" : "受约束修复将针对当前缺陷生成最小补丁并执行守卫核验；再验证继承原始运行时条件，全量门禁就绪方可放行。"}
         </p>
       ) : null}
       {error ? (
@@ -488,7 +488,7 @@ export default function VerificationConsole({
                 >
                   <Maximize2 size={14} />
                 </button>
-                {focused && graphMode === "workflow" ? <span className="caption">见证路径: {focused}</span> : null}
+                {focused && graphMode === "workflow" ? <span className="caption">反例路径: {focused}</span> : null}
               </div>
               <div className="vf-dag" style={{ position: "relative" }}>
                 {scan && effectsAllowScan(effects) ? <GridScan active /> : null}
@@ -564,7 +564,7 @@ export default function VerificationConsole({
                     <div><dt>原因</dt><dd>{selected.title || selected.description || selected.code}</dd></div>
                     <div><dt>预期</dt><dd>{selected.expected ?? "未提供预期值"}</dd></div>
                     <div><dt>实际</dt><dd>{selected.actual ?? "未提供实际值"}</dd></div>
-                    <div><dt>见证路径</dt><dd className="mono vf-witness-path" key={selected.id}>{(highlight?.path ?? selected.witness_path ?? []).length ? (highlight?.path ?? selected.witness_path).map((id, index) => <span key={`${id}-${index}`} style={{ animationDelay: `${index * 70}ms` }}>{index ? "→ " : ""}{id}</span>) : "无已记录见证路径"}</dd></div>
+                    <div><dt>反例路径</dt><dd className="mono vf-witness-path" key={selected.id}>{(highlight?.path ?? selected.witness_path ?? []).length ? (highlight?.path ?? selected.witness_path).map((id, index) => <span key={`${id}-${index}`} style={{ animationDelay: `${index * 70}ms` }}>{index ? "→ " : ""}{id}</span>) : "无已记录反例路径"}</dd></div>
                   </dl>
                   </SpotlightCard>
                   <details className="vf-evidence-details"><summary>查看根因与完整证据</summary><dl className="vf-kv">
@@ -678,7 +678,7 @@ export default function VerificationConsole({
             <details className="vf-disclosure"><summary>需求覆盖</summary><div className="vf-disclosure-body">
               <p className="caption">
                 覆盖 {trace.covered} · 失败 {trace.failed} · 歧义 {trace.ambiguous} · 未映射 {trace.unmapped}
-                。覆盖来自规格约束与验证器，不是模型自评。
+                。覆盖率依据形式化规格约束与确定性验证结果严格统计。
               </p>
               <div className="vf-table-wrap">
                 <table className="vf-matrix">

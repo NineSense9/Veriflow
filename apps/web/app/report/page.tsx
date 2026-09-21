@@ -32,13 +32,13 @@ function ReportBody() {
     <main className="page vf-page">
       <header className="page-head split tight">
         <div>
-          <p className="kicker">入库检查</p>
-          <h1>入库检查</h1>
-          <p className="lead">AI 可以帮忙出题，但题进库必须过检查。过不过由验证器根据记录判定，不是模型自评。</p>
-          <ol className="judge-path" aria-label="三分钟演示">
-            <li><span>1</span>拦住：该入库却未入库</li>
-            <li><span>2</span>证据：轨迹中未见这一步</li>
-            <li><span>3</span>修复仍受约束：AI 补丁也要过守卫</li>
+          <p className="kicker">工作流验证</p>
+          <h1>工作流全链路验证</h1>
+          <p className="lead">面向 AI 生成出题流水线的多维确定性分析：涵盖结构连通、语义时序、数据流绑定与沙箱异常模拟。</p>
+          <ol className="judge-path" aria-label="核心验证流程">
+            <li><span>1</span> 缺陷拦截：检测时序缺失与未闭合分支</li>
+            <li><span>2</span> 证据溯源：提取最小反例与执行轨迹</li>
+            <li><span>3</span> 闭环修复：生成受约束补丁并执行增量复验</li>
           </ol>
         </div>
       </header>
