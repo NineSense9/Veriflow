@@ -6,6 +6,23 @@ export const NODE_HEIGHT = 100;
 export const COLUMN_STEP = 220;
 export const ROW_STEP = 132;
 
+export const TOOL_NAMES_ZH: Record<string, string> = {
+  test_generator: "AI 测资生成",
+  publish_problem: "题目发布入库",
+  solution_runner: "标程运行验证",
+  validator: "数据合法性校验",
+  checker: "特判器评测",
+  notify_1: "助教通知",
+};
+
+export const KIND_BADGE_ZH: Record<string, string> = {
+  tool: "工具 · TOOL",
+  guard: "守卫 · GUARD",
+  branch: "分支 · BRANCH",
+  human_gate: "人工门 · GATE",
+  notify: "通知 · NOTIFY",
+};
+
 export function irToFlow(
   ir: WorkflowIR,
   errors: ComposeError[],
@@ -55,14 +72,25 @@ export function irToFlow(
     const col = level.get(node.id) || 0;
     const row = slots.get(col) || 0;
     slots.set(col, row + 1);
-    const label =
+    const zhTitle =
       node.kind === "tool"
-        ? node.tool || node.id
+        ? (TOOL_NAMES_ZH[node.tool || ""] || node.tool || node.id)
         : node.kind === "guard"
-          ? node.expr || node.id
+          ? "范围守卫"
           : node.kind === "human_gate"
-            ? "审题门"
+            ? "专家审题门"
+            : node.kind === "branch"
+              ? (node.id === "if_pay" ? "支付分支" : "条件分支")
+              : (node.id === "notify_1" ? "助教通知" : node.id);
+    const zhSub =
+      node.kind === "tool"
+        ? (node.tool || node.id)
+        : node.kind === "guard"
+          ? (node.expr || node.id)
+          : node.kind === "branch"
+            ? (node.expr || node.id)
             : node.id;
+    const label = zhTitle !== zhSub ? `${zhTitle} (${zhSub})` : zhTitle;
     return {
       id: node.id,
       type: "kind",
@@ -70,6 +98,9 @@ export function irToFlow(
       style: { width: NODE_WIDTH, height: NODE_HEIGHT },
       data: {
         label,
+        zhTitle,
+        zhSub,
+        kindBadge: KIND_BADGE_ZH[node.kind] || node.kind,
         kind: node.kind,
         error: errorIds.has(node.id),
         status: errorIds.has(node.id) ? "fail" : selected.has(node.id) ? "sel" : "ok",

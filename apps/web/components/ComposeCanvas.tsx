@@ -9,13 +9,43 @@ import GraphSurface, { type GraphHandle } from "./GraphSurface";
 export type { GraphHandle } from "./GraphSurface";
 
 function KindNode({ data }: NodeProps) {
-  const payload = data as { label: string; kind: string; error: boolean; selected?: boolean; dim?: boolean };
-  return <div title={payload.label} className={`rf-node kind-${payload.kind} ${payload.error ? "err" : ""} ${payload.selected ? "selected" : ""} ${payload.dim ? "dim" : ""}`}>
-    <Handle type="target" position={Position.Left} />
-    <span className="rf-kind">{payload.kind}{payload.error ? " · FAIL" : ""}</span>
-    <strong>{payload.label}</strong>
-    <Handle type="source" position={Position.Right} />
-  </div>;
+  const payload = data as {
+    label: string;
+    kind: string;
+    zhTitle?: string;
+    zhSub?: string;
+    kindBadge?: string;
+    error: boolean;
+    selected?: boolean;
+    dim?: boolean;
+  };
+  return (
+    <div
+      title={payload.label}
+      className={`rf-node kind-${payload.kind} ${payload.error ? "err" : ""} ${payload.selected ? "selected" : ""} ${payload.dim ? "dim" : ""}`}
+    >
+      <Handle type="target" position={Position.Left} />
+      <span className="rf-kind">{payload.kindBadge || payload.kind}{payload.error ? " · FAIL" : ""}</span>
+      <strong>{payload.zhTitle || payload.label}</strong>
+      {payload.zhSub ? (
+        <span
+          className="rf-sub"
+          style={{
+            display: "block",
+            fontSize: "10px",
+            color: "var(--muted)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            marginTop: "2px",
+          }}
+        >
+          {payload.zhSub}
+        </span>
+      ) : null}
+      <Handle type="source" position={Position.Right} />
+    </div>
+  );
 }
 const nodeTypes = { kind: KindNode };
 

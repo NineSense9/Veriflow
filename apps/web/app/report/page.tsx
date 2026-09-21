@@ -32,13 +32,13 @@ function ReportBody() {
     <main className="page vf-page">
       <header className="page-head split tight">
         <div>
-          <p className="kicker">工作流验证</p>
-          <h1>工作流全链路验证</h1>
-          <p className="lead">面向 AI 生成出题流水线的多维确定性分析：涵盖结构连通、语义时序、数据流绑定与沙箱异常模拟。</p>
+          <p className="kicker">AI 出题质检门禁</p>
+          <h1>AI 出题流水线全链路质检</h1>
+          <p className="lead">面向 AI 自动生成算法题的多维确定性分析：静态检查拓扑与类型，沙箱模拟真实执行轨迹；严防残缺题目、未审题目流入 OJ 题库。</p>
           <ol className="judge-path" aria-label="核心验证流程">
-            <li><span>1</span> 缺陷拦截：检测时序缺失与未闭合分支</li>
-            <li><span>2</span> 证据溯源：提取最小反例与执行轨迹</li>
-            <li><span>3</span> 闭环修复：生成受约束补丁并执行增量复验</li>
+            <li><span>1</span> 门禁拦截：沙箱模拟捕获隐蔽时序跳步与未闭合分支</li>
+            <li><span>2</span> 证据溯源：提取最小反例与执行违规轨迹</li>
+            <li><span>3</span> 闭环修复：生成确定性补丁复验，门禁就绪后安全入库</li>
           </ol>
         </div>
       </header>

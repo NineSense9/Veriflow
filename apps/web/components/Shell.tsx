@@ -14,23 +14,25 @@ import StaggeredMenu from "@/components/reactbits/StaggeredMenu";
 
 const CORE = [
   { href: "/", label: "控制台" },
-  { href: "/report", label: "工作流验证" },
-  { href: "/compose", label: "需求编译" },
-  { href: "/evidence", label: "证据链分析" },
-  { href: "/benchmark", label: "评测基准" },
+  { href: "/problems", label: "题库训练" },
+  { href: "/status", label: "沙箱判题" },
+  { href: "/stress", label: "智能对拍" },
+  { href: "/report", label: "出题质检" },
+  { href: "/compose", label: "需求出题" },
 ];
 
 const LAB_LINKS = [
+  { href: "/benchmark", label: "评测基准", description: "55 组全量验证与变异评测" },
+  { href: "/evidence", label: "证据链分析", description: "缺陷溯源与最小反例轨迹" },
   { href: "/algorithms", label: "算法矩阵", description: "确定性验证器与监控器" },
-  { href: "/history", label: "历史记录", description: "历史核验与复验报告" },
   { href: "/architecture", label: "系统架构", description: "模块交互与数据流向地图" },
+  { href: "/history", label: "历史记录", description: "历史核验与门禁放行报告" },
 ];
 
 const SANDBOX_LINKS = [
-  { href: "/problems", label: "题目库", description: "已验证题目集" },
-  { href: "/stress", label: "沙箱对拍", description: "生成器与暴力解验证" },
-  { href: "/status", label: "提交记录", description: "代码提交沙箱判题" },
-  { href: "/sets", label: "题目分组", description: "竞赛题单集合" },
+  { href: "/sets", label: "题单分组", description: "竞赛经典题单集合" },
+  { href: "/problems/VF1001", label: "两数之和 (样例题)", description: "三列反例与启发教练" },
+  { href: "/problems/VF1004", label: "最长上升子序列", description: "数据生成器与对拍验证" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -147,25 +149,46 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const drawer = useMemo(
     () => (
       <nav className="drawer-nav" id="site-nav">
-        <p className="nav-group-label">核心功能</p>
-        {CORE.map((link) => (
-          <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
-            {link.label}
-          </Link>
-        ))}
-        <p className="nav-group-label">算法实验室</p>
-        {LAB_LINKS.map((link) => (
-          <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
-            {link.label}
-          </Link>
-        ))}
-        <p className="nav-group-label">评测沙箱</p>
-        {SANDBOX_LINKS.map((link) => (
-          <Link key={link.href} href={link.href} className={isActive(pathname, link.href) ? "active" : undefined}>
-            {link.label}
-          </Link>
-        ))}
+        <p className="nav-group-label">🏆 竞赛训练 (OJ 核心)</p>
+        <Link href="/problems" className={isActive(pathname, "/problems") ? "active" : undefined}>
+          题库训练
+        </Link>
+        <Link href="/status" className={isActive(pathname, "/status") ? "active" : undefined}>
+          沙箱判题
+        </Link>
+        <Link href="/stress" className={isActive(pathname, "/stress") ? "active" : undefined}>
+          智能对拍
+        </Link>
+        <Link href="/sets" className={isActive(pathname, "/sets") ? "active" : undefined}>
+          题单分组
+        </Link>
+        <p className="nav-group-label">🛡️ AI 出题质检 (VeriFlow)</p>
+        <Link href="/report" className={isActive(pathname, "/report") ? "active" : undefined}>
+          出题质检 (全链路验证)
+        </Link>
+        <Link href="/compose" className={isActive(pathname, "/compose") ? "active" : undefined}>
+          需求出题
+        </Link>
+        <Link href="/benchmark" className={isActive(pathname, "/benchmark") ? "active" : undefined}>
+          评测基准
+        </Link>
+        <Link href="/evidence" className={isActive(pathname, "/evidence") ? "active" : undefined}>
+          证据链分析
+        </Link>
+        <p className="nav-group-label">🔬 算法矩阵与系统</p>
+        <Link href="/algorithms" className={isActive(pathname, "/algorithms") ? "active" : undefined}>
+          算法矩阵
+        </Link>
+        <Link href="/architecture" className={isActive(pathname, "/architecture") ? "active" : undefined}>
+          系统架构
+        </Link>
+        <Link href="/history" className={isActive(pathname, "/history") ? "active" : undefined}>
+          历史记录
+        </Link>
         <p className="nav-group-label">系统</p>
+        <Link href="/" className={pathname === "/" ? "active" : undefined}>
+          控制台
+        </Link>
         <Link href="/account" className={isActive(pathname, "/account") ? "active" : undefined}>
           个人中心
         </Link>
@@ -229,8 +252,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </button>
         <nav className="top-nav" aria-label="主导航" ref={navRef}>
           <PillNav items={CORE} activeHref={pathname} className="desktop-pill" />
-          <CardDrop label="算法实验室" items={LAB_LINKS} pathname={pathname} open={drop === "lab"} onToggle={() => setDrop(drop === "lab" ? null : "lab")} onClose={() => setDrop(null)} />
-          <CardDrop label="评测沙箱" items={SANDBOX_LINKS} pathname={pathname} open={drop === "sandbox"} onToggle={() => setDrop(drop === "sandbox" ? null : "sandbox")} onClose={() => setDrop(null)} />
+          <CardDrop label="验证实验室" items={LAB_LINKS} pathname={pathname} open={drop === "lab"} onToggle={() => setDrop(drop === "lab" ? null : "lab")} onClose={() => setDrop(null)} />
+          <CardDrop label="竞赛题单" items={SANDBOX_LINKS} pathname={pathname} open={drop === "sandbox"} onToggle={() => setDrop(drop === "sandbox" ? null : "sandbox")} onClose={() => setDrop(null)} />
         </nav>
         <div className="top-meta">
           <span className="sandbox" title={`评测沙箱：${sandbox}`}>
@@ -268,8 +291,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </header>
       <div id="main">{children}</div>
       <footer className="footer">
-        <span>VeriFlow · 面向 AI 工作流的确定性验证与门禁系统</span>
-        <span>沙箱运行环境 · C++17 / Python3</span>
+        <span>VeriFlow · 可验证算法训练平台与 AI 出题门禁系统</span>
+        <span>沙箱运行环境 · C++17 / Python3 · Docker 裁判</span>
       </footer>
     </div>
   );

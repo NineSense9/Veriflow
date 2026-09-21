@@ -25,7 +25,7 @@ import { effectsAllowScan, useEffects } from "@/lib/effects";
 import { setAmbientActivity } from "@/lib/ambient-activity";
 import ComposeCanvas, { type GraphHandle } from "@/components/ComposeCanvas";
 import { matchingIssueNodes } from "./verification-selection";
-import { categoryLabel, demoTitle, pipelineLabel } from "@/lib/ui-zh";
+import { categoryLabel, demoTitle, pipelineLabel, DEMO_SCENARIO_ZH } from "@/lib/ui-zh";
 import { algorithmCopy } from "@/lib/algorithm-copy-zh";
 import { evidenceKindLabel } from "@/lib/evidence-layout";
 import { downloadSessionEvidence } from "@/lib/evidence-export";
@@ -332,6 +332,7 @@ export default function VerificationConsole({
     el?.scrollIntoView({ behavior: effectsAllowScan(effects) ? "smooth" : "instant", block: "nearest" });
     el?.focus({ preventScroll: true });
   };
+  const scenarioInfo = DEMO_SCENARIO_ZH[demoId] || (session ? DEMO_SCENARIO_ZH[session.ir.name] : null);
 
   return (
     <div className="vf-console vf-workbench-console">
@@ -438,6 +439,20 @@ export default function VerificationConsole({
             </div>
             <p className="caption">{gateWhy(dimensions.find((item) => item.name === "executable")?.status, session.runtime?.status, session.gate.ready) || "核验结果来自静态验证器与运行时记录。"}</p>
           </section>
+          {scenarioInfo ? (
+            <div className="vf-scenario-card" role="region" aria-label="出题业务场景还原">
+              <div className="vf-scenario-head">
+                <span className="vf-scenario-badge">真实业务场景还原</span>
+                <span className="vf-scenario-title">{scenarioInfo.title}</span>
+              </div>
+              <p className="vf-scenario-context">
+                <span className="vf-scenario-label">出题流程：</span>{scenarioInfo.scenario}
+              </p>
+              <p className="vf-scenario-verdict">
+                <span className="vf-scenario-label">质检判定：</span>{scenarioInfo.verdict}
+              </p>
+            </div>
+          ) : null}
           <Stepper
             labels={session.pipeline.map((step) => pipelineLabel(step.id, step.name))}
             className="vf-rb-stepper"
