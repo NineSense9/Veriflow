@@ -135,7 +135,7 @@ function StressInner() {
               ))}
             </select>
             <h1>{kit?.title ?? "对拍台"}</h1>
-            <label>
+            <label style={{ display: "flex", alignItems: "center" }}>
               轮次
               <input
                 type="number"
@@ -144,11 +144,24 @@ function StressInner() {
                 value={rounds}
                 onChange={(e) => setRounds(Number(e.target.value))}
                 aria-label="对拍轮次"
-                style={{ width: 72, marginLeft: 8 }}
+                style={{ width: 60, marginLeft: 8 }}
               />
+              <span className="stress-presets">
+                {[20, 50, 100].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`stress-preset-btn ${rounds === p ? "active" : ""}`}
+                    onClick={() => setRounds(p)}
+                    title={`设置为 ${p} 轮`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </span>
             </label>
             <button className="primary" type="button" disabled={busy || disabled} data-click-fx="strong" onClick={run}>
-              {busy ? "对拍中" : "开拍"}
+              {busy ? "⚡ 对拍中..." : "开拍"}
             </button>
           </div>
           <div className="stress-banner">
@@ -253,14 +266,26 @@ function StressInner() {
           <div className="stress-log">
             <div className="kicker">日志</div>
             {error ? <div className="err" role="alert">{error}</div> : null}
-            {busy ? <div>循环中…</div> : null}
+            {busy ? (
+              <div className="stress-running-box">
+                <span className="stress-running-pulse" />
+                <span>
+                  <strong>沙箱高速对拍中</strong> · 正在以单容器批处理模式运行 <strong>{rounds} 轮</strong> 模糊测试...
+                </span>
+              </div>
+            ) : null}
             {result ? (
-              <div>
+              <div style={{ marginBottom: 10 }}>
                 <span className={`verdict ${result.status === "mismatch" ? "WA" : result.status === "no_fail" ? "AC" : "TLE"}`}>
-                  {result.status}
+                  {result.status === "no_fail" ? "AC 全部通过" : result.status === "mismatch" ? "WA 捕获反例" : result.status}
                 </span>
                 {"  "}
-                {result.rounds_ran} 轮 · {result.time_ms} ms · {result.sandbox}
+                <strong>{result.rounds_ran} 轮</strong> · 耗时 <strong>{result.time_ms} ms</strong>
+                {result.rounds_ran > 0 ? (
+                  <span className="ghost"> (平均 {(result.time_ms / result.rounds_ran).toFixed(1)} ms/轮)</span>
+                ) : null}
+                {" · "}
+                <span className="ghost">{result.sandbox === "docker" ? "Docker 容器沙箱" : result.sandbox}</span>
                 {result.detail ? ` · ${result.detail}` : ""}
               </div>
             ) : null}

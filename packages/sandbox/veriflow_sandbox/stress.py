@@ -36,6 +36,10 @@ def run_stress(
     time_limit_ms: int,
     memory_limit_mb: int,
 ) -> StressResult:
+    if hasattr(sandbox, "stress") and callable(getattr(sandbox, "stress")):
+        return sandbox.stress(
+            generator, brute, solution, rounds, time_limit_ms, memory_limit_mb
+        )
     artifacts: list[str] = []
     try:
         compiled = {}

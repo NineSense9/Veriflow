@@ -62,14 +62,30 @@ export default function SubmissionPage() {
               <p className="ghost">此评测记录未持久化源码。</p>
             )}
             {row.counterexample ? (
-              <section style={{ marginTop: 24 }}>
-                <h2>沙箱捕获失败测试用例 (最小反例)</h2>
-                <p className="caption">输入测试数据 (stdin)</p>
-                <pre className="vf-account-source">{row.counterexample.stdin}</pre>
-                <p className="caption">期望标准输出 (expected)</p>
-                <pre className="vf-account-source">{row.counterexample.expected}</pre>
-                <p className="caption">实际程序输出 (actual)</p>
-                <pre className="vf-account-source">{row.counterexample.actual}</pre>
+              <section className="vf-status-ce-section">
+                <div className="vf-status-ce-head">
+                  <h2>
+                    <span>沙箱捕获失败测试用例 (最小反例)</span>
+                  </h2>
+                  <CopyButton
+                    text={`输入:\n${row.counterexample.stdin}\n期望:\n${row.counterexample.expected}\n实际:\n${row.counterexample.actual}`}
+                    label="复制反例"
+                  />
+                </div>
+                <div className="vf-status-ce-grid">
+                  <div className="vf-status-ce-col">
+                    <span className="vf-status-ce-label">输入测试数据 (stdin)</span>
+                    <pre className="vf-status-ce-pre">{row.counterexample.stdin || "(空)"}</pre>
+                  </div>
+                  <div className="vf-status-ce-col">
+                    <span className="vf-status-ce-label">期望标准输出 (expected)</span>
+                    <pre className="vf-status-ce-pre">{row.counterexample.expected || "(空)"}</pre>
+                  </div>
+                  <div className="vf-status-ce-col actual">
+                    <span className="vf-status-ce-label err">实际程序输出 (actual)</span>
+                    <pre className="vf-status-ce-pre">{row.counterexample.actual || "(空)"}</pre>
+                  </div>
+                </div>
               </section>
             ) : null}
           </>

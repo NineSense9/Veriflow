@@ -1171,7 +1171,19 @@ a.brand:hover .brand-text strong {
 .vf-account-source {
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 420px;
+  max-height: 500px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 10px 0 24px;
+  clear: both;
+  position: relative;
 }
 
 a.user-name {
@@ -4825,4 +4837,127 @@ html[data-theme="dark"] .evidence-cert {
   border-top: 1px solid var(--border-subtle);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
 }
+
+/* Submission Detail Page Counterexample */
+.vf-status-ce-section {
+  margin-top: 32px;
+  clear: both;
+}
+
+.vf-status-ce-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.vf-status-ce-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vf-status-ce-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 800px) {
+  .vf-status-ce-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vf-status-ce-col {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.vf-status-ce-col.actual {
+  background: var(--wa-soft);
+  border-color: color-mix(in srgb, var(--wa) 35%, transparent);
+}
+
+.vf-status-ce-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.vf-status-ce-label.err {
+  color: var(--wa);
+}
+
+.vf-status-ce-pre {
+  margin: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 220px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Stress testing preset rounds and active banner */
+.stress-presets {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.stress-preset-btn {
+  padding: 2px 7px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stress-preset-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.stress-preset-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.stress-running-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.stress-running-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-ring 1.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
 
