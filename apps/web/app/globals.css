@@ -2606,6 +2606,34 @@ button.sample {
   min-height: 0;
 }
 
+.stress-head {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.stress-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.stress-banner-tag {
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .stress-cols {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

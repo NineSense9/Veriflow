@@ -88,44 +88,47 @@ function StressInner() {
     <Shell>
       <div className="stress" style={{ position: "relative" }}>
         {busy && effectsAllowScan(effects) ? <Scanner active /> : null}
-        <div className="arena-top">
-          <span className="pid">对拍</span>
-          <label className="sr-only" htmlFor="stress-problem">
-            题目
-          </label>
-          <select id="stress-problem" value={problemId} onChange={(e) => setProblemId(e.target.value)}>
-            {(problems.length ? problems : [{ id: problemId, title: problemId }]).map((row) => (
-              <option key={row.id} value={row.id}>
-                {row.id} {row.title ?? ""}
-              </option>
-            ))}
-          </select>
-          <h1>{kit?.title ?? "对拍台"}</h1>
-          <label>
-            轮次
-            <input
-              type="number"
-              min={1}
-              max={200}
-              value={rounds}
-              onChange={(e) => setRounds(Number(e.target.value))}
-              aria-label="对拍轮次"
-              style={{ width: 72, marginLeft: 8 }}
-            />
-          </label>
-          <button className="primary" type="button" disabled={busy || disabled} data-click-fx="strong" onClick={run}>
-            {busy ? "对拍中" : "开拍"}
-          </button>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", background: "var(--surface-2)", borderBottom: "1px solid var(--border-subtle)", fontSize: "12px", color: "var(--text-2)" }}>
-          <span style={{ fontWeight: 600, color: "var(--accent)", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "4px" }}>对拍机制说明</span>
-          <span>选手无需自写脚本：系统已加载该题预置测资生成器与暴力验证标程，点击「开拍」即在隔离沙箱中高频对比 50~200 轮，秒级捕捉极端边界反例。</span>
-        </div>
-        {disabled ? (
-          <p className="ghost" style={{ padding: 16 }}>
-            本题不提供暴力解，对拍按钮禁用。
-          </p>
-        ) : null}
+        <header className="stress-head">
+          <div className="arena-top">
+            <span className="pid">对拍</span>
+            <label className="sr-only" htmlFor="stress-problem">
+              题目
+            </label>
+            <select id="stress-problem" value={problemId} onChange={(e) => setProblemId(e.target.value)}>
+              {(problems.length ? problems : [{ id: problemId, title: problemId }]).map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.id} {row.title ?? ""}
+                </option>
+              ))}
+            </select>
+            <h1>{kit?.title ?? "对拍台"}</h1>
+            <label>
+              轮次
+              <input
+                type="number"
+                min={1}
+                max={200}
+                value={rounds}
+                onChange={(e) => setRounds(Number(e.target.value))}
+                aria-label="对拍轮次"
+                style={{ width: 72, marginLeft: 8 }}
+              />
+            </label>
+            <button className="primary" type="button" disabled={busy || disabled} data-click-fx="strong" onClick={run}>
+              {busy ? "对拍中" : "开拍"}
+            </button>
+          </div>
+          <div className="stress-banner">
+            <span className="stress-banner-tag">对拍机制</span>
+            <span>已加载该题预置测资生成器与暴力标程，点击「开拍」即在沙箱中高频对比 50~200 轮，毫秒级捕获边界反例。</span>
+          </div>
+          {disabled ? (
+            <div className="stress-banner" style={{ color: "var(--wa)" }}>
+              <span className="stress-banner-tag" style={{ color: "var(--wa)", background: "var(--wa-soft)" }}>提示</span>
+              <span>本题暂未配置基准暴力解，对拍功能暂不可用。</span>
+            </div>
+          ) : null}
+        </header>
         <div className="stress-cols">
           <div className="stress-col">
             <h2>
