@@ -474,11 +474,23 @@ export default function VerificationConsole({
                     <span className="vf-step-role">VeriFlow 双核质检 (静态 + 动态)</span>
                   </div>
                   <div className="vf-step-body">
-                    <strong className="vf-step-title">静态分析全绿，沙箱捕获致命断流！</strong>
-                    <p className="vf-step-desc">{scenarioInfo.roleStory?.defect || scenarioInfo.verdict}</p>
+                    <strong className="vf-step-title">
+                      {session.status === "PASS"
+                        ? "补丁再验证通过，双核质检全绿！"
+                        : scenarioInfo.roleStory?.defectTitle || "双核质检发现缺陷"}
+                    </strong>
+                    <p className="vf-step-desc">
+                      {session.status === "PASS"
+                        ? "受约束修复补丁已通过守卫与回归测试，时序、数据流与安全规范全部达标。"
+                        : scenarioInfo.roleStory?.defect || scenarioInfo.verdict}
+                    </p>
                   </div>
                   <div className="vf-step-foot">
-                    <span className="vf-step-tag danger">发现时序违规 · 捕获最小反例</span>
+                    <span className={`vf-step-tag ${session.status === "PASS" ? "safe" : "danger"}`}>
+                      {session.status === "PASS"
+                        ? "形式化全绿 · 证据闭环"
+                        : scenarioInfo.roleStory?.defectTag || "发现规则违规 · 捕获最小反例"}
+                    </span>
                   </div>
                 </div>
 
@@ -487,15 +499,29 @@ export default function VerificationConsole({
                 {/* Stage 3: Gate Decision */}
                 <div className="vf-story-card step-gate">
                   <div className="vf-step-head">
-                    <span className="vf-step-pill gate">阶段 3 · 终审出库</span>
+                    <span className={`vf-step-pill ${session.gate.ready === "READY" ? "safe" : "gate"}`}>
+                      阶段 3 · 终审出库
+                    </span>
                     <span className="vf-step-role">发布门禁决策 (Gate Engine)</span>
                   </div>
                   <div className="vf-step-body">
-                    <strong className="vf-step-title">强制熔断阻断 (BLOCKED)</strong>
-                    <p className="vf-step-desc">{scenarioInfo.roleStory?.defense || "一票否决非法发布，保卫题库安全。"}</p>
+                    <strong className="vf-step-title">
+                      {session.gate.ready === "READY"
+                        ? "门禁就绪准予发布 (READY)"
+                        : "强制熔断阻断 (BLOCKED)"}
+                    </strong>
+                    <p className="vf-step-desc">
+                      {session.gate.ready === "READY"
+                        ? "全量门禁检验通过，题目规格完整且无旁路风险，安全准予入库上线。"
+                        : scenarioInfo.roleStory?.defense || "一票否决非法发布，保卫题库安全。"}
+                    </p>
                   </div>
                   <div className="vf-step-foot">
-                    <span className="vf-step-tag safe">杜绝残缺假题流入竞赛 OJ 题库</span>
+                    <span className="vf-step-tag safe">
+                      {session.gate.ready === "READY"
+                        ? "已通过全量安全门禁，放行入库"
+                        : "杜绝残缺假题流入竞赛 OJ 题库"}
+                    </span>
                   </div>
                 </div>
               </div>

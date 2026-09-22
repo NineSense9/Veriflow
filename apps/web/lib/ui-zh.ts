@@ -11,6 +11,8 @@ export type RoleStory = {
   input: string;
   defect: string;
   defense: string;
+  defectTitle?: string;
+  defectTag?: string;
 };
 
 export const DEMO_SCENARIO_ZH: Record<
@@ -25,6 +27,8 @@ export const DEMO_SCENARIO_ZH: Record<
       input: "大模型（AI Agent）编排了 6 步出题任务链（静态拓扑结构连线完备）。",
       defect: "动态沙箱仿真运行至「外部准入判定」即异常终止，导致后续专家审核与入库节点未能到达。",
       defense: "VeriFlow 捕获反例时序切片，门禁判定 BLOCKED，阻止未完备试题污染题库。",
+      defectTitle: "静态分析全绿，沙箱捕获致命断流",
+      defectTag: "运行时断流 · 捕获最小反例",
     },
   },
   case1_order: {
@@ -35,6 +39,8 @@ export const DEMO_SCENARIO_ZH: Record<
       input: "大模型将「发布入库」排在「测资生成」之前，出现时序颠倒的严重逻辑倒错。",
       defect: "有向无环图（DAG）拓扑检查发现前置依赖尚未就绪，存在时序倒错。",
       defense: "静态门禁当场阻断，生成有向见证路径，精准指导出题人调换正确执行顺序。",
+      defectTitle: "DAG 拓扑检查失败，前置依赖未就绪",
+      defectTag: "时序倒错 · 拓扑违规",
     },
   },
   case2_dataflow: {
@@ -45,6 +51,8 @@ export const DEMO_SCENARIO_ZH: Record<
       input: "大模型输出的测资格式是字典对象，但沙箱评测器要求标准纯文本标准输入 (stdin)。",
       defect: "生产者-消费者类型检查发现 Type Mismatch（类型不匹配）。",
       defense: "数据流验证器拦截发布，强制要求在中间添加数据格式转换适配器。",
+      defectTitle: "数据流类型不匹配 (Type Mismatch)",
+      defectTag: "接口崩溃 · 类型不兼容",
     },
   },
   case3_safety: {
@@ -55,6 +63,8 @@ export const DEMO_SCENARIO_ZH: Record<
       input: "大模型试图实现「全无人值守直接发布」，跳过了任何教师或裁判的人工审核环节。",
       defect: "触发出题系统的安全底线：AI 不能既当出题人又当质检人，必须设防。",
       defense: "安全策略引擎（Safety Engine）一票否决，坚决阻断违规直通发布。",
+      defectTitle: "缺少人工审核节点，触发安全红线",
+      defectTag: "安全策略 · 缺少审题门",
     },
   },
 };
