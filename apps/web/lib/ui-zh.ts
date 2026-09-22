@@ -1,7 +1,7 @@
 /** User-visible Chinese. Protocol enums PASS/FAIL/READY stay English. */
 
 export const DEMO_TITLE_ZH: Record<string, string> = {
-  case4_runtime: "静态全绿 · 动态沙箱断流 (推荐答辩演示)",
+  case4_runtime: "静态全绿 · 动态沙箱断流 (典型案例)",
   case1_order: "前置缺失 · 测资未成提前发布",
   case2_dataflow: "接口崩溃 · 测资类型与沙箱不符",
   case3_safety: "越权违规 · 缺少专家人工审题门",
@@ -18,13 +18,13 @@ export const DEMO_SCENARIO_ZH: Record<
   { title: string; scenario: string; verdict: string; roleStory: RoleStory }
 > = {
   case4_runtime: {
-    title: "AI 自动出题流水线（经典时序欺骗与沙箱截断）",
+    title: "AI 自动出题流水线（时序违规与沙箱截断）",
     scenario: "大模型尝试构建端到端出题流程：「AI测资生成 → 范围守卫 → 外部准入判定 → 助教审核通知 → 专家审题门 → 题目发布入库」。",
-    verdict: "静态连线与结构全部通畅（静态 7 项检查全绿 PASS），具有极强的欺骗性！但沙箱在真实仿真模拟执行时发现：第 3 步外部判定条件未满足导致流程提前猝死中断，后续关键的「助教通知」与「专家审题门」惨遭绕过！VeriFlow 强制触发发布门禁熔断（BLOCKED），严防残缺坏题流入 OJ 题库！",
+    verdict: "静态连线与拓扑结构检查全部通过（静态 7 项检查全为 PASS）。但在沙箱动态仿真执行时发现：第 3 步前置准入判定因外部条件未满足导致流程异常中断，后续「助教审核通知」与「专家审题门」未被触发。VeriFlow 依形式化安全规约触发发布门禁熔断 (BLOCKED)，阻止残缺试题流入题库。",
     roleStory: {
-      input: "大模型（AI Agent）编排了一个看似完美的 6 步出题任务链（静态拓扑连线全通）。",
-      defect: "动态沙箱仿真运行至「外部判定」即异常终止（红线拦截），导致专家审核与入库全部失联！",
-      defense: "VeriFlow 识破静态伪装，捕获反例时序切片，门禁判定 BLOCKED，保护题库免遭污染。",
+      input: "大模型（AI Agent）编排了 6 步出题任务链（静态拓扑结构连线完备）。",
+      defect: "动态沙箱仿真运行至「外部准入判定」即异常终止，导致后续专家审核与入库节点未能到达。",
+      defense: "VeriFlow 捕获反例时序切片，门禁判定 BLOCKED，阻止未完备试题污染题库。",
     },
   },
   case1_order: {

@@ -133,13 +133,13 @@ function ComposeProjectBody() {
         </div>
         {project.published_problem_id ? (
           <div className="vf-publish-card">
-            <div className="vf-publish-card-badge">🎉 题目已正式发布上线题库</div>
+            <div className="vf-publish-card-badge">题目已正式发布上线题库</div>
             <div className="vf-publish-card-body">
               <p>
                 该出题工作流已通过时序守卫、变异测试并完成人工审题门批准，题目 <strong>{project.published_problem_id}</strong> 已正式部署上线！
               </p>
               <Link href={`/problems/${project.published_problem_id}`} className="btn btn-sm btn-primary">
-                🎯 立即前往做题台挑战此题 ({project.published_problem_id}) →
+                立即前往做题台挑战此题 ({project.published_problem_id}) →
               </Link>
             </div>
           </div>

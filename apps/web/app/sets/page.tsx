@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { BookOpen, Layers } from "lucide-react";
 import Shell from "@/components/Shell";
 import { ProblemListItem, api } from "@/lib/api";
 
@@ -85,7 +86,7 @@ export default function SetsPage() {
             <section className="vf-problems-progress-card" aria-label="题单攻克进度概览" style={{ marginBottom: 24 }}>
               <div className="vf-problems-progress-info">
                 <div className="vf-problems-progress-title">
-                  <span className="vf-problems-progress-icon">📚</span>
+                  <span className="vf-problems-progress-icon"><BookOpen size={16} /></span>
                   <strong>
                     题单总览：已攻克 {globalStats.solvedUnique} / {globalStats.totalUnique} 题 ({globalStats.pct}%)
                   </strong>
@@ -118,7 +119,7 @@ export default function SetsPage() {
                   <section className="vf-set-card" key={row.id}>
                     <div className="vf-set-head">
                       <div className="vf-set-head-main">
-                        <span className="vf-set-icon">🎯</span>
+                        <span className="vf-set-icon"><Layers size={16} /></span>
                         <div>
                           <h2>{row.title}</h2>
                           <span className="vf-set-count">
@@ -153,7 +154,7 @@ export default function SetsPage() {
                             className={`vf-set-prob-row ${isAC ? "ac" : ""}`}
                           >
                             <span className={`vf-set-prob-status ${isAC ? "ac" : ""}`}>
-                              {isAC ? "✓ AC" : "○"}
+                              {isAC ? "AC" : "—"}
                             </span>
                             <span className="vf-set-prob-id">{problem.id}</span>
                             <strong className="vf-set-prob-title">{problem.title}</strong>

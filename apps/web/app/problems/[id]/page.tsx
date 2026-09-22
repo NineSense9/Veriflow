@@ -193,7 +193,7 @@ export default function ProblemPage() {
             source: parsed.source || "",
             lang: parsedLang,
           });
-          setDebugNotice("🎯 已从智能对拍导入第一条反例与选手程序，请针对反例调整逻辑后重新提交。");
+          setDebugNotice("已从智能对拍导入反例测试点与程序代码，可针对反例调试后重新提交。");
           return;
         }
       }
@@ -384,7 +384,7 @@ export default function ProblemPage() {
         <div className="arena-top">
           {zenMode ? (
             <div className="vf-zen-badge">
-              <span>⛶ 专注模式</span>
+              <span>专注模式</span>
             </div>
           ) : (
             <Link href="/problems" className="btn btn-ghost btn-sm">
@@ -495,7 +495,7 @@ export default function ProblemPage() {
                 setZenHistoryOpen(false);
               }}
             >
-              {zenMode ? "✕ 退出专注" : "⛶ 专注模式"}
+              {zenMode ? "退出专注" : "专注模式"}
             </button>
 
             {/* Zen Mode History Popover */}
@@ -596,7 +596,7 @@ export default function ProblemPage() {
               onSubmit={submit}
             />
             <div className="vf-editor-bar-hint">
-              <span>💡 支持 <code>Ctrl+Enter</code> 或 <code>⌘+Enter</code> 快捷提交评测</span>
+              <span>支持 <code>Ctrl+Enter</code> 或 <code>⌘+Enter</code> 快捷提交评测</span>
             </div>
           </section>
           <aside className="side">
@@ -674,7 +674,7 @@ export default function ProblemPage() {
             {result?.counterexample ? (
               <>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--error)", background: "var(--wa-soft)", padding: "2px 8px", borderRadius: "4px", marginBottom: "8px" }}>
-                  <span>⚠️ 沙箱捕获错误边界 · 提取最小反例</span>
+                  <span>沙箱捕获错误边界 · 提取最小反例</span>
                 </div>
                 <div className="sample-head">
                   <span>{result.verdict} · 第一条反例</span>
@@ -731,7 +731,7 @@ export default function ProblemPage() {
             )}
             <h2>启发教练</h2>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--accent)", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "4px", marginBottom: "8px" }}>
-              <span>🛡️ 苏格拉底启发 · 严禁直接给出代码</span>
+              <span>苏格拉底启发 · 严禁直接给出代码</span>
             </div>
             {coach ? (
               <div style={{ padding: "10px 12px", background: "var(--surface-2)", borderRadius: "6px", borderLeft: "3px solid var(--accent)", margin: "4px 0 8px" }}>
@@ -902,11 +902,11 @@ export default function ProblemPage() {
                           : "wa"
                       }`}
                     >
-                      {result.verdict === "AC" && <span>🎉 Accepted · 全部通过</span>}
-                      {result.verdict === "WA" && <span>❌ Wrong Answer · 答案错误</span>}
-                      {result.verdict === "TLE" && <span>⏳ Time Limit Exceeded · 运行超时</span>}
-                      {result.verdict === "CE" && <span>⚠️ Compile Error · 编译错误</span>}
-                      {result.verdict === "RE" && <span>💥 Runtime Error · 运行时异常</span>}
+                      {result.verdict === "AC" && <span>Accepted · 全部通过</span>}
+                      {result.verdict === "WA" && <span>Wrong Answer · 答案错误</span>}
+                      {result.verdict === "TLE" && <span>Time Limit Exceeded · 运行超时</span>}
+                      {result.verdict === "CE" && <span>Compile Error · 编译错误</span>}
+                      {result.verdict === "RE" && <span>Runtime Error · 运行时异常</span>}
                       {!["AC", "WA", "TLE", "CE", "RE"].includes(result.verdict) && (
                         <span>{result.verdict}</span>
                       )}
@@ -1002,7 +1002,7 @@ export default function ProblemPage() {
                         askCoach();
                       }}
                     >
-                      {coachBusy ? "启发中…" : "🤖 苏格拉底启发教练"}
+                      {coachBusy ? "启发中…" : "苏格拉底启发教练"}
                     </button>
                   ) : null}
                   {problem?.has_brute ? (
@@ -1015,7 +1015,7 @@ export default function ProblemPage() {
                         } catch {}
                       }}
                     >
-                      ⚡ 智能对拍找反例
+                      智能对拍找反例
                     </Link>
                   ) : null}
                   <button

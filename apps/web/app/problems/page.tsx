@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Target } from "lucide-react";
 import Shell from "@/components/Shell";
 import { api, ProblemListItem, SubmissionRow } from "@/lib/api";
 
@@ -141,7 +142,7 @@ export default function ProblemsPage() {
           <section className="vf-problems-progress-card" aria-label="训练进度概览">
             <div className="vf-problems-progress-info">
               <div className="vf-problems-progress-title">
-                <span className="vf-problems-progress-icon">🎯</span>
+                <span className="vf-problems-progress-icon"><Target size={15} /></span>
                 <strong>训练进度：已解决 {stats.solved} / {stats.total} 题 ({stats.pct}%)</strong>
                 {stats.attempted > 0 ? (
                   <span className="vf-problems-progress-attempted">· 尝试中 {stats.attempted} 题</span>
@@ -278,11 +279,11 @@ export default function ProblemsPage() {
                       <td>
                         {st === "AC" ? (
                           <span className="verdict AC" style={{ fontSize: "11px", padding: "1px 6px" }}>
-                            ✔ AC
+                            AC
                           </span>
                         ) : st === "WA" ? (
                           <span className="verdict WA" style={{ fontSize: "11px", padding: "1px 6px" }}>
-                            ✘ 尝试
+                            未通过
                           </span>
                         ) : (
                           <span className="ghost" style={{ fontSize: "13px", paddingLeft: "4px" }}>

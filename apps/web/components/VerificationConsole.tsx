@@ -98,7 +98,6 @@ export default function VerificationConsole({
   const [reload, setReload] = useState(0);
   const requestId = useRef(0);
   const [view, setView] = useState("workflow");
-  const [judgeScriptOpen, setJudgeScriptOpen] = useState(false);
   const graphSection = useRef<HTMLElement>(null);
   const findingsSection = useRef<HTMLElement>(null);
   const repairSection = useRef<HTMLDetailsElement>(null);
@@ -444,17 +443,9 @@ export default function VerificationConsole({
             <div className="vf-storyboard-container" role="region" aria-label="AI出题验流全链路业务故事看板">
               <div className="vf-storyboard-header">
                 <div className="vf-storyboard-title-box">
-                  <span className="vf-storyboard-badge">🎯 评委速览 · 验流在完成什么业务闭环？</span>
+                  <span className="vf-storyboard-badge">业务流程 · AI 出题质检链路透视</span>
                   <strong className="vf-storyboard-title">{scenarioInfo.title}</strong>
                 </div>
-                <button
-                  type="button"
-                  className={`vf-storyboard-guide-btn ${judgeScriptOpen ? "active" : ""}`}
-                  onClick={() => setJudgeScriptOpen((prev) => !prev)}
-                  title="展开面向评委的 30 秒口播答辩说辞"
-                >
-                  {judgeScriptOpen ? "收起答辩速记 ✕" : "🎙️ 评委 30 秒答辩速记指南 ▼"}
-                </button>
               </div>
 
               {/* 3-Stage Visual Pipeline Cards */}
@@ -463,24 +454,24 @@ export default function VerificationConsole({
                 <div className="vf-story-card step-agent">
                   <div className="vf-step-head">
                     <span className="vf-step-pill">阶段 1 · 业务起点</span>
-                    <span className="vf-step-role">🤖 大模型出题 Agent 提案</span>
+                    <span className="vf-step-role">出题代理 (AI Agent) 任务编排</span>
                   </div>
                   <div className="vf-step-body">
                     <strong className="vf-step-title">大模型自主编排出题流水线</strong>
                     <p className="vf-step-desc">{scenarioInfo.roleStory?.input || scenarioInfo.scenario}</p>
                   </div>
                   <div className="vf-step-foot">
-                    <span className="vf-step-tag">输入: 自然语言指令 ➔ LLM 生成 6 步 DAG</span>
+                    <span className="vf-step-tag">输入: 自然语言指令 → LLM 生成 6 步 DAG 任务链</span>
                   </div>
                 </div>
 
-                <div className="vf-story-connector" aria-hidden="true">➔</div>
+                <div className="vf-story-connector" aria-hidden="true">→</div>
 
                 {/* Stage 2: VeriFlow Dual Verification (HERE) */}
                 <div className="vf-story-card step-verify is-highlight">
                   <div className="vf-step-head">
                     <span className="vf-step-pill current">阶段 2 · 核心质检</span>
-                    <span className="vf-step-role">🛡️ VeriFlow 形式化与动态双核质检</span>
+                    <span className="vf-step-role">VeriFlow 双核质检 (静态 + 动态)</span>
                   </div>
                   <div className="vf-step-body">
                     <strong className="vf-step-title">静态分析全绿，沙箱捕获致命断流！</strong>
@@ -491,13 +482,13 @@ export default function VerificationConsole({
                   </div>
                 </div>
 
-                <div className="vf-story-connector" aria-hidden="true">➔</div>
+                <div className="vf-story-connector" aria-hidden="true">→</div>
 
                 {/* Stage 3: Gate Decision */}
                 <div className="vf-story-card step-gate">
                   <div className="vf-step-head">
                     <span className="vf-step-pill gate">阶段 3 · 终审出库</span>
-                    <span className="vf-step-role">⚖️ 门禁熔断与题库安全防线</span>
+                    <span className="vf-step-role">发布门禁决策 (Gate Engine)</span>
                   </div>
                   <div className="vf-step-body">
                     <strong className="vf-step-title">强制熔断阻断 (BLOCKED)</strong>
@@ -508,24 +499,6 @@ export default function VerificationConsole({
                   </div>
                 </div>
               </div>
-
-              {/* Collapsible Judge Presentation Script */}
-              {judgeScriptOpen ? (
-                <div className="vf-judge-script-drawer">
-                  <div className="vf-script-header">
-                    <span className="vf-script-icon">🎙️</span>
-                    <strong>评委答辩 30 秒高分讲解口播（现场直击痛点）：</strong>
-                    <button type="button" onClick={() => setJudgeScriptOpen(false)} className="vf-script-close-btn">✕</button>
-                  </div>
-                  <p className="vf-script-paragraph">
-                    “各位评委老师，以往让大模型自动出算法题，最大的风险在于<strong>‘AI 自行生成的步骤黑盒不可控、容易产生幻觉或自作主张跳过人工审核’</strong>。
-                    VeriFlow 的出题质检（验流）系统就像<strong>‘算法题库的工业级安检机’</strong>！
-                    正如您当前屏幕看到的典型场景：大模型生成的出题流水线<strong>在静态连线结构上看似天衣无缝（静态 7 项检查全绿 PASS）</strong>，
-                    但通过我们的<strong>运行时沙箱仿真器</strong>进行毫秒级模拟试跑，瞬间捕获到了致命漏洞——由于外部判定条件异常中断，导致后面的<strong>‘助教通知’与‘专家审题门’被完全跳过</strong>！
-                    如果缺乏质检，一道无人审核的残缺坏题就会直接上线残害考生。VeriFlow 在此当场执行<strong>门禁熔断（BLOCKED）</strong>并提取出反例铁证，彻底攻克了大模型出题的安全可靠落地难题！”
-                  </p>
-                </div>
-              ) : null}
             </div>
           ) : null}
           <Stepper
@@ -581,10 +554,10 @@ export default function VerificationConsole({
                 {focused && graphMode === "workflow" ? <span className="caption">反例路径: {focused}</span> : null}
               </div>
               <div className="vf-graph-legend-strip" role="note" aria-label="图谱节点状态图例">
-                <span className="vf-legend-label">仿真图例：</span>
-                <span className="vf-legend-pill ok">🟢 仿真执行成功</span>
-                <span className="vf-legend-pill break">🔴 仿真在此中断 (断流点)</span>
-                <span className="vf-legend-pill dim">⚪ 惨遭绕过的关键节点 (专家门/入库)</span>
+                <span className="vf-legend-label">仿真执行图例：</span>
+                <span className="vf-legend-pill"><span className="vf-dot ok" /> 正常执行节点</span>
+                <span className="vf-legend-pill"><span className="vf-dot break" /> 异常中断节点 (断流点)</span>
+                <span className="vf-legend-pill"><span className="vf-dot dim" /> 未执行节点 (绕过门禁/入库)</span>
               </div>
               <div className="vf-dag" style={{ position: "relative" }}>
                 {scan && effectsAllowScan(effects) ? <GridScan active /> : null}

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import Shell from "@/components/Shell";
 import CopyButton from "@/components/CopyButton";
 import Scanner from "@/components/reactbits/Scanner";
@@ -181,7 +182,7 @@ function StressInner() {
               </span>
             </label>
             <button className="primary" type="button" disabled={busy || disabled} data-click-fx="strong" onClick={run}>
-              {busy ? "⚡ 对拍中..." : "开拍"}
+              {busy ? "对拍中..." : "开拍"}
             </button>
           </div>
           <div className="stress-banner">
@@ -268,7 +269,7 @@ function StressInner() {
                     }
                   }}
                 >
-                  ⚡ 导入暴力解
+                  导入暴力解
                 </button>
                 <select
                   aria-label="选手语言"
@@ -375,13 +376,13 @@ function StressInner() {
                     router.push(`/problems/${problemId}`);
                   }}
                 >
-                  🎯 带此反例回做题台调试 →
+                  带此反例回做题台调试 →
                 </button>
               </>
             ) : result && result.status === "no_fail" ? (
               <div className="vf-stress-success-card">
                 <div className="vf-stress-success-head">
-                  <span className="vf-stress-success-icon">🎉</span>
+                  <span className="vf-stress-success-icon"><CheckCircle2 size={18} color="var(--ac)" /></span>
                   <div>
                     <strong style={{ fontSize: "14px", color: "var(--ac)" }}>
                       {result.rounds_ran}/{result.rounds_ran} 轮沙箱对拍全量一致！
@@ -410,7 +411,7 @@ function StressInner() {
                   className="btn btn-sm btn-primary"
                   style={{ width: "100%", justifyContent: "center", marginTop: "12px", textDecoration: "none" }}
                 >
-                  🚀 信心满满，立即前往竞技场提交评测 →
+                  前往做题台提交评测 →
                 </Link>
               </div>
             ) : (

@@ -58,10 +58,10 @@ export default function HomePage() {
             </p>
             <div className="vf-home-ctas">
               <Link className="btn btn-primary" href="/problems">
-                🏆 进入题库训练
+                进入题库训练
               </Link>
               <Link className="btn" href="/report?demo=case4_runtime&tour=1">
-                🛡️ 3 分钟 AI 出题质检演示
+                AI 出题质检演示
               </Link>
             </div>
             <p className="vf-home-secondary">

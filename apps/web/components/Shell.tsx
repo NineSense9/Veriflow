@@ -157,7 +157,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const drawer = useMemo(
     () => (
       <nav className="drawer-nav" id="site-nav">
-        <p className="nav-group-label">🏆 竞赛训练 (OJ 核心)</p>
+        <p className="nav-group-label">竞赛训练 (OJ 核心)</p>
         <Link href="/problems" className={isActive(pathname, "/problems") ? "active" : undefined}>
           题库训练
         </Link>
@@ -170,7 +170,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <Link href="/sets" className={isActive(pathname, "/sets") ? "active" : undefined}>
           题单分组
         </Link>
-        <p className="nav-group-label">🛡️ AI 出题质检 (VeriFlow)</p>
+        <p className="nav-group-label">AI 出题质检 (VeriFlow)</p>
         <Link href="/report" className={isActive(pathname, "/report") ? "active" : undefined}>
           出题质检 (全链路验证)
         </Link>
@@ -183,7 +183,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <Link href="/evidence" className={isActive(pathname, "/evidence") ? "active" : undefined}>
           证据链分析
         </Link>
-        <p className="nav-group-label">🔬 算法矩阵与系统</p>
+        <p className="nav-group-label">算法矩阵与系统</p>
         <Link href="/algorithms" className={isActive(pathname, "/algorithms") ? "active" : undefined}>
           算法矩阵
         </Link>

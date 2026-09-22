@@ -71,27 +71,6 @@
   color: var(--text);
 }
 
-.vf-storyboard-guide-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--accent);
-  background: var(--surface);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.vf-storyboard-guide-btn:hover,
-.vf-storyboard-guide-btn.active {
-  background: var(--accent);
-  color: #fff;
-}
-
 .vf-storyboard-grid {
   display: flex;
   align-items: stretch;
@@ -215,54 +194,11 @@
   font-weight: 600;
 }
 
-/* 评委 30 秒口播答辩指南抽屉 */
-.vf-judge-script-drawer {
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
-  border: 1px dashed var(--accent);
-  border-radius: 8px;
-  padding: 14px 16px;
-  animation: fadeIn 0.2s ease-out;
-}
-
-.vf-script-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--accent);
-  font-size: 13px;
-  margin-bottom: 8px;
-}
-
-.vf-script-close-btn {
-  margin-left: auto;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.vf-script-close-btn:hover {
-  color: var(--text);
-}
-
-.vf-script-paragraph {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--text);
-}
-
-.vf-script-paragraph strong {
-  color: var(--accent);
-  font-weight: 600;
-}
-
 /* 图谱图例 */
 .vf-graph-legend-strip {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   padding: 6px 12px;
   margin-bottom: 6px;
   background: var(--surface-2);
@@ -281,9 +217,32 @@
 .vf-legend-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 11px;
   color: var(--text);
+}
+
+.vf-legend-pill .vf-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.vf-legend-pill .vf-dot.ok {
+  background: #10b981;
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
+}
+
+.vf-legend-pill .vf-dot.break {
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+}
+
+.vf-legend-pill .vf-dot.dim {
+  background: var(--muted);
+  opacity: 0.7;
 }
 
 /* 智能缺陷人话标题与副标 */

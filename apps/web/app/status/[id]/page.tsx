@@ -86,7 +86,7 @@ export default function SubmissionPage() {
                   onClick={jumpToStress}
                   title="携带此代码与反例前往智能对拍页面验证"
                 >
-                  ⚡ 前往对拍
+                  前往对拍
                 </button>
               </span>
             </div>
@@ -108,7 +108,7 @@ export default function SubmissionPage() {
                       onClick={jumpToStress}
                       title="携此失败反例与提交代码前往智能对拍平台进行边界比对"
                     >
-                      ⚡ 携此反例与代码前往智能对拍 →
+                      携此反例与代码前往智能对拍 →
                     </button>
                     <CopyButton
                       text={`输入:\n${row.counterexample.stdin}\n期望:\n${row.counterexample.expected}\n实际:\n${row.counterexample.actual}`}
