@@ -189,7 +189,7 @@ export default function ProblemsPage() {
         </div>
 
         {/* 难度级别分层筛选 */}
-        <div className="filters" role="tablist" aria-label="难度分级筛选" style={{ marginBottom: "8px" }}>
+        <div className="filters vf-diff-capsules" role="tablist" aria-label="难度分级筛选" style={{ marginBottom: "8px" }}>
           {(["全部", "入门 (<1000)", "进阶 (1000-1300)", "挑战 (1400+)"] as const).map((level) => (
             <button
               key={level}
