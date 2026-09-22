@@ -48,10 +48,15 @@ export default function ProblemPage() {
   const id = params.id;
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
   const [lang, setLang] = useState<Lang>("python3");
+  const [drafts, setDrafts] = useState<Record<Lang, string>>({
+    python3: PYTHON_STUB,
+    cpp17: CPP_STUB,
+  });
   const [source, setSource] = useState(PYTHON_STUB);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [error, setError] = useState("");
+  const [debugNotice, setDebugNotice] = useState("");
   const [coach, setCoach] = useState("");
   const [coachBusy, setCoachBusy] = useState(false);
   const [contrast, setContrast] = useState<ContrastResult | null>(null);
@@ -59,17 +64,91 @@ export default function ProblemPage() {
   const [contrastOpen, setContrastOpen] = useState(false);
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
 
+  function updateSource(next: string) {
+    setSource(next);
+    setDrafts((prev) => ({ ...prev, [lang]: next }));
+    try {
+      sessionStorage.setItem(`vf_code_${id}_${lang}`, next);
+      sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang, source: next }));
+    } catch {}
+  }
+
+  function switchLang(nextLang: Lang) {
+    setLang(nextLang);
+    let nextSource = drafts[nextLang];
+    try {
+      const saved = sessionStorage.getItem(`vf_code_${id}_${nextLang}`);
+      if (saved) nextSource = saved;
+    } catch {}
+    setSource(nextSource);
+    try {
+      sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang: nextLang, source: nextSource }));
+    } catch {}
+  }
+
   useEffect(() => {
     api
       .problem(id)
       .then(setProblem)
       .catch(() => setError("题目加载失败。"));
+
+    // Check if user came from /stress with an imported counterexample
+    try {
+      const debugRaw = sessionStorage.getItem(`vf_debug_case_${id}`);
+      if (debugRaw) {
+        sessionStorage.removeItem(`vf_debug_case_${id}`);
+        const parsed = JSON.parse(debugRaw);
+        if (parsed?.counterexample) {
+          const parsedLang: Lang = parsed.lang === "cpp17" ? "cpp17" : "python3";
+          setLang(parsedLang);
+          if (parsed.source) {
+            setSource(parsed.source);
+            setDrafts((prev) => ({ ...prev, [parsedLang]: parsed.source }));
+            try {
+              sessionStorage.setItem(`vf_code_${id}_${parsedLang}`, parsed.source);
+              sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang: parsedLang, source: parsed.source }));
+            } catch {}
+          }
+          setResult({
+            job_id: "",
+            submission_id: 0,
+            verdict: "WA",
+            stage: "done",
+            time_ms: 0,
+            counterexample: parsed.counterexample,
+            sandbox: "docker",
+            source: parsed.source || "",
+            lang: parsedLang,
+          });
+          setDebugNotice("🎯 已从智能对拍导入第一条反例与选手程序，请针对反例调整逻辑后重新提交。");
+          return;
+        }
+      }
+    } catch {}
+
+    // Restore cached drafts for both languages if available
+    try {
+      const py = sessionStorage.getItem(`vf_code_${id}_python3`);
+      const cpp = sessionStorage.getItem(`vf_code_${id}_cpp17`);
+      if (py || cpp) {
+        setDrafts((prev) => ({
+          python3: py || prev.python3,
+          cpp17: cpp || prev.cpp17,
+        }));
+      }
+    } catch {}
+
     const wanted = Number(new URLSearchParams(window.location.search).get("sub") || "");
     if (Number.isFinite(wanted) && wanted > 0) {
       api
         .submission(wanted)
         .then((row) => {
-          if (row.source) setSource(row.source);
+          if (row.source) {
+            setSource(row.source);
+            if (row.lang === "cpp17" || row.lang === "python3") {
+              setDrafts((prev) => ({ ...prev, [row.lang as Lang]: row.source }));
+            }
+          }
           if (row.lang === "cpp17" || row.lang === "python3") setLang(row.lang);
           setResult({
             job_id: "",
@@ -89,11 +168,17 @@ export default function ProblemPage() {
     api
       .review(id)
       .then((data) => {
-        if (data.submission) {
-          setResult(data.submission);
-          if (data.submission.source) setSource(data.submission.source);
-          if (data.submission.lang === "cpp17" || data.submission.lang === "python3") {
-            setLang(data.submission.lang);
+        const sub = data.submission;
+        if (sub) {
+          setResult(sub);
+          if (sub.source) {
+            setSource(sub.source);
+            if (sub.lang === "cpp17" || sub.lang === "python3") {
+              setDrafts((prev) => ({ ...prev, [sub.lang as Lang]: sub.source || "" }));
+            }
+          }
+          if (sub.lang === "cpp17" || sub.lang === "python3") {
+            setLang(sub.lang);
           }
         }
         if (data.contrast) setContrast(data.contrast);
@@ -209,15 +294,7 @@ export default function ProblemPage() {
             <select
               id="lang"
               value={lang}
-              onChange={(event) => {
-                const next = event.target.value as Lang;
-                setLang(next);
-                const nextSource = next === "python3" ? PYTHON_STUB : CPP_STUB;
-                setSource(nextSource);
-                try {
-                  sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang: next, source: nextSource }));
-                } catch {}
-              }}
+              onChange={(event) => switchLang(event.target.value as Lang)}
             >
               <option value="python3">Python3</option>
               <option value="cpp17">C++17</option>
@@ -228,6 +305,7 @@ export default function ProblemPage() {
                 onClick={() => {
                   try {
                     sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang, source }));
+                    sessionStorage.setItem(`vf_code_${id}_${lang}`, source);
                   } catch {}
                 }}
               >
@@ -248,7 +326,7 @@ export default function ProblemPage() {
                 setCoach("");
                 try {
                   const next = await api.solve(id, lang);
-                  if (next.source) setSource(next.source);
+                  if (next.source) updateSource(next.source);
                   setResult(next);
                 } catch (err) {
                   setError((err as Error).message || "生成草稿失败");
@@ -265,11 +343,23 @@ export default function ProblemPage() {
             <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
               {coachBusy ? "启发中…" : "启发教练 (防剧透)"}
             </button>
-            <button className="primary" type="button" disabled={busy} onClick={submit}>
+            <button
+              className="primary"
+              type="button"
+              disabled={busy}
+              onClick={submit}
+              title="提交评测 (快捷键: Ctrl+Enter / ⌘+Enter)"
+            >
               {busy ? "沙箱评测中…" : "提交评测"}
             </button>
           </div>
         </div>
+        {debugNotice ? (
+          <div className="vf-arena-debug-notice">
+            <span>{debugNotice}</span>
+            <button type="button" onClick={() => setDebugNotice("")} aria-label="关闭提示">✕</button>
+          </div>
+        ) : null}
         <div className="arena-body">
           <section className="statement">
             {problem ? (
@@ -294,13 +384,12 @@ export default function ProblemPage() {
             <CodeEditor
               language={monacoLang}
               value={source}
-              onChange={(next) => {
-                setSource(next);
-                try {
-                  sessionStorage.setItem(`vf_code_${id}`, JSON.stringify({ lang, source: next }));
-                } catch {}
-              }}
+              onChange={updateSource}
+              onSubmit={submit}
             />
+            <div className="vf-editor-bar-hint">
+              <span>💡 支持 <code>Ctrl+Enter</code> 或 <code>⌘+Enter</code> 快捷提交评测</span>
+            </div>
           </section>
           <aside className="side">
             <h2>公开样例</h2>

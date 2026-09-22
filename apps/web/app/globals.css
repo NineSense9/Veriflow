@@ -4960,4 +4960,132 @@ html[data-theme="dark"] .evidence-cert {
   animation: pulse-ring 1.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
 }
 
+/* Arena debug notice & shortcut hint */
+.vf-arena-debug-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.vf-arena-debug-notice button {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.vf-arena-debug-notice button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.vf-editor-bar-hint {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-3);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.vf-editor-bar-hint code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: var(--accent);
+}
+
+/* Stress counterexample to arena CTA button */
+.vf-stress-debug-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: all 0.15s ease;
+}
+
+.vf-stress-debug-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Compose publish celebration card */
+.vf-publish-card {
+  margin: 12px 16px;
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--ac) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--ac) 35%, transparent);
+  border-radius: 8px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.vf-publish-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ac);
+  margin-bottom: 6px;
+}
+
+.vf-publish-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.vf-publish-card-body p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.vf-publish-card-body .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--ac);
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.vf-publish-card-body .btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
 

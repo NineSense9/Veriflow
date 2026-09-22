@@ -8,14 +8,18 @@ export default function CodeEditor({
   language,
   value,
   onChange,
+  onSubmit,
   height = "100%",
 }: {
   language: "python" | "cpp";
   value: string;
   onChange: (value: string) => void;
+  onSubmit?: () => void;
   height?: string;
 }) {
   const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
 
   function apply(monaco: Parameters<OnMount>[1]) {
     const dark = readTheme() === "dark";
@@ -76,9 +80,12 @@ export default function CodeEditor({
           },
         });
       }}
-      onMount={(_editor, monaco) => {
+      onMount={(editor, monaco) => {
         monacoRef.current = monaco;
         apply(monaco);
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+          onSubmitRef.current?.();
+        });
       }}
     />
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import CopyButton from "@/components/CopyButton";
@@ -21,6 +21,7 @@ type Lang = "python3" | "cpp17";
 const CodeEditor = dynamic(() => import("@/components/CodeEditor"), { ssr: false });
 
 function StressInner() {
+  const router = useRouter();
   const search = useSearchParams();
   const initialId = search.get("id") || "VF1001";
   const urlLang = search.get("lang");
@@ -329,6 +330,28 @@ function StressInner() {
                     {result.counterexample.actual}
                   </div>
                 </div>
+                <button
+                  type="button"
+                  className="vf-stress-debug-btn"
+                  title="将当前反例测试点和选手代码带入做题竞技场进行针对性调试"
+                  onClick={() => {
+                    try {
+                      sessionStorage.setItem(
+                        `vf_debug_case_${problemId}`,
+                        JSON.stringify({
+                          counterexample: result.counterexample,
+                          source: sol,
+                          lang: solLang,
+                        })
+                      );
+                      sessionStorage.setItem(`vf_code_${problemId}`, JSON.stringify({ lang: solLang, source: sol }));
+                      sessionStorage.setItem(`vf_code_${problemId}_${solLang}`, sol);
+                    } catch {}
+                    router.push(`/problems/${problemId}`);
+                  }}
+                >
+                  🎯 带此反例回做题台调试 →
+                </button>
               </>
             ) : (
               <p className="ghost">拍到不一致会停在这里。暴力超时记 stress_error，不是你的 WA。</p>
