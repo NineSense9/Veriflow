@@ -1,34 +1,109 @@
 /** User-visible Chinese. Protocol enums PASS/FAIL/READY stay English. */
 
 export const DEMO_TITLE_ZH: Record<string, string> = {
-  case1_order: "顺序失败",
-  case2_dataflow: "数据流失败",
-  case3_safety: "安全策略失败",
-  case4_runtime: "静态通过 · 运行失败",
+  case4_runtime: "静态全绿 · 动态沙箱断流 (推荐答辩演示)",
+  case1_order: "前置缺失 · 测资未成提前发布",
+  case2_dataflow: "接口崩溃 · 测资类型与沙箱不符",
+  case3_safety: "越权违规 · 缺少专家人工审题门",
 };
 
-export const DEMO_SCENARIO_ZH: Record<string, { title: string; scenario: string; verdict: string }> = {
+export type RoleStory = {
+  input: string;
+  defect: string;
+  defense: string;
+};
+
+export const DEMO_SCENARIO_ZH: Record<
+  string,
+  { title: string; scenario: string; verdict: string; roleStory: RoleStory }
+> = {
   case4_runtime: {
-    title: "AI 自动出题与发布流水线",
-    scenario: "大模型尝试构建出题流程：「AI测资生成 → 数据范围校验 → 分支判定 → 助教通知 → 专家审题 → 题目发布入库」。",
-    verdict: "静态连线全部通畅（静态 PASS），但沙箱模拟运行时发现：分支异常导致通知与审题步骤被绕过。VeriFlow 强制触发发布门禁熔断（BLOCKED），杜绝残缺题目流入 OJ 题库！",
+    title: "AI 自动出题流水线（经典时序欺骗与沙箱截断）",
+    scenario: "大模型尝试构建端到端出题流程：「AI测资生成 → 范围守卫 → 外部准入判定 → 助教审核通知 → 专家审题门 → 题目发布入库」。",
+    verdict: "静态连线与结构全部通畅（静态 7 项检查全绿 PASS），具有极强的欺骗性！但沙箱在真实仿真模拟执行时发现：第 3 步外部判定条件未满足导致流程提前猝死中断，后续关键的「助教通知」与「专家审题门」惨遭绕过！VeriFlow 强制触发发布门禁熔断（BLOCKED），严防残缺坏题流入 OJ 题库！",
+    roleStory: {
+      input: "大模型（AI Agent）编排了一个看似完美的 6 步出题任务链（静态拓扑连线全通）。",
+      defect: "动态沙箱仿真运行至「外部判定」即异常终止（红线拦截），导致专家审核与入库全部失联！",
+      defense: "VeriFlow 识破静态伪装，捕获反例时序切片，门禁判定 BLOCKED，保护题库免遭污染。",
+    },
   },
   case1_order: {
-    title: "步骤顺序颠倒缺陷",
-    scenario: "大模型构建的出题流中，在测试数据尚未生成完毕前就提前调用了发布工具。",
-    verdict: "违反时序前置依赖约束。静态检查当场标红并拦截，防止空测资题目入库。",
+    title: "步骤顺序颠倒缺陷（测资尚未生成即尝试入库）",
+    scenario: "大模型构建的出题流中，在测试数据尚未生成完毕前就提前调用了入库发布工具。",
+    verdict: "违反时序前置依赖约束。静态依赖分析器当场标红并拦截，防止空数据或残缺题目入库发布。",
+    roleStory: {
+      input: "大模型将「发布入库」排在「测资生成」之前，出现时序颠倒的严重逻辑倒错。",
+      defect: "有向无环图（DAG）拓扑检查发现前置依赖尚未就绪，存在时序倒错。",
+      defense: "静态门禁当场阻断，生成有向见证路径，精准指导出题人调换正确执行顺序。",
+    },
   },
   case2_dataflow: {
-    title: "测资类型与沙箱不匹配",
-    scenario: "出题流水线中生成器产出的测试用例格式与后续判题沙箱所需输入存在关键字段缺失。",
-    verdict: "数据流绑定检查失败，触发门禁拦截，避免线上学生提交判题时引发沙箱崩溃。",
+    title: "测资类型与沙箱入参不匹配",
+    scenario: "出题流水线中生成器产出的测试用例格式与后续判题沙箱所需输入存在关键字段缺失与类型不兼容。",
+    verdict: "数据流绑定检查失败，触发门禁拦截，避免线上学生提交判题时引发沙箱崩溃或批量 RE。",
+    roleStory: {
+      input: "大模型输出的测资格式是字典对象，但沙箱评测器要求标准纯文本标准输入 (stdin)。",
+      defect: "生产者-消费者类型检查发现 Type Mismatch（类型不匹配）。",
+      defense: "数据流验证器拦截发布，强制要求在中间添加数据格式转换适配器。",
+    },
   },
   case3_safety: {
-    title: "缺少人工审题门禁",
-    scenario: "大模型直接将自动生成的题目发布入库，流程中没有放置任何人工确认门（Human Gate）。",
-    verdict: "违反发布安全策略（MISSING_HUMAN_GATE）。发布门禁强制阻断，必须有人工打勾才能放行。",
+    title: "越权发布：缺少人工审题强制门禁",
+    scenario: "大模型直接将自动生成的题目发布入库，整个流程中没有任何人工确认门（Human Gate）。",
+    verdict: "违反发布安全策略（MISSING_HUMAN_GATE）。发布门禁强制阻断，必须配置专家审核节点才能放行入库。",
+    roleStory: {
+      input: "大模型试图实现「全无人值守直接发布」，跳过了任何教师或裁判的人工审核环节。",
+      defect: "触发出题系统的安全底线：AI 不能既当出题人又当质检人，必须设防。",
+      defense: "安全策略引擎（Safety Engine）一票否决，坚决阻断违规直通发布。",
+    },
   },
 };
+
+export const ISSUE_TITLE_ZH: Record<string, { title: string; subtitle: string; tag: string }> = {
+  "eventually publish_problem": {
+    title: "【致命断流】题目未能发布入库 (publish_problem 未执行)",
+    subtitle: "流水线在前半段异常中断，导致题目未达入库终态，沦为残缺草稿",
+    tag: "执行未竟",
+  },
+  "if test_generator then human_gate": {
+    title: "【安全违规】绕过专家人工审题门 (human_gate 缺失)",
+    subtitle: "AI 尝试跳过专家复核直接推进，违反竞赛安全策略强制门禁",
+    tag: "越权绕过",
+  },
+  "exactly once publish_problem": {
+    title: "【幂等缺陷】未达成精准单次入库",
+    subtitle: "入库动作在执行轨迹中执行次数为 0，未达成规格要求",
+    tag: "未达成",
+  },
+  "MISSING_HUMAN_GATE": {
+    title: "【安全策略】流程缺乏人工审核门禁",
+    subtitle: "发布路径上存在无人工审核的旁路，触发出题安全红线",
+    tag: "安全红线",
+  },
+  "OUT_OF_ORDER": {
+    title: "【时序颠倒】执行步骤顺序倒置",
+    subtitle: "后续依赖步骤在先决条件就绪前被提前触发",
+    tag: "时序违规",
+  },
+  "TYPE_MISMATCH": {
+    title: "【数据流异常】输入输出类型不匹配",
+    subtitle: "上游产出的数据字段或类型无法被下游沙箱接收",
+    tag: "数据流",
+  },
+};
+
+export function issueDisplayInfo(issue: { title?: string; code?: string; description?: string }) {
+  const key = (issue.title || issue.code || "").trim();
+  if (ISSUE_TITLE_ZH[key]) return ISSUE_TITLE_ZH[key];
+  for (const [k, v] of Object.entries(ISSUE_TITLE_ZH)) {
+    if (key.includes(k)) return v;
+  }
+  return {
+    title: issue.title || issue.code || "未分类缺陷",
+    subtitle: issue.description || "沙箱监视器捕获到的运行异常",
+    tag: "缺陷",
+  };
+}
 
 export const PIPELINE_ZH: Record<string, string> = {
   parse: "解析",

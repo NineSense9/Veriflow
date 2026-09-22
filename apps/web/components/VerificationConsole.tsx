@@ -25,7 +25,7 @@ import { effectsAllowScan, useEffects } from "@/lib/effects";
 import { setAmbientActivity } from "@/lib/ambient-activity";
 import ComposeCanvas, { type GraphHandle } from "@/components/ComposeCanvas";
 import { matchingIssueNodes } from "./verification-selection";
-import { categoryLabel, demoTitle, pipelineLabel, DEMO_SCENARIO_ZH } from "@/lib/ui-zh";
+import { categoryLabel, demoTitle, pipelineLabel, DEMO_SCENARIO_ZH, issueDisplayInfo } from "@/lib/ui-zh";
 import { algorithmCopy } from "@/lib/algorithm-copy-zh";
 import { evidenceKindLabel } from "@/lib/evidence-layout";
 import { downloadSessionEvidence } from "@/lib/evidence-export";
@@ -98,6 +98,7 @@ export default function VerificationConsole({
   const [reload, setReload] = useState(0);
   const requestId = useRef(0);
   const [view, setView] = useState("workflow");
+  const [judgeScriptOpen, setJudgeScriptOpen] = useState(false);
   const graphSection = useRef<HTMLElement>(null);
   const findingsSection = useRef<HTMLElement>(null);
   const repairSection = useRef<HTMLDetailsElement>(null);
@@ -440,17 +441,91 @@ export default function VerificationConsole({
             <p className="caption">{gateWhy(dimensions.find((item) => item.name === "executable")?.status, session.runtime?.status, session.gate.ready) || "核验结果来自静态验证器与运行时记录。"}</p>
           </section>
           {scenarioInfo ? (
-            <div className="vf-scenario-card" role="region" aria-label="出题业务场景还原">
-              <div className="vf-scenario-head">
-                <span className="vf-scenario-badge">真实业务场景还原</span>
-                <span className="vf-scenario-title">{scenarioInfo.title}</span>
+            <div className="vf-storyboard-container" role="region" aria-label="AI出题验流全链路业务故事看板">
+              <div className="vf-storyboard-header">
+                <div className="vf-storyboard-title-box">
+                  <span className="vf-storyboard-badge">🎯 评委速览 · 验流在完成什么业务闭环？</span>
+                  <strong className="vf-storyboard-title">{scenarioInfo.title}</strong>
+                </div>
+                <button
+                  type="button"
+                  className={`vf-storyboard-guide-btn ${judgeScriptOpen ? "active" : ""}`}
+                  onClick={() => setJudgeScriptOpen((prev) => !prev)}
+                  title="展开面向评委的 30 秒口播答辩说辞"
+                >
+                  {judgeScriptOpen ? "收起答辩速记 ✕" : "🎙️ 评委 30 秒答辩速记指南 ▼"}
+                </button>
               </div>
-              <p className="vf-scenario-context">
-                <span className="vf-scenario-label">出题流程：</span>{scenarioInfo.scenario}
-              </p>
-              <p className="vf-scenario-verdict">
-                <span className="vf-scenario-label">质检判定：</span>{scenarioInfo.verdict}
-              </p>
+
+              {/* 3-Stage Visual Pipeline Cards */}
+              <div className="vf-storyboard-grid">
+                {/* Stage 1: AI Agent Proposal */}
+                <div className="vf-story-card step-agent">
+                  <div className="vf-step-head">
+                    <span className="vf-step-pill">阶段 1 · 业务起点</span>
+                    <span className="vf-step-role">🤖 大模型出题 Agent 提案</span>
+                  </div>
+                  <div className="vf-step-body">
+                    <strong className="vf-step-title">大模型自主编排出题流水线</strong>
+                    <p className="vf-step-desc">{scenarioInfo.roleStory?.input || scenarioInfo.scenario}</p>
+                  </div>
+                  <div className="vf-step-foot">
+                    <span className="vf-step-tag">输入: 自然语言指令 ➔ LLM 生成 6 步 DAG</span>
+                  </div>
+                </div>
+
+                <div className="vf-story-connector" aria-hidden="true">➔</div>
+
+                {/* Stage 2: VeriFlow Dual Verification (HERE) */}
+                <div className="vf-story-card step-verify is-highlight">
+                  <div className="vf-step-head">
+                    <span className="vf-step-pill current">阶段 2 · 核心质检</span>
+                    <span className="vf-step-role">🛡️ VeriFlow 形式化与动态双核质检</span>
+                  </div>
+                  <div className="vf-step-body">
+                    <strong className="vf-step-title">静态分析全绿，沙箱捕获致命断流！</strong>
+                    <p className="vf-step-desc">{scenarioInfo.roleStory?.defect || scenarioInfo.verdict}</p>
+                  </div>
+                  <div className="vf-step-foot">
+                    <span className="vf-step-tag danger">发现时序违规 · 捕获最小反例</span>
+                  </div>
+                </div>
+
+                <div className="vf-story-connector" aria-hidden="true">➔</div>
+
+                {/* Stage 3: Gate Decision */}
+                <div className="vf-story-card step-gate">
+                  <div className="vf-step-head">
+                    <span className="vf-step-pill gate">阶段 3 · 终审出库</span>
+                    <span className="vf-step-role">⚖️ 门禁熔断与题库安全防线</span>
+                  </div>
+                  <div className="vf-step-body">
+                    <strong className="vf-step-title">强制熔断阻断 (BLOCKED)</strong>
+                    <p className="vf-step-desc">{scenarioInfo.roleStory?.defense || "一票否决非法发布，保卫题库安全。"}</p>
+                  </div>
+                  <div className="vf-step-foot">
+                    <span className="vf-step-tag safe">杜绝残缺假题流入竞赛 OJ 题库</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Collapsible Judge Presentation Script */}
+              {judgeScriptOpen ? (
+                <div className="vf-judge-script-drawer">
+                  <div className="vf-script-header">
+                    <span className="vf-script-icon">🎙️</span>
+                    <strong>评委答辩 30 秒高分讲解口播（现场直击痛点）：</strong>
+                    <button type="button" onClick={() => setJudgeScriptOpen(false)} className="vf-script-close-btn">✕</button>
+                  </div>
+                  <p className="vf-script-paragraph">
+                    “各位评委老师，以往让大模型自动出算法题，最大的风险在于<strong>‘AI 自行生成的步骤黑盒不可控、容易产生幻觉或自作主张跳过人工审核’</strong>。
+                    VeriFlow 的出题质检（验流）系统就像<strong>‘算法题库的工业级安检机’</strong>！
+                    正如您当前屏幕看到的典型场景：大模型生成的出题流水线<strong>在静态连线结构上看似天衣无缝（静态 7 项检查全绿 PASS）</strong>，
+                    但通过我们的<strong>运行时沙箱仿真器</strong>进行毫秒级模拟试跑，瞬间捕获到了致命漏洞——由于外部判定条件异常中断，导致后面的<strong>‘助教通知’与‘专家审题门’被完全跳过</strong>！
+                    如果缺乏质检，一道无人审核的残缺坏题就会直接上线残害考生。VeriFlow 在此当场执行<strong>门禁熔断（BLOCKED）</strong>并提取出反例铁证，彻底攻克了大模型出题的安全可靠落地难题！”
+                  </p>
+                </div>
+              ) : null}
             </div>
           ) : null}
           <Stepper
@@ -505,6 +580,12 @@ export default function VerificationConsole({
                 </button>
                 {focused && graphMode === "workflow" ? <span className="caption">反例路径: {focused}</span> : null}
               </div>
+              <div className="vf-graph-legend-strip" role="note" aria-label="图谱节点状态图例">
+                <span className="vf-legend-label">仿真图例：</span>
+                <span className="vf-legend-pill ok">🟢 仿真执行成功</span>
+                <span className="vf-legend-pill break">🔴 仿真在此中断 (断流点)</span>
+                <span className="vf-legend-pill dim">⚪ 惨遭绕过的关键节点 (专家门/入库)</span>
+              </div>
               <div className="vf-dag" style={{ position: "relative" }}>
                 {scan && effectsAllowScan(effects) ? <GridScan active /> : null}
                 {graphMode === "workflow" && ir ? (
@@ -556,29 +637,36 @@ export default function VerificationConsole({
               </div>
             </section>
             <aside className="vf-findings" ref={findingsSection} tabIndex={-1} aria-label="问题与证据">
-              <div className="vf-issues-heading"><h2>问题定位</h2><span className="vf-count">{issues.length}</span></div>
+              <div className="vf-issues-heading"><h2>问题定位 (Findings)</h2><span className="vf-count">{issues.length}</span></div>
               <p className="caption">
                 共 {issues.length} · 静态 {session.static.issues.length} · 运行 {(session.runtime_findings ?? []).length}
               </p>
               {nodeNote ? <p className="caption">{nodeNote}</p> : null}
               {issues.length === 0 ? <p className="ghost">无 Issue。静态与运行时均未给出 FAIL。</p> : null}
               <div className="vf-issue-list" role="group" aria-label="选择核验问题">
-                {issues.map((issue) => (
-                  <button key={issue.id} type="button" className="vf-issue-option" aria-pressed={selected?.id === issue.id} onClick={() => focusIssue(issue)}>
-                    {chip(issue.severity === "HIGH" || issue.severity === "CRITICAL" ? "FAIL" : issue.severity)}
-                    <span><strong>{issue.title || issue.code}</strong><small>{issue.category} · {nodeOf(issue)}</small></span>
-                    <span aria-hidden="true">↗</span>
-                  </button>
-                ))}
+                {issues.map((issue) => {
+                  const display = issueDisplayInfo(issue);
+                  return (
+                    <button key={issue.id} type="button" className="vf-issue-option" aria-pressed={selected?.id === issue.id} onClick={() => focusIssue(issue)}>
+                      {chip(issue.severity === "HIGH" || issue.severity === "CRITICAL" ? "FAIL" : issue.severity)}
+                      <span>
+                        <strong className="vf-issue-smart-title">{display.title}</strong>
+                        <small className="vf-issue-smart-sub">{display.subtitle}</small>
+                        <span className="vf-issue-meta-code">{issue.category} · {nodeOf(issue)} · {issue.title || issue.code}</span>
+                      </span>
+                      <span aria-hidden="true">↗</span>
+                    </button>
+                  );
+                })}
               </div>
               {selected ? (
                 <section className="vf-current-issue" aria-label="当前问题证据" data-issue-id={selected.id}>
                   <SpotlightCard className="vf-evidence-spotlight">
-                  <div className="vf-evidence-heading"><span>证据</span><span>{selected.detected_by || selected.category}</span></div>
+                  <div className="vf-evidence-heading"><span>证据溯源</span><span>{selected.detected_by || selected.category}</span></div>
                   <dl className="vf-kv vf-primary-evidence">
-                    <div><dt>原因</dt><dd>{selected.title || selected.description || selected.code}</dd></div>
-                    <div><dt>预期</dt><dd>{selected.expected ?? "未提供预期值"}</dd></div>
-                    <div><dt>实际</dt><dd>{selected.actual ?? "未提供实际值"}</dd></div>
+                    <div><dt>缺陷诊断</dt><dd><strong>{issueDisplayInfo(selected).title}</strong><div style={{ color: "var(--muted)", fontSize: "12px", marginTop: "2px" }}>{issueDisplayInfo(selected).subtitle}</div></dd></div>
+                    <div><dt>预期要求</dt><dd>{selected.expected ? `期望: ${selected.expected}` : "未提供预期值"}</dd></div>
+                    <div><dt>实际表现</dt><dd className="err">{selected.actual ? (selected.actual === "not in trace" ? "沙箱实测: 该动作在执行轨迹中完全缺失 (未被触发)" : `沙箱实测: ${selected.actual}`) : "未提供实际值"}</dd></div>
                     <div><dt>反例路径</dt><dd className="mono vf-witness-path" key={selected.id}>{(highlight?.path ?? selected.witness_path ?? []).length ? (highlight?.path ?? selected.witness_path).map((id, index) => <span key={`${id}-${index}`} style={{ animationDelay: `${index * 70}ms` }}>{index ? "→ " : ""}{id}</span>) : "无已记录反例路径"}</dd></div>
                   </dl>
                   </SpotlightCard>

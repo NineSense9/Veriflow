@@ -80,15 +80,15 @@ export function irToFlow(
           : node.kind === "human_gate"
             ? "专家审题门"
             : node.kind === "branch"
-              ? (node.id === "if_pay" ? "支付分支" : "条件分支")
-              : (node.id === "notify_1" ? "助教通知" : node.id);
+              ? (node.id === "if_pay" ? "前置准入判定" : "条件分支")
+              : (node.id === "notify_1" ? "助教审核通知" : node.id);
     const zhSub =
       node.kind === "tool"
         ? (node.tool || node.id)
         : node.kind === "guard"
           ? (node.expr || node.id)
           : node.kind === "branch"
-            ? (node.expr || node.id)
+            ? (node.expr === "payment_status == success" ? "外部条件 (status==ok)" : (node.expr || node.id))
             : node.id;
     const label = zhTitle !== zhSub ? `${zhTitle} (${zhSub})` : zhTitle;
     return {
