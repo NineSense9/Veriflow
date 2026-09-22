@@ -20,6 +20,7 @@ import {
 import { statementProse } from "@/lib/statement-view";
 
 const CodeEditor = dynamic(() => import("@/components/CodeEditor"), { ssr: false });
+const CodeDiffEditor = dynamic(() => import("@/components/CodeDiffEditor"), { ssr: false });
 
 type Lang = "python3" | "cpp17";
 
@@ -97,6 +98,27 @@ export default function ProblemPage() {
       setError("拉取历史提交源码失败。");
     } finally {
       setRestoringSubId(null);
+    }
+  }
+
+  const [diffModalOpen, setDiffModalOpen] = useState(false);
+  const [diffSubId, setDiffSubId] = useState<number | null>(null);
+  const [diffHistoricalSource, setDiffHistoricalSource] = useState("");
+  const [diffSubMeta, setDiffSubMeta] = useState<{ verdict: string; lang: string } | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+
+  async function openDiff(subId: number, verdict: string, subLang: string) {
+    setDiffSubId(subId);
+    setDiffSubMeta({ verdict, lang: subLang });
+    setDiffLoading(true);
+    setDiffModalOpen(true);
+    try {
+      const detail = await api.submission(subId);
+      setDiffHistoricalSource(detail.source || "");
+    } catch {
+      setDiffHistoricalSource("// 拉取该次提交的历史源码失败。");
+    } finally {
+      setDiffLoading(false);
     }
   }
 
@@ -242,7 +264,9 @@ export default function ProblemPage() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        if (contrastOpen || submitModalOpen) {
+        if (diffModalOpen) {
+          setDiffModalOpen(false);
+        } else if (contrastOpen || submitModalOpen) {
           setContrastOpen(false);
           setSubmitModalOpen(false);
         } else if (zenHistoryOpen) {
@@ -252,7 +276,7 @@ export default function ProblemPage() {
         }
       }
     };
-    if (contrastOpen || submitModalOpen) {
+    if (contrastOpen || submitModalOpen || diffModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -262,7 +286,7 @@ export default function ProblemPage() {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", onKey);
     };
-  }, [contrastOpen, submitModalOpen, zenMode, zenHistoryOpen]);
+  }, [contrastOpen, submitModalOpen, zenMode, zenHistoryOpen, diffModalOpen]);
 
   useEffect(() => {
     const onShortcut = (event: KeyboardEvent) => {
@@ -514,6 +538,14 @@ export default function ProblemPage() {
                         >
                           {restoringSubId === sub.id ? "载入中…" : "↺ 载入代码"}
                         </button>
+                        <button
+                          type="button"
+                          className="vf-history-btn-diff"
+                          onClick={() => openDiff(sub.id, sub.verdict || "UNKNOWN", sub.lang)}
+                          title="对比当前编辑器代码与此版本的差异"
+                        >
+                          ⇄ 对比
+                        </button>
                         <Link
                           href={`/status/${sub.id}`}
                           className="vf-history-btn-detail"
@@ -617,6 +649,14 @@ export default function ProblemPage() {
                         title="将该次提交的代码重新载入到编辑器"
                       >
                         {restoringSubId === sub.id ? "载入中…" : "↺ 载入代码"}
+                      </button>
+                      <button
+                        type="button"
+                        className="vf-history-btn-diff"
+                        onClick={() => openDiff(sub.id, sub.verdict || "UNKNOWN", sub.lang)}
+                        title="对比当前编辑器代码与此版本的差异"
+                      >
+                        ⇄ 对比
                       </button>
                       <Link
                         href={`/status/${sub.id}`}
@@ -987,6 +1027,77 @@ export default function ProblemPage() {
                   </button>
                 </>
               )}
+            </footer>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Code Diff Inspector Modal */}
+      {diffModalOpen ? (
+        <div
+          className="vf-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="vf-diff-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDiffModalOpen(false);
+          }}
+        >
+          <div className="vf-modal-card vf-diff-dialog">
+            <header className="vf-modal-header">
+              <div>
+                <span className="kicker">版本差异检查器 (Code Diff)</span>
+                <h3 id="vf-diff-title" style={{ margin: "2px 0 0" }}>
+                  提交 #{diffSubId} ({diffSubMeta?.verdict} · {diffSubMeta?.lang}) ⇄ 当前编辑器代码
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="vf-modal-close"
+                onClick={() => setDiffModalOpen(false)}
+                aria-label="关闭对比"
+              >
+                ✕
+              </button>
+            </header>
+
+            <div className="vf-diff-body">
+              {diffLoading ? (
+                <div className="vf-diff-loading">正在拉取提交 #{diffSubId} 历史源码…</div>
+              ) : (
+                <CodeDiffEditor
+                  original={diffHistoricalSource}
+                  modified={source}
+                  language={monacoLang}
+                />
+              )}
+            </div>
+
+            <footer className="vf-modal-actions" style={{ justifyContent: "space-between" }}>
+              <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                <span>左栏：历史提交 #{diffSubId}</span>
+                <span style={{ margin: "0 8px" }}>·</span>
+                <span>右栏：当前编辑器代码 (增减差异实时高亮)</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => {
+                    if (diffSubId) restoreSubmissionCode(diffSubId);
+                    setDiffModalOpen(false);
+                  }}
+                >
+                  ↺ 恢复为此历史版本
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() => setDiffModalOpen(false)}
+                >
+                  关闭 (Esc)
+                </button>
+              </div>
             </footer>
           </div>
         </div>

@@ -11,6 +11,7 @@ import Brand from "@/components/Brand";
 import PillNav from "@/components/reactbits/PillNav";
 import CardNav from "@/components/reactbits/CardNav";
 import StaggeredMenu from "@/components/reactbits/StaggeredMenu";
+import CommandPalette from "@/components/CommandPalette";
 
 const CORE = [
   { href: "/", label: "控制台" },
@@ -81,6 +82,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
   const [navOpen, setNavOpen] = useState(false);
   const [drop, setDrop] = useState<string | null>(null);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const bar = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const [indicator, setIndicator] = useState({ x: 0, w: 0, on: 0 });
@@ -130,9 +132,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && (event.key === "k" || event.key === "K")) {
+        event.preventDefault();
+        setCmdOpen((prev) => !prev);
+        return;
+      }
       if (event.key === "Escape") {
         setNavOpen(false);
         setDrop(null);
+        setCmdOpen(false);
       }
     }
     function onDoc(event: MouseEvent) {
@@ -268,6 +276,19 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               后台
             </Link>
           ) : null}
+          <button
+            type="button"
+            className="vf-cmd-trigger"
+            onClick={() => setCmdOpen(true)}
+            title="全局指令搜索盘 (快捷键: Ctrl+K / ⌘+K)"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <span>搜索</span>
+            <kbd>⌘K</kbd>
+          </button>
           <ThemeToggle theme={theme} onToggle={setTheme} />
           <Link href="/settings" className="btn btn-ghost btn-sm">
             设置
@@ -294,6 +315,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <span>VeriFlow · 可验证算法训练平台与 AI 出题门禁系统</span>
         <span>沙箱运行环境 · C++17 / Python3 · Docker 裁判</span>
       </footer>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }

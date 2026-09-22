@@ -40,6 +40,7 @@ function StressInner() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<StressResult | null>(null);
   const [error, setError] = useState("");
+  const [seedNotice, setSeedNotice] = useState<string | null>(null);
   const { effects } = useEffects();
 
   useEffect(() => {
@@ -59,6 +60,23 @@ function StressInner() {
       .catch((err: Error & { status?: number }) => {
         if (err.status !== 401) setError(err.message || "题包加载失败");
       });
+
+    // 0. Check if user came from a failed submission counterexample bridge
+    try {
+      const seedRaw = sessionStorage.getItem(`vf_stress_seed_${problemId}`);
+      if (seedRaw) {
+        sessionStorage.removeItem(`vf_stress_seed_${problemId}`);
+        const parsed = JSON.parse(seedRaw);
+        if (parsed?.counterexample) {
+          const previewIn = parsed.counterexample.stdin ? String(parsed.counterexample.stdin).replace(/\s+/g, " ").trim() : "空";
+          setSeedNotice(
+            parsed.subId
+              ? `已从评测记录 #${parsed.subId} 载入代码与反例（样例输入: ${previewIn.slice(0, 24)}${previewIn.length > 24 ? "…" : ""}）`
+              : "已从评测记录载入代码与失败反例。"
+          );
+        }
+      }
+    } catch {}
 
     // 1. Prioritize draft/code passed from problem arena via sessionStorage
     let loaded = false;
@@ -170,6 +188,12 @@ function StressInner() {
             <span className="stress-banner-tag">对拍机制</span>
             <span>已加载该题预置测资生成器与暴力标程，点击「开拍」即在沙箱中高频对比 50~200 轮，毫秒级捕获边界反例。</span>
           </div>
+          {seedNotice ? (
+            <div className="stress-banner vf-stress-imported-banner" style={{ borderColor: "var(--brand, #4f46e5)", background: "rgba(79, 70, 229, 0.08)" }}>
+              <span className="stress-banner-tag" style={{ background: "var(--brand, #4f46e5)", color: "#fff" }}>已就绪</span>
+              <span>{seedNotice} 可直接点击右上角「开拍」进行沙箱高频对拍验证！</span>
+            </div>
+          ) : null}
           {disabled ? (
             <div className="stress-banner" style={{ color: "var(--wa)" }}>
               <span className="stress-banner-tag" style={{ color: "var(--wa)", background: "var(--wa-soft)" }}>提示</span>

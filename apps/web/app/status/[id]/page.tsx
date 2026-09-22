@@ -2,16 +2,42 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
 import CopyButton from "@/components/CopyButton";
 import { SubmissionDetail, api } from "@/lib/api";
 
 export default function SubmissionPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const [row, setRow] = useState<SubmissionDetail | null>(null);
   const [error, setError] = useState("");
+
+  function jumpToStress() {
+    if (!row) return;
+    try {
+      sessionStorage.setItem(
+        `vf_code_${row.problem_id}`,
+        JSON.stringify({ lang: row.lang, source: row.source || "" })
+      );
+      if (row.source) {
+        sessionStorage.setItem(`vf_code_${row.problem_id}_${row.lang}`, row.source);
+      }
+      if (row.counterexample) {
+        sessionStorage.setItem(
+          `vf_stress_seed_${row.problem_id}`,
+          JSON.stringify({
+            subId: row.id,
+            counterexample: row.counterexample,
+            source: row.source,
+            lang: row.lang,
+          })
+        );
+      }
+    } catch {}
+    router.push(`/stress?id=${row.problem_id}&lang=${row.lang}`);
+  }
 
   useEffect(() => {
     if (!Number.isFinite(id)) {
@@ -54,6 +80,14 @@ export default function SubmissionPage() {
               <span className="vf-home-more" style={{ margin: 0 }}>
                 <CopyButton text={row.source || ""} label="复制代码" />
                 <Link href={`/problems/${row.problem_id}?sub=${row.id}`}>载入编辑器重试</Link>
+                <button
+                  type="button"
+                  className="vf-status-stress-link-btn"
+                  onClick={jumpToStress}
+                  title="携带此代码与反例前往智能对拍页面验证"
+                >
+                  ⚡ 前往对拍
+                </button>
               </span>
             </div>
             {row.source ? (
@@ -67,10 +101,20 @@ export default function SubmissionPage() {
                   <h2>
                     <span>沙箱捕获失败测试用例 (最小反例)</span>
                   </h2>
-                  <CopyButton
-                    text={`输入:\n${row.counterexample.stdin}\n期望:\n${row.counterexample.expected}\n实际:\n${row.counterexample.actual}`}
-                    label="复制反例"
-                  />
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <button
+                      type="button"
+                      className="vf-status-ce-jump-stress"
+                      onClick={jumpToStress}
+                      title="携此失败反例与提交代码前往智能对拍平台进行边界比对"
+                    >
+                      ⚡ 携此反例与代码前往智能对拍 →
+                    </button>
+                    <CopyButton
+                      text={`输入:\n${row.counterexample.stdin}\n期望:\n${row.counterexample.expected}\n实际:\n${row.counterexample.actual}`}
+                      label="复制反例"
+                    />
+                  </div>
                 </div>
                 <div className="vf-status-ce-grid">
                   <div className="vf-status-ce-col">
