@@ -202,6 +202,19 @@ export default function ProblemPage() {
     };
   }, [contrastOpen, submitModalOpen]);
 
+  useEffect(() => {
+    const onShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        if (!busy) {
+          submit();
+        }
+      }
+    };
+    window.addEventListener("keydown", onShortcut);
+    return () => window.removeEventListener("keydown", onShortcut);
+  }, [busy, lang, source]);
+
   const monacoLang = lang === "python3" ? "python" : "cpp";
   const stages = useMemo(() => {
     if (!result && !busy) return [];
