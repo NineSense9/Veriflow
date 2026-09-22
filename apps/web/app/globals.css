@@ -5088,4 +5088,146 @@ html[data-theme="dark"] .evidence-cert {
   transform: translateY(-1px);
 }
 
+/* Problems page progress summary & status pills */
+.vf-problems-progress-card {
+  margin: 16px 0 20px;
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vf-problems-progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.vf-problems-progress-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.vf-problems-progress-icon {
+  font-size: 16px;
+}
+
+.vf-problems-progress-attempted {
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.vf-status-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vf-status-pill {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vf-status-pill:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.vf-status-pill.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.vf-progress-track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+}
+
+.vf-progress-fill-ac {
+  height: 100%;
+  background: var(--ac);
+  transition: width 0.3s ease;
+}
+
+.vf-progress-fill-wa {
+  height: 100%;
+  background: var(--wa);
+  transition: width 0.3s ease;
+}
+
+/* Stress test success celebration card */
+.vf-stress-success-card {
+  padding: 16px;
+  background: color-mix(in srgb, var(--ac) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--ac) 25%, transparent);
+  border-radius: 8px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.vf-stress-success-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.vf-stress-success-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.vf-stress-success-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.vf-stress-success-metrics .metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vf-stress-success-metrics .metric .label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.vf-stress-success-metrics .metric .val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vf-stress-success-metrics .metric .val.highlight {
+  color: var(--ac);
+}
+
+
 

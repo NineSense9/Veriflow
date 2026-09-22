@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Shell from "@/components/Shell";
@@ -353,6 +354,41 @@ function StressInner() {
                   🎯 带此反例回做题台调试 →
                 </button>
               </>
+            ) : result && result.status === "no_fail" ? (
+              <div className="vf-stress-success-card">
+                <div className="vf-stress-success-head">
+                  <span className="vf-stress-success-icon">🎉</span>
+                  <div>
+                    <strong style={{ fontSize: "14px", color: "var(--ac)" }}>
+                      {result.rounds_ran}/{result.rounds_ran} 轮沙箱对拍全量一致！
+                    </strong>
+                    <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--muted)", lineHeight: 1.4 }}>
+                      程序在随机规模与极值边界下与暴力标程输出完全吻合。
+                    </p>
+                  </div>
+                </div>
+                <div className="vf-stress-success-metrics">
+                  <div className="metric">
+                    <span className="label">测试轮次</span>
+                    <span className="val">{result.rounds_ran} 轮</span>
+                  </div>
+                  <div className="metric">
+                    <span className="label">总耗时</span>
+                    <span className="val">{result.time_ms} ms</span>
+                  </div>
+                  <div className="metric">
+                    <span className="label">健壮性评级</span>
+                    <span className="val highlight">极高 (Robust)</span>
+                  </div>
+                </div>
+                <Link
+                  href={`/problems/${problemId}`}
+                  className="btn btn-sm btn-primary"
+                  style={{ width: "100%", justifyContent: "center", marginTop: "12px", textDecoration: "none" }}
+                >
+                  🚀 信心满满，立即前往竞技场提交评测 →
+                </Link>
+              </div>
             ) : (
               <p className="ghost">拍到不一致会停在这里。暴力超时记 stress_error，不是你的 WA。</p>
             )}

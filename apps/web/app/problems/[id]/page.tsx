@@ -63,6 +63,22 @@ export default function ProblemPage() {
   const [contrastBusy, setContrastBusy] = useState(false);
   const [contrastOpen, setContrastOpen] = useState(false);
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  function resetCode() {
+    const defaultStub = lang === "python3" ? PYTHON_STUB : CPP_STUB;
+    if (source === defaultStub) return;
+    if (!window.confirm("确定将当前代码重置为初始模板吗？已编写的内容将被覆盖。")) return;
+    updateSource(defaultStub);
+  }
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(source);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {}
+  }
 
   function updateSource(next: string) {
     setSource(next);
@@ -312,6 +328,20 @@ export default function ProblemPage() {
               <option value="python3">Python3</option>
               <option value="cpp17">C++17</option>
             </select>
+            <button
+              type="button"
+              title="重置为当前语言初始代码模板"
+              onClick={resetCode}
+            >
+              重置
+            </button>
+            <button
+              type="button"
+              title="复制编辑器中的全部源码"
+              onClick={copyCode}
+            >
+              {copiedCode ? "已复制 ✓" : "复制代码"}
+            </button>
             {problem?.has_brute ? (
               <Link
                 href={`/stress?id=${id}&lang=${lang}`}
