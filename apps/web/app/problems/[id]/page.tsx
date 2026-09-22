@@ -13,6 +13,7 @@ import {
   ContrastResult,
   ProblemDetail,
   PublicTest,
+  SampleRunResult,
   SubmissionRow,
   SubmitResult,
   api,
@@ -71,6 +72,22 @@ export default function ProblemPage() {
   const [restoringSubId, setRestoringSubId] = useState<number | null>(null);
   const [restoreNotice, setRestoreNotice] = useState("");
   const [zenHistoryOpen, setZenHistoryOpen] = useState(false);
+  const [sampleRunning, setSampleRunning] = useState(false);
+  const [sampleResult, setSampleResult] = useState<SampleRunResult | null>(null);
+
+  async function runSampleTests() {
+    if (busy || sampleRunning) return;
+    setSampleRunning(true);
+    setError("");
+    try {
+      const res = await api.runSample(id, lang, source);
+      setSampleResult(res);
+    } catch (err) {
+      setError((err as Error).message || "自测运行失败");
+    } finally {
+      setSampleRunning(false);
+    }
+  }
 
   function loadHistory() {
     api
@@ -478,6 +495,15 @@ export default function ProblemPage() {
               </>
             ) : null}
             <button
+              type="button"
+              className="vf-btn-run-sample"
+              disabled={busy || sampleRunning}
+              onClick={runSampleTests}
+              title="针对公开样例进行沙箱自测运行 (不计入正式提交历史)"
+            >
+              {sampleRunning ? "自测中…" : "调试运行"}
+            </button>
+            <button
               className="primary"
               type="button"
               disabled={busy}
@@ -600,6 +626,69 @@ export default function ProblemPage() {
             </div>
           </section>
           <aside className="side">
+            {sampleRunning ? (
+              <div className="vf-sample-running-card">
+                <span className="vf-sample-spinner" />
+                <span>Docker 沙箱自测运行中，正在执行公开样例…</span>
+              </div>
+            ) : null}
+
+            {sampleResult ? (
+              <div className="vf-sample-run-card">
+                <div className="vf-sample-run-header">
+                  <div className="vf-sample-run-title-group">
+                    <strong>自测运行结果</strong>
+                    <span className={`vf-sample-badge ${sampleResult.verdict === "OK" ? "ok" : "wa"}`}>
+                      {sampleResult.verdict === "OK" ? "全部通过" : sampleResult.verdict}
+                    </span>
+                  </div>
+                  <div className="vf-sample-header-right">
+                    <span className="vf-sample-run-meta">
+                      {sampleResult.tests_passed}/{sampleResult.tests_total} 通过 · {sampleResult.time_ms} ms
+                    </span>
+                    <button
+                      type="button"
+                      className="vf-sample-close-btn"
+                      onClick={() => setSampleResult(null)}
+                      title="收起自测结果"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                {sampleResult.compile_log ? (
+                  <pre className="vf-sample-compile-log">{sampleResult.compile_log}</pre>
+                ) : null}
+                <div className="vf-sample-cases-list">
+                  {sampleResult.runs.map((r, i) => (
+                    <div key={i} className={`vf-sample-case-row ${r.passed ? "passed" : "failed"}`}>
+                      <div className="vf-sample-case-meta">
+                        <span className="vf-sample-case-name">样例 {r.name || `#${i + 1}`}</span>
+                        <span className={`vf-sample-case-tag ${r.passed ? "ok" : "wa"}`}>
+                          {r.passed ? "通过" : r.verdict}
+                        </span>
+                        <span className="vf-sample-case-time">{r.time_ms} ms</span>
+                      </div>
+                      <div className="vf-sample-case-grid">
+                        <div>
+                          <div className="vf-sample-sublabel">输入</div>
+                          <pre>{r.stdin}</pre>
+                        </div>
+                        <div>
+                          <div className="vf-sample-sublabel">期望</div>
+                          <pre>{r.expected}</pre>
+                        </div>
+                        <div>
+                          <div className="vf-sample-sublabel">实际输出</div>
+                          <pre>{r.actual || "(无输出)"}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <h2>公开样例</h2>
             {problem && problem.public_tests.length === 0 ? (
               <p className="ghost">本题暂无公开样例</p>

@@ -228,3 +228,42 @@ def test_contrast_wa_falls_back_to_brute(api_client):
     assert "print(n)" in (review["submission"].get("source") or "")
     assert review["contrast"]["reference_source"]
     assert review["contrast"]["solver"] == body["solver"]
+
+
+def test_run_samples_does_not_save_submission(api_client):
+    token = _login(api_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Get submission count before
+    before_subs = api_client.get("/api/submissions", headers=headers).json()["submissions"]
+    
+    # Run samples with AC source
+    run_res = api_client.post(
+        "/api/problems/VF1001/run",
+        json={"lang": "python3", "source": AC_SOURCE},
+        headers=headers,
+    )
+    assert run_res.status_code == 200, run_res.text
+    body = run_res.json()
+    assert body["ok"] is True
+    assert body["verdict"] == "OK"
+    assert len(body["runs"]) > 0
+    assert body["tests_passed"] == len(body["runs"])
+    assert all(r["passed"] for r in body["runs"])
+    
+    # Run samples with WA source
+    wa_res = api_client.post(
+        "/api/problems/VF1001/run",
+        json={"lang": "python3", "source": WA_SOURCE},
+        headers=headers,
+    )
+    assert wa_res.status_code == 200, wa_res.text
+    wa_body = wa_res.json()
+    assert wa_body["ok"] is True
+    assert wa_body["verdict"] == "WA"
+    assert wa_body["tests_passed"] < wa_body["tests_total"]
+    
+    # Verify no new submission was created in submissions table
+    after_subs = api_client.get("/api/submissions", headers=headers).json()["submissions"]
+    assert len(after_subs) == len(before_subs)
+

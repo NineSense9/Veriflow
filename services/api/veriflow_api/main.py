@@ -22,8 +22,10 @@ from veriflow_api.solver import solve as draft_solution
 from veriflow_api.tutor import ask_tutor
 from veriflow_api.contrast import ce_case, passes_tests, propose_aligned
 from veriflow_ir.workflow import WorkflowIR
+from veriflow_compare.tokens import outputs_equal
 from veriflow_sandbox.factory import SandboxUnavailable, get_sandbox, sandbox_mode
 from veriflow_sandbox.judge import Case, judge_submission
+from veriflow_sandbox.resources import cleanup_artifacts
 from veriflow_sandbox.stress import StressProgram, run_stress
 from veriflow_staticcheck.check import check_workflow
 
@@ -268,6 +270,94 @@ def grade_submission(user_id: int, problem_id: str, lang: str, source: str) -> d
         "kill_rate": kill,
         "source": source,
     }
+
+
+def run_samples(problem_id: str, lang: str, source: str) -> dict:
+    with connect() as connection:
+        problem = connection.execute(
+            "SELECT id, spec_json FROM problems WHERE id = ? AND published = 1",
+            (problem_id,),
+        ).fetchone()
+        tests = connection.execute(
+            "SELECT name, stdin, stdout FROM tests WHERE problem_id = ? AND visibility = 'public' ORDER BY name ASC",
+            (problem_id,),
+        ).fetchall()
+    if problem is None:
+        raise HTTPException(
+            status_code=404, detail={"code": "not_found", "message": "problem not found"}
+        )
+    if not tests:
+        raise HTTPException(
+            status_code=409, detail={"code": "missing_public_tests", "message": "该题目暂无公开样例"}
+        )
+    spec = json.loads(problem["spec_json"])
+    time_limit_ms = spec.get("time_limit_ms", 1000)
+    memory_limit_mb = spec.get("memory_limit_mb", 256)
+
+    sandbox = get_sandbox()
+    compile_result = sandbox.compile(lang, source)
+    artifacts: list[str] = []
+    if compile_result.artifact:
+        artifacts.append(compile_result.artifact)
+    try:
+        if not compile_result.ok:
+            return {
+                "ok": False,
+                "verdict": "CE",
+                "compile_log": compile_result.log,
+                "time_ms": compile_result.time_ms,
+                "runs": [],
+                "tests_passed": 0,
+                "tests_total": len(tests),
+            }
+
+        runs = []
+        total_time = compile_result.time_ms
+        overall_verdict = "OK"
+        for row in tests:
+            run = sandbox.run(
+                lang,
+                compile_result.artifact or "",
+                row["stdin"],
+                time_limit_ms,
+                memory_limit_mb,
+            )
+            total_time += run.time_ms
+            passed = False
+            verdict = run.verdict
+            if run.verdict == "OK":
+                if outputs_equal(run.stdout, row["stdout"]):
+                    passed = True
+                    verdict = "OK"
+                else:
+                    verdict = "WA"
+                    if overall_verdict == "OK":
+                        overall_verdict = "WA"
+            else:
+                if overall_verdict == "OK":
+                    overall_verdict = run.verdict
+
+            runs.append({
+                "name": row["name"],
+                "stdin": row["stdin"],
+                "expected": row["stdout"],
+                "actual": run.stdout,
+                "passed": passed,
+                "verdict": verdict,
+                "time_ms": run.time_ms,
+                "detail": run.detail,
+            })
+
+        return {
+            "ok": True,
+            "verdict": overall_verdict,
+            "time_ms": total_time,
+            "runs": runs,
+            "tests_passed": sum(1 for r in runs if r["passed"]),
+            "tests_total": len(runs),
+        }
+    finally:
+        cleanup_artifacts(sandbox, artifacts)
 
 
 def _bearer_token(authorization: str | None, vf_session: str | None) -> str | None:
@@ -910,6 +1000,10 @@ def _register_routes(application: FastAPI) -> None:
     @application.post("/api/problems/{problem_id}/submit")
     def submit_problem(problem_id: str, body: SubmitBody, user=Depends(current_user)):
         return grade_submission(user["id"], problem_id, body.lang, body.source)
+
+    @application.post("/api/problems/{problem_id}/run")
+    def run_problem_samples(problem_id: str, body: SubmitBody, user=Depends(current_user)):
+        return run_samples(problem_id, body.lang, body.source)
 
     @application.post("/api/problems/{problem_id}/solve")
     def solve_problem(problem_id: str, body: SolveBody, user=Depends(current_user)):

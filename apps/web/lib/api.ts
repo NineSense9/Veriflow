@@ -411,6 +411,27 @@ export type SubmitResult = {
   lang?: string;
 };
 
+export type SampleRunItem = {
+  name: string;
+  stdin: string;
+  expected: string;
+  actual: string;
+  passed: boolean;
+  verdict: string;
+  time_ms: number;
+  detail?: string | null;
+};
+
+export type SampleRunResult = {
+  ok: boolean;
+  verdict: string;
+  time_ms: number;
+  compile_log?: string | null;
+  runs: SampleRunItem[];
+  tests_passed: number;
+  tests_total: number;
+};
+
 export type ContrastResult = {
   solver: string;
   reference_source: string | null;
@@ -538,6 +559,11 @@ export const api = {
   problem: (id: string) => request<ProblemDetail>(`/api/problems/${id}`),
   submit: (id: string, lang: "python3" | "cpp17", source: string) =>
     request<SubmitResult>(`/api/problems/${id}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ lang, source }),
+    }),
+  runSample: (id: string, lang: "python3" | "cpp17", source: string) =>
+    request<SampleRunResult>(`/api/problems/${id}/run`, {
       method: "POST",
       body: JSON.stringify({ lang, source }),
     }),

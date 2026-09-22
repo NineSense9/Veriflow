@@ -125,6 +125,92 @@ export default function VerificationConsole({
     steps: { reason: string; patches: { operation: string; source?: string | null; target?: string | null; node_id?: string | null; reason?: string }[] }[];
   } | null>(null);
 
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const [tourMessage, setTourMessage] = useState("");
+  const tourTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  function stopTour() {
+    if (tourTimerRef.current) {
+      clearTimeout(tourTimerRef.current);
+      tourTimerRef.current = null;
+    }
+    setTourActive(false);
+    setTourStep(0);
+    setTourMessage("");
+  }
+
+  async function startTour() {
+    stopTour();
+    setTourActive(true);
+    setTourStep(1);
+    setTourMessage("巡航演练 1/3 · 载入案例 1 (DAG 拓扑逆序)，触发强制熔断 (BLOCKED)");
+
+    try {
+      const case1 = await api.reportSession({ demo: "case1_order" });
+      setDemoId("case1_order");
+      apply(case1);
+      scrollTo("workflow");
+
+      tourTimerRef.current = setTimeout(async () => {
+        setTourStep(2);
+        setTourMessage("巡航演练 2/3 · 正在调用受约束修复引擎，自动生成重构补丁...");
+        setBusy("repair");
+        setScan(true);
+        try {
+          const repaired = await api.repairReportRun(case1.run_id!, true);
+          apply(repaired);
+          setTourMessage("巡航演练 2/3 · 拓扑补丁应用成功，双核复验通过，门禁翻转为 READY");
+
+          tourTimerRef.current = setTimeout(async () => {
+            setTourStep(3);
+            setTourMessage("巡航演练 3/3 · 载入案例 4 (静态全绿但沙箱运行时断流)，再次拦截熔断");
+            try {
+              const case4 = await api.reportSession({ demo: "case4_runtime" });
+              setDemoId("case4_runtime");
+              apply(case4);
+              scrollTo("workflow");
+
+              tourTimerRef.current = setTimeout(() => {
+                setTourMessage("巡航演练完成 · 全流程闭环验证完毕");
+                tourTimerRef.current = setTimeout(() => {
+                  stopTour();
+                }, 2500);
+              }, 4500);
+            } catch {
+              stopTour();
+            }
+          }, 4000);
+        } catch {
+          stopTour();
+        } finally {
+          setBusy("");
+          setScan(false);
+        }
+      }, 3500);
+    } catch {
+      stopTour();
+    }
+  }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && tourActive) {
+        stopTour();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [tourActive]);
+
+  const tourStartedRef = useRef(false);
+  useEffect(() => {
+    if (tour && !tourStartedRef.current && !initialLoading) {
+      tourStartedRef.current = true;
+      startTour();
+    }
+  }, [tour, initialLoading]);
+
   function focusIssue(issue: VerifyIssue | null, nodeId?: string, pan = true) {
     setSelected(issue);
     setGraphMode("workflow");
@@ -336,6 +422,15 @@ export default function VerificationConsole({
 
   return (
     <div className="vf-console vf-workbench-console">
+      {tourActive ? (
+        <div className="vf-tour-floating-banner">
+          <span className="vf-tour-dot-pulse" />
+          <span className="vf-tour-text">{tourMessage}</span>
+          <button type="button" className="vf-tour-quit-btn" onClick={stopTour} title="退出演练 (Esc)">
+            ✕ 退出演练 (Esc)
+          </button>
+        </div>
+      ) : null}
       <nav className="vf-story-nav" aria-label="证据工作区导航">
         <div className="vf-story-tabs">
           {[["workflow", "工作流"], ["evidence", "证据"], ["repair", "修复"]].map(([id, label], index) => (
@@ -365,7 +460,25 @@ export default function VerificationConsole({
             {demos.map((demo) => <option key={demo.id} value={demo.id}>{demoTitle(demo.id, demo.title)}</option>)}
           </select>
         </label>
-        <button type="button" className="btn btn-sm" disabled={Boolean(busy) || initialLoading || !demos.some((demo) => demo.id === demoId)} onClick={() => loadDemo(demoId)}><Play size={14} />{busy && busy !== "repair" ? "验证中…" : "运行案例"}</button>
+        <button
+          type="button"
+          className="btn btn-sm"
+          disabled={Boolean(busy) || initialLoading || !demos.some((demo) => demo.id === demoId)}
+          onClick={() => {
+            if (tourActive) stopTour();
+            loadDemo(demoId);
+          }}
+        >
+          <Play size={14} />{busy && busy !== "repair" ? "验证中…" : "运行案例"}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${tourActive ? "btn-warning vf-tour-active-btn" : ""}`}
+          onClick={tourActive ? stopTour : startTour}
+          title={tourActive ? "点击退出演练 (Esc)" : "自动串联演示：拓扑逆序 -> 补丁修复 -> 门禁翻转 -> 运行时断流"}
+        >
+          {tourActive ? "■ 停止巡航" : "▶ 巡航演练"}
+        </button>
         {session ? (
           <button
             type="button"

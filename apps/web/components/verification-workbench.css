@@ -409,3 +409,64 @@ html[data-effects="off"] .vf-workbench-console *, html[data-effects="reduced"] .
   .vf-event-row { grid-template-columns: 65px 70px minmax(0,1fr); }
   .vf-event-row small { display: none; }
 }
+
+/* ==========================================================================
+   Auto-Tour Mode (自动巡航演练)
+   ========================================================================== */
+.vf-tour-floating-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--accent, #6366f1);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
+  backdrop-filter: blur(12px);
+  padding: 10px 18px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.vf-tour-dot-pulse {
+  width: 8px;
+  height: 8px;
+  background: #6366f1;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #6366f1;
+  animation: pulse 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.vf-tour-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #f8fafc;
+  flex: 1;
+  letter-spacing: -0.01em;
+}
+
+.vf-tour-quit-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.vf-tour-quit-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+.vf-tour-active-btn {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  color: #f59e0b !important;
+  font-weight: 600;
+}
+
