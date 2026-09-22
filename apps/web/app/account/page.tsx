@@ -197,7 +197,7 @@ export default function AccountPage() {
 
         {/* 选手算法能力图谱与难度掌握度看板 */}
         <div className="vf-home-grid" style={{ marginTop: "16px" }}>
-          <section className="vf-home-panel vf-account-fit">
+          <section className="vf-home-panel vf-account-fit vf-account-mastery">
             <div className="vf-panel-head">
               <h2>难度攻克掌握度</h2>
               <span className="ghost">{solvedProblemIds.size} / {problems.length} 题</span>
@@ -233,7 +233,7 @@ export default function AccountPage() {
             </div>
           </section>
 
-          <section className="vf-home-panel vf-account-fit">
+          <section className="vf-home-panel vf-account-fit vf-account-skills">
             <div className="vf-panel-head">
               <h2>高频算法能力图谱</h2>
               <span className="ghost">TOP 10 核心算法标签</span>
