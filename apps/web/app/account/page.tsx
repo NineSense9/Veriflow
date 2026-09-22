@@ -51,6 +51,55 @@ export default function AccountPage() {
     }
     return [...seen.values()];
   }, [rows]);
+  const solvedProblemIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (r.verdict === "AC") set.add(r.problem_id);
+    }
+    return set;
+  }, [rows]);
+
+  const diffStats = useMemo(() => {
+    let easyTotal = 0, easySolved = 0;
+    let midTotal = 0, midSolved = 0;
+    let hardTotal = 0, hardSolved = 0;
+
+    for (const p of problems) {
+      const isSolved = solvedProblemIds.has(p.id);
+      if (p.difficulty < 1000) {
+        easyTotal++;
+        if (isSolved) easySolved++;
+      } else if (p.difficulty <= 1300) {
+        midTotal++;
+        if (isSolved) midSolved++;
+      } else {
+        hardTotal++;
+        if (isSolved) hardSolved++;
+      }
+    }
+    return {
+      easy: { solved: easySolved, total: easyTotal, pct: easyTotal ? Math.round((easySolved / easyTotal) * 100) : 0 },
+      mid: { solved: midSolved, total: midTotal, pct: midTotal ? Math.round((midSolved / midTotal) * 100) : 0 },
+      hard: { solved: hardSolved, total: hardTotal, pct: hardTotal ? Math.round((hardSolved / hardTotal) * 100) : 0 },
+    };
+  }, [problems, solvedProblemIds]);
+
+  const tagStats = useMemo(() => {
+    const tally = new Map<string, { solved: number; total: number }>();
+    for (const p of problems) {
+      const isSolved = solvedProblemIds.has(p.id);
+      for (const t of p.tags) {
+        const cur = tally.get(t) || { solved: 0, total: 0 };
+        cur.total++;
+        if (isSolved) cur.solved++;
+        tally.set(t, cur);
+      }
+    }
+    return [...tally.entries()]
+      .sort((a, b) => b[1].solved - a[1].solved || b[1].total - a[1].total)
+      .slice(0, 10);
+  }, [problems, solvedProblemIds]);
+
   const last = rows[0] ?? null;
   const acRate = rows.length ? Math.round((counts.AC / rows.length) * 100) : 0;
   const hasVerdicts = rows.some((row) => row.verdict);
@@ -143,6 +192,75 @@ export default function AccountPage() {
               <Link href="/stress">去对拍</Link>
               <Link href="/settings">设置</Link>
             </p>
+          </section>
+        </div>
+
+        {/* 选手算法能力图谱与难度掌握度看板 */}
+        <div className="vf-home-grid" style={{ marginTop: "16px" }}>
+          <section className="vf-home-panel vf-account-fit">
+            <div className="vf-panel-head">
+              <h2>难度攻克掌握度</h2>
+              <span className="ghost">{solvedProblemIds.size} / {problems.length} 题</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "8px 0" }}>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                  <span className="diff-easy" style={{ fontWeight: 600 }}>● 入门基础 (&lt;1000)</span>
+                  <strong>{diffStats.easy.solved} / {diffStats.easy.total} ({diffStats.easy.pct}%)</strong>
+                </div>
+                <div className="vf-progress-track">
+                  <div className="vf-progress-fill-ac" style={{ width: `${diffStats.easy.pct}%`, background: "var(--ac)" }} />
+                </div>
+              </div>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                  <span className="diff-mid" style={{ fontWeight: 600 }}>● 进阶提高 (1000-1300)</span>
+                  <strong>{diffStats.mid.solved} / {diffStats.mid.total} ({diffStats.mid.pct}%)</strong>
+                </div>
+                <div className="vf-progress-track">
+                  <div className="vf-progress-fill-ac" style={{ width: `${diffStats.mid.pct}%`, background: "var(--warning)" }} />
+                </div>
+              </div>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                  <span className="diff-hard" style={{ fontWeight: 600 }}>● 核心压轴 (1400+)</span>
+                  <strong>{diffStats.hard.solved} / {diffStats.hard.total} ({diffStats.hard.pct}%)</strong>
+                </div>
+                <div className="vf-progress-track">
+                  <div className="vf-progress-fill-ac" style={{ width: `${diffStats.hard.pct}%`, background: "var(--error)" }} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="vf-home-panel vf-account-fit">
+            <div className="vf-panel-head">
+              <h2>高频算法能力图谱</h2>
+              <span className="ghost">TOP 10 核心算法标签</span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", padding: "8px 0" }}>
+              {tagStats.map(([t, stat]) => (
+                <span
+                  key={t}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    background: stat.solved > 0 ? "color-mix(in srgb, var(--ac) 12%, var(--surface))" : "var(--surface-2)",
+                    border: `1px solid ${stat.solved > 0 ? "color-mix(in srgb, var(--ac) 35%, transparent)" : "var(--border)"}`,
+                    color: stat.solved > 0 ? "var(--text)" : "var(--muted)",
+                  }}
+                >
+                  <strong>{t}</strong>
+                  <span style={{ fontSize: "11px", color: stat.solved > 0 ? "var(--ac)" : "var(--muted)" }}>
+                    {stat.solved}/{stat.total}
+                  </span>
+                </span>
+              ))}
+            </div>
           </section>
         </div>
 

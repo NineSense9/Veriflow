@@ -17,6 +17,9 @@ function diffClass(value: number) {
 }
 
 type StatusFilter = "全部" | "已解决" | "尝试中" | "未开始";
+type DiffLevel = "全部" | "入门 (<1000)" | "进阶 (1000-1300)" | "挑战 (1400+)";
+type SortField = "id" | "difficulty" | "ac_rate" | "kill_rate";
+type SortDir = "asc" | "desc" | null;
 
 export default function ProblemsPage() {
   const [rows, setRows] = useState<ProblemListItem[]>([]);
@@ -24,6 +27,9 @@ export default function ProblemsPage() {
   const [error, setError] = useState("");
   const [tag, setTag] = useState("全部");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("全部");
+  const [diffFilter, setDiffFilter] = useState<DiffLevel>("全部");
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>(null);
   const [query, setQuery] = useState("");
   const [loaded, setLoaded] = useState(false);
 
@@ -72,11 +78,32 @@ export default function ProblemsPage() {
     return ["全部", ...Array.from(set).sort()];
   }, [rows]);
 
+  function toggleSort(field: SortField) {
+    if (sortField !== field) {
+      setSortField(field);
+      setSortDir("desc");
+    } else if (sortDir === "desc") {
+      setSortDir("asc");
+    } else {
+      setSortField(null);
+      setSortDir(null);
+    }
+  }
+
+  function sortIndicator(field: SortField) {
+    if (sortField !== field) return <span style={{ opacity: 0.35, fontSize: "11px", marginLeft: "4px" }}>↕</span>;
+    return <span style={{ color: "var(--accent)", fontSize: "11px", marginLeft: "4px", fontWeight: 700 }}>{sortDir === "asc" ? "▲" : "▼"}</span>;
+  }
+
   const visible = rows.filter((row) => {
     const st = userStatusMap.get(row.id) || "NONE";
     if (statusFilter === "已解决" && st !== "AC") return false;
     if (statusFilter === "尝试中" && st !== "WA") return false;
     if (statusFilter === "未开始" && st !== "NONE") return false;
+
+    if (diffFilter === "入门 (<1000)" && row.difficulty >= 1000) return false;
+    if (diffFilter === "进阶 (1000-1300)" && (row.difficulty < 1000 || row.difficulty > 1300)) return false;
+    if (diffFilter === "挑战 (1400+)" && row.difficulty < 1400) return false;
 
     const tagOk = tag === "全部" || row.tags.includes(tag);
     const q = query.trim().toLowerCase();
@@ -87,6 +114,19 @@ export default function ProblemsPage() {
       row.tags.some((item) => item.toLowerCase().includes(q));
     return tagOk && textOk;
   });
+
+  const sorted = useMemo(() => {
+    if (!sortField || !sortDir) return visible;
+    return [...visible].sort((a, b) => {
+      if (sortField === "id") {
+        return sortDir === "asc" ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id);
+      }
+      const va = a[sortField] ?? -1;
+      const vb = b[sortField] ?? -1;
+      if (va === vb) return 0;
+      return sortDir === "asc" ? (va as number) - (vb as number) : (vb as number) - (va as number);
+    });
+  }, [visible, sortField, sortDir]);
 
   return (
     <Shell>
@@ -145,8 +185,25 @@ export default function ProblemsPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-          <span className="ghost">{visible.length} / {rows.length}</span>
+          <span className="ghost">{sorted.length} / {rows.length}</span>
         </div>
+
+        {/* 难度级别分层筛选 */}
+        <div className="filters" role="tablist" aria-label="难度分级筛选" style={{ marginBottom: "8px" }}>
+          {(["全部", "入门 (<1000)", "进阶 (1000-1300)", "挑战 (1400+)"] as const).map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={diffFilter === level ? "on" : ""}
+              aria-pressed={diffFilter === level}
+              onClick={() => setDiffFilter(level)}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+
+        {/* 算法标签筛选 */}
         <div className="filters" role="tablist" aria-label="题目标签">
           {tags.map((item) => (
             <button
@@ -160,16 +217,17 @@ export default function ProblemsPage() {
             </button>
           ))}
         </div>
+
         {!loaded ? (
           <div aria-hidden="true">
             <div className="skel wide" />
             <div className="skel mid" />
             <div className="skel short" />
           </div>
-        ) : !visible.length ? (
+        ) : !sorted.length ? (
           <div className="empty">
             <p>没有匹配的题目。</p>
-            <p className="caption">换个标签，或清空搜索。</p>
+            <p className="caption">换个难度、标签，或清空搜索。</p>
           </div>
         ) : (
           <div className="table-wrap">
@@ -177,18 +235,43 @@ export default function ProblemsPage() {
               <thead>
                 <tr>
                   <th style={{ width: "88px" }}>状态</th>
-                  <th>编号</th>
+                  <th
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleSort("id")}
+                    title="点击按题目编号排序"
+                  >
+                    编号 {sortIndicator("id")}
+                  </th>
                   <th>标题</th>
-                  <th className="num">难度</th>
+                  <th
+                    className="num"
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleSort("difficulty")}
+                    title="点击按难度分级排序"
+                  >
+                    难度 {sortIndicator("difficulty")}
+                  </th>
                   <th>标签</th>
-                  <th className="num">通过率</th>
-                  <th className="num" title="变异测试评估：测试用例集对潜在逻辑缺陷代码的击杀率，反映测资防 Hack 强度">
-                    测资强度 (击杀率)
+                  <th
+                    className="num"
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleSort("ac_rate")}
+                    title="点击按通过率排序"
+                  >
+                    通过率 {sortIndicator("ac_rate")}
+                  </th>
+                  <th
+                    className="num"
+                    style={{ cursor: "pointer", userSelect: "none" }}
+                    onClick={() => toggleSort("kill_rate")}
+                    title="变异测试评估：测试用例集对潜在逻辑缺陷代码的击杀率，反映测资防 Hack 强度（点击排序）"
+                  >
+                    测资强度 (击杀率) {sortIndicator("kill_rate")}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {visible.map((row) => {
+                {sorted.map((row) => {
                   const st = userStatusMap.get(row.id) || "NONE";
                   return (
                     <tr key={row.id}>

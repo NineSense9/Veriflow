@@ -5229,5 +5229,250 @@ html[data-theme="dark"] .evidence-cert {
   color: var(--ac);
 }
 
+/* ==========================================================================
+   Arena Zen Mode & In-Arena Submission History Restore
+   ========================================================================== */
 
+/* Arena Zen Mode (Full-screen coding immersion) */
+.arena.vf-arena-zen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
 
+.arena.vf-arena-zen .arena-top {
+  padding: 8px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+}
+
+.arena.vf-arena-zen .arena-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.arena.vf-arena-zen .statement,
+.arena.vf-arena-zen .side {
+  display: none !important;
+}
+
+.arena.vf-arena-zen .editor-pane {
+  flex: 1;
+  width: 100%;
+  border-left: none;
+  border-right: none;
+  position: relative;
+}
+
+.vf-zen-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.vf-btn-zen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important;
+}
+
+.vf-btn-zen.active {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+
+/* Zen History Dropdown / Popover */
+.vf-zen-history-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  width: 380px;
+  max-height: 480px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  z-index: 1050;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.vf-zen-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.vf-zen-history-head strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Arena In-sidebar Submission History */
+.vf-arena-restore-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: color-mix(in srgb, var(--ac) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ac) 30%, transparent);
+  border-radius: 6px;
+  color: var(--ac);
+  font-size: 12px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.vf-arena-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.vf-arena-history-item {
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.vf-arena-history-item:hover {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+.vf-arena-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.vf-history-verdict {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono), monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+.vf-history-verdict.ac {
+  background: var(--ac-soft);
+  color: var(--ac);
+}
+
+.vf-history-verdict.wa {
+  background: var(--wa-soft);
+  color: var(--wa);
+}
+
+.vf-history-verdict.tle {
+  background: var(--tle-soft);
+  color: var(--tle);
+}
+
+.vf-history-verdict.ce {
+  background: var(--ce-soft);
+  color: var(--ce);
+}
+
+.vf-history-id {
+  font-family: var(--font-mono), monospace;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.vf-history-lang {
+  color: var(--text-2);
+  background: var(--surface-3);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.vf-history-time {
+  margin-left: auto;
+  font-family: var(--font-mono), monospace;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.vf-arena-history-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.vf-history-btn-restore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+}
+
+.vf-history-btn-restore:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.vf-history-btn-restore:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vf-history-btn-detail {
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 2px 6px;
+}
+
+.vf-history-btn-detail:hover {
+  color: var(--text);
+  text-decoration: underline;
+}

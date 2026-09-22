@@ -13,6 +13,7 @@ import {
   ContrastResult,
   ProblemDetail,
   PublicTest,
+  SubmissionRow,
   SubmitResult,
   api,
 } from "@/lib/api";
@@ -64,6 +65,40 @@ export default function ProblemPage() {
   const [contrastOpen, setContrastOpen] = useState(false);
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [zenMode, setZenMode] = useState(false);
+  const [historySubmissions, setHistorySubmissions] = useState<SubmissionRow[]>([]);
+  const [restoringSubId, setRestoringSubId] = useState<number | null>(null);
+  const [restoreNotice, setRestoreNotice] = useState("");
+  const [zenHistoryOpen, setZenHistoryOpen] = useState(false);
+
+  function loadHistory() {
+    api
+      .submissions()
+      .then((res) => {
+        const list = (res.submissions || []).filter((s) => s.problem_id === id);
+        list.sort((a, b) => b.id - a.id);
+        setHistorySubmissions(list);
+      })
+      .catch(() => undefined);
+  }
+
+  async function restoreSubmissionCode(subId: number) {
+    setRestoringSubId(subId);
+    try {
+      const detail = await api.submission(subId);
+      if (detail.source) {
+        const subLang: Lang = detail.lang === "cpp17" ? "cpp17" : "python3";
+        setLang(subLang);
+        updateSource(detail.source);
+        setRestoreNotice(`已成功恢复提交 #${subId} 的 ${detail.lang} 源码！`);
+        setTimeout(() => setRestoreNotice(""), 4000);
+      }
+    } catch {
+      setError("拉取历史提交源码失败。");
+    } finally {
+      setRestoringSubId(null);
+    }
+  }
 
   function resetCode() {
     const defaultStub = lang === "python3" ? PYTHON_STUB : CPP_STUB;
@@ -200,23 +235,34 @@ export default function ProblemPage() {
         if (data.contrast) setContrast(data.contrast);
       })
       .catch(() => undefined);
+
+    loadHistory();
   }, [id]);
 
   useEffect(() => {
-    if (!contrastOpen && !submitModalOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setContrastOpen(false);
-        setSubmitModalOpen(false);
+        if (contrastOpen || submitModalOpen) {
+          setContrastOpen(false);
+          setSubmitModalOpen(false);
+        } else if (zenHistoryOpen) {
+          setZenHistoryOpen(false);
+        } else if (zenMode) {
+          setZenMode(false);
+        }
       }
     };
-    document.body.style.overflow = "hidden";
+    if (contrastOpen || submitModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", onKey);
     };
-  }, [contrastOpen, submitModalOpen]);
+  }, [contrastOpen, submitModalOpen, zenMode, zenHistoryOpen]);
 
   useEffect(() => {
     const onShortcut = (event: KeyboardEvent) => {
@@ -263,6 +309,7 @@ export default function ProblemPage() {
     try {
       const next = await api.submit(id, lang, source);
       setResult(next);
+      loadHistory();
     } catch (err) {
       const status = (err as { status?: number }).status;
       setError(status === 401 ? "登录已过期，请重新登录。" : "提交失败。");
@@ -309,14 +356,20 @@ export default function ProblemPage() {
 
   return (
     <Shell>
-      <div className="arena">
+      <div className={`arena ${zenMode ? "vf-arena-zen" : ""}`}>
         <div className="arena-top">
-          <Link href="/problems" className="btn btn-ghost btn-sm">
-            题库
-          </Link>
+          {zenMode ? (
+            <div className="vf-zen-badge">
+              <span>⛶ 专注模式</span>
+            </div>
+          ) : (
+            <Link href="/problems" className="btn btn-ghost btn-sm">
+              题库
+            </Link>
+          )}
           <span className="pid">{problem?.id ?? id}</span>
           <h1>{problem?.title ?? "…"}</h1>
-          <div className="arena-tools">
+          <div className="arena-tools" style={{ position: "relative" }}>
             <label className="sr-only" htmlFor="lang">
               语言
             </label>
@@ -342,7 +395,17 @@ export default function ProblemPage() {
             >
               {copiedCode ? "已复制 ✓" : "复制代码"}
             </button>
-            {problem?.has_brute ? (
+            {zenMode && historySubmissions.length > 0 ? (
+              <button
+                type="button"
+                className={zenHistoryOpen ? "active" : ""}
+                title="查看与恢复历史提交代码"
+                onClick={() => setZenHistoryOpen((prev) => !prev)}
+              >
+                ↺ 历史 ({historySubmissions.length})
+              </button>
+            ) : null}
+            {!zenMode && problem?.has_brute ? (
               <Link
                 href={`/stress?id=${id}&lang=${lang}`}
                 onClick={() => {
@@ -354,11 +417,11 @@ export default function ProblemPage() {
               >
                 智能对拍
               </Link>
-            ) : (
+            ) : !zenMode ? (
               <span className="dead" title="本题暂不提供内置暴力解">
                 智能对拍
               </span>
-            )}
+            ) : null}
             <button
               type="button"
               disabled={busy}
@@ -380,12 +443,16 @@ export default function ProblemPage() {
             >
               参考草稿
             </button>
-            <button type="button" disabled={!canTutor || contrastBusy} onClick={() => askContrast(false)}>
-              {contrastBusy ? "对照中…" : contrast?.reference_source ? "摊开对照" : "沙箱对照"}
-            </button>
-            <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
-              {coachBusy ? "启发中…" : "启发教练 (防剧透)"}
-            </button>
+            {!zenMode ? (
+              <>
+                <button type="button" disabled={!canTutor || contrastBusy} onClick={() => askContrast(false)}>
+                  {contrastBusy ? "对照中…" : contrast?.reference_source ? "摊开对照" : "沙箱对照"}
+                </button>
+                <button type="button" disabled={!canTutor || coachBusy} onClick={askCoach}>
+                  {coachBusy ? "启发中…" : "启发教练 (防剧透)"}
+                </button>
+              </>
+            ) : null}
             <button
               className="primary"
               type="button"
@@ -395,6 +462,72 @@ export default function ProblemPage() {
             >
               {busy ? "沙箱评测中…" : "提交评测"}
             </button>
+            <button
+              type="button"
+              className={`vf-btn-zen ${zenMode ? "active" : ""}`}
+              title={zenMode ? "退出全屏专注模式 (Esc)" : "开启全屏专注沉浸编码模式 (Esc 退出)"}
+              onClick={() => {
+                setZenMode((prev) => !prev);
+                setZenHistoryOpen(false);
+              }}
+            >
+              {zenMode ? "✕ 退出专注" : "⛶ 专注模式"}
+            </button>
+
+            {/* Zen Mode History Popover */}
+            {zenMode && zenHistoryOpen ? (
+              <div className="vf-zen-history-popover">
+                <div className="vf-zen-history-head">
+                  <strong>提交历史与代码恢复 ({historySubmissions.length})</strong>
+                  <button
+                    type="button"
+                    className="vf-modal-close"
+                    style={{ position: "static", transform: "none" }}
+                    onClick={() => setZenHistoryOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                {restoreNotice ? (
+                  <div className="vf-arena-restore-alert">
+                    <span>✓ {restoreNotice}</span>
+                  </div>
+                ) : null}
+                <div className="vf-arena-history-list">
+                  {historySubmissions.map((sub) => (
+                    <div key={sub.id} className="vf-arena-history-item">
+                      <div className="vf-arena-history-meta">
+                        <span className={`vf-history-verdict ${sub.verdict === "AC" ? "ac" : sub.verdict === "TLE" ? "tle" : sub.verdict === "CE" ? "ce" : "wa"}`}>
+                          {sub.verdict || "PENDING"}
+                        </span>
+                        <span className="vf-history-id">#{sub.id}</span>
+                        <span className="vf-history-lang">{sub.lang}</span>
+                        {sub.time_ms != null ? <span className="vf-history-time">{sub.time_ms} ms</span> : null}
+                      </div>
+                      <div className="vf-arena-history-actions">
+                        <button
+                          type="button"
+                          className="vf-history-btn-restore"
+                          disabled={restoringSubId === sub.id}
+                          onClick={() => restoreSubmissionCode(sub.id)}
+                          title="恢复该次提交的代码至编辑器"
+                        >
+                          {restoringSubId === sub.id ? "载入中…" : "↺ 载入代码"}
+                        </button>
+                        <Link
+                          href={`/status/${sub.id}`}
+                          className="vf-history-btn-detail"
+                          target="_blank"
+                          title="在新标签页查看提交详情"
+                        >
+                          详情 ↗
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
         {debugNotice ? (
@@ -454,6 +587,49 @@ export default function ProblemPage() {
                 {test.stdout}
               </div>
             ))}
+
+            <h2>提交历史 {historySubmissions.length ? `(${historySubmissions.length})` : ""}</h2>
+            {restoreNotice ? (
+              <div className="vf-arena-restore-alert">
+                <span>✓ {restoreNotice}</span>
+              </div>
+            ) : null}
+            {historySubmissions.length === 0 ? (
+              <p className="ghost">本题暂无提交记录。提交后将在此记录版本并支持一键恢复历史代码。</p>
+            ) : (
+              <div className="vf-arena-history-list">
+                {historySubmissions.slice(0, 8).map((sub) => (
+                  <div key={sub.id} className="vf-arena-history-item">
+                    <div className="vf-arena-history-meta">
+                      <span className={`vf-history-verdict ${sub.verdict === "AC" ? "ac" : sub.verdict === "TLE" ? "tle" : sub.verdict === "CE" ? "ce" : "wa"}`}>
+                        {sub.verdict || "PENDING"}
+                      </span>
+                      <span className="vf-history-id">#{sub.id}</span>
+                      <span className="vf-history-lang">{sub.lang}</span>
+                      {sub.time_ms != null ? <span className="vf-history-time">{sub.time_ms} ms</span> : null}
+                    </div>
+                    <div className="vf-arena-history-actions">
+                      <button
+                        type="button"
+                        className="vf-history-btn-restore"
+                        disabled={restoringSubId === sub.id}
+                        onClick={() => restoreSubmissionCode(sub.id)}
+                        title="将该次提交的代码重新载入到编辑器"
+                      >
+                        {restoringSubId === sub.id ? "载入中…" : "↺ 载入代码"}
+                      </button>
+                      <Link
+                        href={`/status/${sub.id}`}
+                        className="vf-history-btn-detail"
+                        title="查看完整评测详情"
+                      >
+                        详情 →
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <h2>最小反例</h2>
             {result?.counterexample ? (
               <>
