@@ -121,7 +121,7 @@ export default function HomePage() {
           <Link className="vf-home-cap" href="/report?demo=case4_runtime">
             <h2>AI 出题时序质检门禁</h2>
             <p className="vf-home-cap-en">自然语言编译 → 拓扑检查与沙箱防跳步</p>
-            <p>大模型出题先过规格编译与时序模拟；缺少审题门强制熔断，防止垃圾题</p>
+            <p>静态检查可以通过。CASE 4 的轨迹在支付分支后截断，审题门仍在图上，门禁因此拦截。</p>
           </Link>
         </section>
 
