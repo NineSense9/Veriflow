@@ -76,9 +76,9 @@ export const ISSUE_TITLE_ZH: Record<string, { title: string; subtitle: string; t
     tag: "执行未竟",
   },
   "if test_generator then human_gate": {
-    title: "【安全违规】绕过专家人工审题门 (human_gate 缺失)",
-    subtitle: "AI 尝试跳过专家复核直接推进，违反竞赛安全策略强制门禁",
-    tag: "越权绕过",
+    title: "【轨迹中断】审题门约束未满足",
+    subtitle: "审题门仍在图上。轨迹在它之前终止，所以「生成器执行后必须经过审题门」没有被观察到。",
+    tag: "轨迹未达",
   },
   "exactly once publish_problem": {
     title: "【幂等缺陷】未达成精准单次入库",

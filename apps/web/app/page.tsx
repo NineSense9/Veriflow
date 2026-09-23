@@ -4,12 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import VerificationMiniFlow from "@/components/home/VerificationMiniFlow";
-import { Me, ProblemListItem, SubmissionRow, api, currentUsername } from "@/lib/api";
+import { Me, ProblemListItem, SubmissionRow, api, currentUsername, unwrapBench } from "@/lib/api";
 
 const FEATURED_IDS = ["VF1001", "VF1004", "VF1016"];
 
 function stamp(value: string) {
   return value.replace("T", " ").slice(0, 16);
+}
+
+function benchNum(value: unknown, digits = 3) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "—";
 }
 
 function pickFeatured(rows: ProblemListItem[]) {
@@ -26,12 +30,14 @@ export default function HomePage() {
   const [problems, setProblems] = useState<ProblemListItem[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [me, setMe] = useState<Me | null>(null);
+  const [bench, setBench] = useState<Record<string, unknown> | null>(null);
   const name = currentUsername();
 
   useEffect(() => {
     api.problems().then((data) => setProblems(data.problems)).catch(() => undefined);
     api.submissions().then((data) => setSubmissions(data.submissions)).catch(() => undefined);
     api.me().then(setMe).catch(() => undefined);
+    api.benchLatest().then((data) => setBench(unwrapBench(data))).catch(() => undefined);
   }, []);
 
   const featured = useMemo(() => pickFeatured(problems), [problems]);
@@ -73,21 +79,26 @@ export default function HomePage() {
 
         <section className="vf-home-band" aria-label="验证效能指标">
           <div className="vf-home-continue-inline">
-            <span className="vf-home-kicker">评测基准</span>
-            <strong>55 组全量验证用例</strong>
-            <span className="ghost">覆盖结构、时序、数据流与安全</span>
+            <span className="vf-home-kicker">合成变异套件</span>
+            <strong>{bench ? `${benchNum(bench.total, 0)} 组` : "—"}</strong>
+            <span className="ghost">
+              正常 {benchNum(bench?.n_clean, 0)} · 故障 {benchNum(bench?.n_faulty ?? bench?.n, 0)} ·{" "}
+              <Link href="/benchmark">不是公开榜</Link>
+            </span>
           </div>
           <div>
-            <strong>100%</strong>
-            <span>缺陷拦截率</span>
+            <strong>{benchNum(bench?.detection_f1)}</strong>
+            <span>检测 F1</span>
           </div>
           <div>
-            <strong>84.4%</strong>
-            <span>安全修复率</span>
+            <strong>{benchNum(bench?.repair_success_rate)}</strong>
+            <span>静态修复接受率</span>
           </div>
           <div>
-            <strong>1.4 ms</strong>
-            <span>平均核验延迟</span>
+            <strong>
+              {typeof bench?.average_static_ms === "number" ? `${benchNum(bench.average_static_ms, 1)} ms` : "—"}
+            </strong>
+            <span>平均静态核验</span>
           </div>
         </section>
 
