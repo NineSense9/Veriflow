@@ -32,8 +32,8 @@ const LAB_LINKS = [
 
 const SANDBOX_LINKS = [
   { href: "/sets", label: "题单分组", description: "竞赛经典题单集合" },
-  { href: "/problems/VF1001", label: "两数之和 (样例题)", description: "三列反例与启发教练" },
-  { href: "/problems/VF1004", label: "最长上升子序列", description: "数据生成器与对拍验证" },
+  { href: "/problems/VF1001", label: "签到时长", description: "三列反例与启发教练" },
+  { href: "/problems/VF1004", label: "括号匹配", description: "数据生成器与对拍验证" },
 ];
 
 function isActive(pathname: string, href: string) {
