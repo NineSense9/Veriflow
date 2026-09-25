@@ -2,9 +2,9 @@
 
 export const DEMO_TITLE_ZH: Record<string, string> = {
   case4_runtime: "静态全绿 · 动态沙箱断流 (典型案例)",
-  case1_order: "前置缺失 · 测资未成提前发布",
+  case1_order: "缺少审题门 · 生成器直接入库",
   case2_dataflow: "接口崩溃 · 测资类型与沙箱不符",
-  case3_safety: "越权违规 · 缺少专家人工审题门",
+  case3_safety: "明文密钥 · 生成器配置写死 api_key",
 };
 
 export type RoleStory = {
@@ -32,15 +32,15 @@ export const DEMO_SCENARIO_ZH: Record<
     },
   },
   case1_order: {
-    title: "步骤顺序颠倒缺陷（测资尚未生成即尝试入库）",
-    scenario: "大模型构建的出题流中，在测试数据尚未生成完毕前就提前调用了入库发布工具。",
-    verdict: "违反时序前置依赖约束。静态依赖分析器当场标红并拦截，防止空数据或残缺题目入库发布。",
+    title: "生成器直接入库，路径上没有审题门",
+    scenario: "图上只有两个节点：生成器 → 入库。顺序没有反，但入库前没有审题门，也没有范围守卫。",
+    verdict: "问题列表报的是缺少审题门（MISSING_HUMAN_GATE），以及缺少上界守卫。不是「发布排在生成之前」。",
     roleStory: {
-      input: "大模型将「发布入库」排在「测资生成」之前，出现时序颠倒的严重逻辑倒错。",
-      defect: "有向无环图（DAG）拓扑检查发现前置依赖尚未就绪，存在时序倒错。",
-      defense: "静态门禁当场阻断，生成有向见证路径，精准指导出题人调换正确执行顺序。",
-      defectTitle: "DAG 拓扑检查失败，前置依赖未就绪",
-      defectTag: "时序倒错 · 拓扑违规",
+      input: "两个节点按生成器再到入库连接，审题门不在图上。",
+      defect: "入库前没有审题门，也没有范围上界守卫。",
+      defense: "门禁因缺少审题门拦截。要补的是审题门，不是把这两步对调。",
+      defectTitle: "缺少审题门",
+      defectTag: "安全策略 · 缺少审题门",
     },
   },
   case2_dataflow: {
@@ -56,15 +56,15 @@ export const DEMO_SCENARIO_ZH: Record<
     },
   },
   case3_safety: {
-    title: "越权发布：缺少人工审题强制门禁",
-    scenario: "大模型直接将自动生成的题目发布入库，整个流程中没有任何人工确认门（Human Gate）。",
-    verdict: "违反发布安全策略（MISSING_HUMAN_GATE）。发布门禁强制阻断，必须配置专家审核节点才能放行入库。",
+    title: "生成器配置里写了明文密钥",
+    scenario: "流程里有范围守卫和专家审题门，然后再入库。生成器的 config.api_key 是明文。",
+    verdict: "静态安全检查报硬编码密钥（HARDCODED_SECRET）。审题门还在图上，不是缺少审题门。",
     roleStory: {
-      input: "大模型试图实现「全无人值守直接发布」，跳过了任何教师或裁判的人工审核环节。",
-      defect: "触发出题系统的安全底线：AI 不能既当出题人又当质检人，必须设防。",
-      defense: "安全策略引擎（Safety Engine）一票否决，坚决阻断违规直通发布。",
-      defectTitle: "缺少人工审核节点，触发安全红线",
-      defectTag: "安全策略 · 缺少审题门",
+      input: "图上有审题门。生成器节点的配置里写了 api_key。",
+      defect: "api_key 是明文密钥，安全检查报 HARDCODED_SECRET。",
+      defense: "门禁因明文密钥拦截。要改的是配置，不是补审题门。",
+      defectTitle: "硬编码密钥",
+      defectTag: "安全策略 · 明文密钥",
     },
   },
 };

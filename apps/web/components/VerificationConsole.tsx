@@ -144,7 +144,7 @@ export default function VerificationConsole({
     stopTour();
     setTourActive(true);
     setTourStep(1);
-    setTourMessage("巡航演练 1/3 · 载入案例 1 (DAG 拓扑逆序)，触发强制熔断 (BLOCKED)");
+    setTourMessage("巡航演练 1/3 · 载入案例 1 (生成器直接入库，缺少审题门)，门禁 BLOCKED");
 
     try {
       const case1 = await api.reportSession({ demo: "case1_order" });
@@ -160,7 +160,7 @@ export default function VerificationConsole({
         try {
           const repaired = await api.repairReportRun(case1.run_id!, true);
           apply(repaired);
-          setTourMessage("巡航演练 2/3 · 拓扑补丁应用成功，双核复验通过，门禁翻转为 READY");
+          setTourMessage("巡航演练 2/3 · 受约束补丁再验证通过，门禁翻转为 READY");
 
           tourTimerRef.current = setTimeout(async () => {
             setTourStep(3);
@@ -475,7 +475,7 @@ export default function VerificationConsole({
           type="button"
           className={`btn btn-sm ${tourActive ? "btn-warning vf-tour-active-btn" : ""}`}
           onClick={tourActive ? stopTour : startTour}
-          title={tourActive ? "点击退出演练 (Esc)" : "自动串联演示：拓扑逆序 -> 补丁修复 -> 门禁翻转 -> 运行时断流"}
+          title={tourActive ? "点击退出演练 (Esc)" : "自动串联演示：缺少审题门 -> 补丁修复 -> 门禁翻转 -> 运行时断流"}
         >
           {tourActive ? "■ 停止巡航" : "▶ 巡航演练"}
         </button>
