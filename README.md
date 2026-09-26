@@ -52,7 +52,7 @@ Requirement → WorkflowSpec → WorkflowIR
 
 面向：AI workflow / 低代码出题图作者、CI/QA。不是“适用于所有行业”的空话。
 
-Bench：`n=9` 的 smoke（含 1 条 clean）适合冒烟，**不能**写成“困难错误检测率 100%”。Repair 在该小集上的数字见 `experiments/runs/smoke/metrics.json`。
+Bench：页面和 `/api/bench/latest` 用的是 `experiments/runs/competition/`（competition-v2，55 组：5 条 clean、50 条 faulty）。这是仓库内合成变异，不是公开榜。检测 F1、诊断、定位和静态修复接受率以该目录的 `metrics.json` 为准；没有评测 Key 时大模型对照是 NOT RUN。`experiments/runs/smoke/` 的 n=9 只是冒烟，不能当成主结果，也不能写成“困难错误检测率 100%”。
 
 文档：
 

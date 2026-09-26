@@ -3,7 +3,7 @@
 export const DEMO_TITLE_ZH: Record<string, string> = {
   case4_runtime: "静态全绿 · 动态沙箱断流 (典型案例)",
   case1_order: "缺少审题门 · 生成器直接入库",
-  case2_dataflow: "接口崩溃 · 测资类型与沙箱不符",
+  case2_dataflow: "类型不一致 · object 对 string",
   case3_safety: "明文密钥 · 生成器配置写死 api_key",
 };
 
@@ -44,15 +44,15 @@ export const DEMO_SCENARIO_ZH: Record<
     },
   },
   case2_dataflow: {
-    title: "测资类型与沙箱入参不匹配",
-    scenario: "出题流水线中生成器产出的测试用例格式与后续判题沙箱所需输入存在关键字段缺失与类型不兼容。",
-    verdict: "数据流绑定检查失败，触发门禁拦截，避免线上学生提交判题时引发沙箱崩溃或批量 RE。",
+    title: "生成器输出 object，守卫要 string",
+    scenario: "生成器的 out_type 是 object，下一跳范围守卫的 in_type 是 string。中间没有转换节点。",
+    verdict: "数据流检查报类型不一致：gen:object -> g_bounds:string。不是 stdin 格式问题。",
     roleStory: {
-      input: "大模型输出的测资格式是字典对象，但沙箱评测器要求标准纯文本标准输入 (stdin)。",
-      defect: "生产者-消费者类型检查发现 Type Mismatch（类型不匹配）。",
-      defense: "数据流验证器拦截发布，强制要求在中间添加数据格式转换适配器。",
-      defectTitle: "数据流类型不匹配 (Type Mismatch)",
-      defectTag: "接口崩溃 · 类型不兼容",
+      input: "生成器声明输出 object，范围守卫声明输入 string。",
+      defect: "检查结果是 gen:object -> g_bounds:string。",
+      defense: "门禁因此拦截。要改的是这两端的类型，不是补一个 stdin 适配器。",
+      defectTitle: "类型不一致",
+      defectTag: "数据流 · object 对 string",
     },
   },
   case3_safety: {
