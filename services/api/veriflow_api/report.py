@@ -58,7 +58,7 @@ def summary() -> dict:
 def export_markdown() -> str:
     data = summary()
     lines = [
-        "# 验流 Veriflow 对照摘要",
+        "# VeriFlow 对照摘要",
         "",
         f"- 题库题数：{data['problems']}",
         f"- 提交次数：{data['submissions']}",

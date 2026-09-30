@@ -51,7 +51,7 @@ export default function HomePage() {
   return (
     <Shell>
       <main className="page wide vf-home">
-        <section className="vf-home-hero vf-home-hero-split" aria-label="验流">
+        <section className="vf-home-hero vf-home-hero-split" aria-label="VeriFlow">
           <div className="vf-home-hero-copy">
             <p className="vf-home-kicker">可验证算法训练平台 · AI 出题质检门禁{name ? ` · ${name}` : ""}</p>
             <h1>

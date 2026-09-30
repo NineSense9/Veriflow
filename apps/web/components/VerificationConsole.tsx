@@ -553,7 +553,7 @@ export default function VerificationConsole({
             <p className="caption">{gateWhy(dimensions.find((item) => item.name === "executable")?.status, session.runtime?.status, session.gate.ready) || "核验结果来自静态验证器与运行时记录。"}</p>
           </section>
           {scenarioInfo ? (
-            <div className="vf-storyboard-container" role="region" aria-label="AI出题验流全链路业务故事看板">
+            <div className="vf-storyboard-container" role="region" aria-label="AI出题 VeriFlow 全链路业务故事看板">
               <div className="vf-storyboard-header">
                 <div className="vf-storyboard-title-box">
                   <span className="vf-storyboard-badge">业务流程 · AI 出题质检链路透视</span>

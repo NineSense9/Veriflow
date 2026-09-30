@@ -214,14 +214,14 @@ export default function ComposeStoryDesk({
                 <p className="ghost">先修一轮再对比。</p>
               )}
               <button className="btn btn-primary" type="button" disabled={!repaired} onClick={() => setAct("flow")}>
-                看验流
+                看 VeriFlow
               </button>
             </>
           ) : null}
 
           {act === "flow" ? (
             <>
-              <p className="vf-home-kicker">验流</p>
+              <p className="vf-home-kicker">VeriFlow</p>
               <h2>{gatePlain(project.gate?.ready)}</h2>
               <p>全链路核验基于可执行轨迹与规格约束，确保修复真实有效。</p>
               <ul className="vf-story-findings">

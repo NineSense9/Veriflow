@@ -26,7 +26,7 @@ export default function ArchitecturePage() {
   const groups = GROUPS.filter(item => group === "overview" || item.id === group);
   const edges = selected ? map.edges.filter(edge => edge.from === selected.id || edge.to === selected.id) : [];
   return <Shell><main className="page vf-page architecture-page">
-    <header className="page-head tight"><p className="kicker">架构 / 验流</p><h1>系统地图</h1><p className="lead">从需求编译到证据与发布，查看各模块的职责与调用关系。</p></header>
+    <header className="page-head tight"><p className="kicker">架构 / VeriFlow</p><h1>系统地图</h1><p className="lead">从需求编译到证据与发布，查看各模块的职责与调用关系。</p></header>
     <nav className="architecture-nav" aria-label="架构分区">
       {[{ id: "overview", name: "总览" }, ...GROUPS].map(item => <button key={item.id} aria-pressed={group === item.id} onClick={() => { setGroup(item.id); setSelected(null); }}>{item.name}</button>)}
     </nav>

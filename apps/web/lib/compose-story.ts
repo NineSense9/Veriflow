@@ -7,7 +7,7 @@ export const STORY_ACTS = [
   { id: "check", label: "检查" },
   { id: "repair", label: "修复" },
   { id: "compare", label: "对比" },
-  { id: "flow", label: "验流" },
+  { id: "flow", label: "VeriFlow" },
 ] as const;
 
 export type StoryAct = (typeof STORY_ACTS)[number]["id"];
