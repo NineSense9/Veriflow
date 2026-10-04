@@ -22,7 +22,7 @@ const TRAIN: { title: string; keys: [string, string][] }[] = [
 
 function ReportBody() {
   const search = useSearchParams();
-  const demo = search.get("demo") || "case4_runtime";
+  const demo = search.get("demo") || "case1_order";
   const tour = search.get("tour") === "1";
   const [train, setTrain] = useState<Record<string, number | null> | null>(null);
   useEffect(() => {
@@ -42,7 +42,7 @@ function ReportBody() {
           </ol>
         </div>
       </header>
-      <VerificationConsole initialDemo={demo} tour={tour} latestOnOpen={!search.has("demo") && !tour} />
+      <VerificationConsole initialDemo={demo} tour={tour} latestOnOpen={false} />
       {train ? (
         <details className="vf-disclosure vf-training"><summary>{TRAIN[0].title}</summary><div className="vf-disclosure-body">
           <dl className="kv">

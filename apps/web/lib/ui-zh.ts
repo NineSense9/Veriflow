@@ -160,7 +160,7 @@ export function pipelineLabel(id: string, fallback?: string) {
 
 /** Display labels only: never use these strings for validation or API values. */
 const STATUS_ZH: Record<string, string> = {
-  PASS: "通过", FAIL: "失败", READY: "可发布", BLOCKED: "已拦截",
+  PASS: "通过", FAIL: "失败", READY: "工作流 READY", BLOCKED: "已拦截",
   WARNING: "警告", UNKNOWN: "未知", "REVIEW REQUIRED": "待人工确认",
   REVIEW: "待复核", NOT_RUN: "未运行", "NOT RUN": "未运行",
   NOT_APPLICABLE: "不适用", NOT_USED: "未使用", USED: "已使用",

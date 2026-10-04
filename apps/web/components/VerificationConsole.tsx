@@ -42,6 +42,9 @@ function nodeOf(issue: VerifyIssue) {
   return issue.affected_nodes?.[0] || issue.minimized_nodes?.[0] || "—";
 }
 
+type VerificationState = "idle" | "loading" | "repairing" | "ready" | "error";
+type PendingAction = "verify" | "repair";
+
 export default function VerificationConsole({
   initialDemo = "case4_runtime",
   initialSession,
@@ -95,6 +98,8 @@ export default function VerificationConsole({
   const [candidateId, setCandidateId] = useState("");
   const [entityDetail, setEntityDetail] = useState<{ type: string; label: string; id: string; metadata?: Record<string, unknown> } | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [verificationState, setVerificationState] = useState<VerificationState>("loading");
+  const [pendingAction, setPendingAction] = useState<PendingAction>("verify");
   const [reload, setReload] = useState(0);
   const requestId = useRef(0);
   const [view, setView] = useState("workflow");
@@ -129,6 +134,35 @@ export default function VerificationConsole({
   const [tourStep, setTourStep] = useState(0);
   const [tourMessage, setTourMessage] = useState("");
   const tourTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  function clearEvidence() {
+    setSession(null);
+    setSelected(null);
+    setRepair(null);
+    setOrigin(null);
+    setCompare(null);
+    setEntityDetail(null);
+    setNodeNote("");
+    setFocused("");
+    setPipe(null);
+    setMatrixCell("");
+    setCandidateId("");
+    setGraphMode("workflow");
+    setView("workflow");
+    panAfterApply.current = false;
+  }
+
+  function selectDemo(id: string) {
+    if (id === demoId) return;
+    requestId.current += 1;
+    setDemoId(id);
+    clearEvidence();
+    setBusy("");
+    setScan(false);
+    setAmbientActivity("idle");
+    setVerificationState("idle");
+    setError("");
+  }
 
   function stopTour() {
     if (tourTimerRef.current) {
@@ -239,24 +273,36 @@ export default function VerificationConsole({
     const ids = firstIssue ? matchingIssueNodes(firstIssue, next.ir.nodes) : [];
     setFocused(ids.join(" → "));
     panAfterApply.current = Boolean(ids.length);
+    setVerificationState("ready");
   }
 
-  async function loadDemo(id: string) {
+  async function loadDemo(id: string, options?: { refreshHistory?: boolean }) {
     if (busy) return;
     const request = ++requestId.current;
+    clearEvidence();
     setBusy(id);
     setDemoId(id);
+    setPendingAction("verify");
     setError("");
+    setVerificationState("loading");
     setScan(true);
     setAmbientActivity("executing");
     try {
       const next = await api.reportSession({ demo: id });
       if (request !== requestId.current) return;
       apply(next);
-      const hist = await api.reportHistory(20);
-      if (request === requestId.current) setHistory(hist.runs);
+      if (options?.refreshHistory !== false) {
+        const hist = await api.reportHistory(20).catch(() => null);
+        if (request === requestId.current && hist) setHistory(hist.runs);
+      }
+      window.setTimeout(() => {
+        if (request === requestId.current) scrollTo("workflow");
+      }, 0);
     } catch (err) {
-      if (request === requestId.current) setError((err as Error).message);
+      if (request === requestId.current) {
+        setError((err as Error).message);
+        setVerificationState("error");
+      }
     } finally {
       if (request === requestId.current) {
         setBusy("");
@@ -289,10 +335,10 @@ export default function VerificationConsole({
         if (cancelled) return;
         apply(latest);
         if (latest.ir?.name) setDemoId(latest.ir.name);
-      }).catch((err: Error) => { if (!cancelled) setError(err.message); })
+      }).catch((err: Error) => { if (!cancelled) { setError(err.message); setVerificationState("error"); } })
         .finally(() => { if (!cancelled) setInitialLoading(false); });
     } else {
-      loadDemo(initialDemo);
+      loadDemo(initialDemo, { refreshHistory: false });
     }
     return () => { cancelled = true; requestId.current++; setAmbientActivity("idle"); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -419,9 +465,32 @@ export default function VerificationConsole({
     el?.focus({ preventScroll: true });
   };
   const scenarioInfo = DEMO_SCENARIO_ZH[demoId] || (session ? DEMO_SCENARIO_ZH[session.ir.name] : null);
+  const repairedReady = Boolean(repair && session?.status === "PASS" && session?.gate.ready === "READY");
+  const caseOneRepaired = repairedReady && demoId === "case1_order";
+  const storyTitle = caseOneRepaired
+    ? "补丁已通过复验"
+    : demoId === "case1_order"
+      ? "生成器直接入库"
+      : demoId === "case4_runtime"
+        ? "静态通过，运行轨迹中断"
+        : scenarioInfo?.title;
+  const storyInput = caseOneRepaired
+    ? "原图只有 2 个节点。\n补入审题门和范围守卫后，共 4 个节点。"
+    : demoId === "case1_order"
+      ? "图上只有 2 个节点。\n生成器直接连接入库。\n缺少审题门和范围守卫。"
+      : demoId === "case4_runtime"
+        ? "图上有 6 个节点，静态连线完整。\n轨迹在支付分支后中断。\n通知、审题门和入库未执行。"
+        : scenarioInfo?.roleStory?.input || scenarioInfo?.scenario;
+  const storyDefect = caseOneRepaired
+    ? "静态检查与运行复验通过。工作流门禁 READY，题包还需校验并等待人工审核。"
+    : demoId === "case1_order"
+      ? "生成器可以直接到达入库节点；图中没有审题门，也没有范围上界守卫。"
+      : demoId === "case4_runtime"
+        ? "静态连线完整，但轨迹在支付分支后中断。通知、审题门和入库未执行。"
+        : scenarioInfo?.roleStory?.defect || scenarioInfo?.verdict;
 
   return (
-    <div className="vf-console vf-workbench-console">
+    <div className={`vf-console vf-workbench-console vf-case-${demoId}`}>
       {tourActive ? (
         <div className="vf-tour-floating-banner">
           <span className="vf-tour-dot-pulse" />
@@ -439,23 +508,19 @@ export default function VerificationConsole({
             </button>
           ))}
         </div>
-        <ol className="vf-story-rail" aria-label="评委三步">
-          <li className={graphMode === "workflow" && view !== "repair" ? "is-active" : undefined}>
-            <button type="button" onClick={() => scrollTo("workflow")}><span>1</span>拦住</button>
-          </li>
-          <li className={graphMode === "evidence" ? "is-active" : undefined}>
-            <button type="button" onClick={() => scrollTo("evidence")}><span>2</span>缺席证据</button>
-          </li>
-          <li className={view === "repair" ? "is-active" : undefined}>
-            <button type="button" onClick={() => scrollTo("repair")}><span>3</span>修复仍受约束</button>
-          </li>
+        <ol className="vf-story-rail" aria-label="验证五步流程">
+          {["需求", "AI 草案", "静态验证", "运行轨迹", "发布门禁"].map((label, index) => (
+            <li key={label} className={index >= 2 && graphMode === "workflow" && view !== "repair" ? "is-active" : index === 4 && view === "repair" ? "is-active" : undefined}>
+              <button type="button" onClick={() => scrollTo(index >= 3 ? "evidence" : "workflow")}><span>{index + 1}</span>{label}</button>
+            </li>
+          ))}
         </ol>
         <span className="vf-session-source"><ShieldCheck size={14} /> 确定性核验 · {initialLoading ? "读取中" : "已记录的结果"}</span>
       </nav>
       <div className="vf-toolbar vf-session-actions">
         <label className="vf-case-select">
           <span>核验案例</span>
-          <select value={demoId} disabled={Boolean(busy) || initialLoading} onChange={(event) => setDemoId(event.target.value)}>
+          <select value={demoId} disabled={initialLoading} onChange={(event) => selectDemo(event.target.value)}>
             {!demos.some((demo) => demo.id === demoId) ? <option value={demoId}>{demoId}</option> : null}
             {demos.map((demo) => <option key={demo.id} value={demo.id}>{demoTitle(demo.id, demo.title)}</option>)}
           </select>
@@ -502,21 +567,34 @@ export default function VerificationConsole({
             ref={repairButton}
             disabled={Boolean(busy) || !canRepair}
             onClick={async () => {
+              const sourceSession = session;
+              const request = ++requestId.current;
               setError("");
+              setPendingAction("repair");
+              clearEvidence();
               setBusy("repair");
+              setVerificationState("repairing");
               setScan(true);
               setAmbientActivity("executing");
               try {
-                const next = await api.repairReportRun(session.run_id!, prefs.aiRepair);
+                const next = await api.repairReportRun(sourceSession.run_id!, prefs.aiRepair);
+                if (request !== requestId.current) return;
                 apply(next);
-                setHistory((await api.reportHistory(20)).runs);
+                const historyResult = await api.reportHistory(20).catch(() => null);
+                if (request !== requestId.current) return;
+                if (historyResult) setHistory(historyResult.runs);
                 setView("repair");
               } catch (err) {
-                setError((err as Error).message);
+                if (request === requestId.current) {
+                  setError((err as Error).message);
+                  setVerificationState("error");
+                }
               } finally {
-                setBusy("");
-                setScan(false);
-                setAmbientActivity("idle");
+                if (request === requestId.current) {
+                  setBusy("");
+                  setScan(false);
+                  setAmbientActivity("idle");
+                }
               }
             }}
             data-click-fx="strong"
@@ -531,11 +609,35 @@ export default function VerificationConsole({
           {runtimeOnly ? "运行时问题已定位，当前暂不支持自动修复。可切换「顺序失败」案例体验静态补丁与再验证；本次运行仍被门禁拦截。" : !canRepair ? "该历史记录缺少运行条件，请先重新运行案例，再执行修复。" : "受约束修复将针对当前缺陷生成最小补丁并执行守卫核验；再验证继承原始运行时条件，全量门禁就绪方可放行。"}
         </p>
       ) : null}
-      {error ? (
+      {error && verificationState !== "error" ? (
         <p className="err" role="alert">
           {error}
           {latestOnOpen && !session ? <button type="button" className="btn btn-sm" onClick={() => setReload((n) => n + 1)}>重新加载</button> : null}
         </p>
+      ) : null}
+      {verificationState !== "ready" ? (
+        <section className={`vf-loading-state ${verificationState === "error" ? "is-error" : ""}`} data-verification-state={verificationState} aria-live={verificationState === "error" ? "assertive" : "polite"}>
+          <span className="vf-activity-dot is-busy" aria-hidden="true" />
+          <div>
+            <strong>
+              {verificationState === "idle" ? `已选择案例「${demoTitle(demoId)}」` : null}
+              {verificationState === "loading" ? `${pendingAction === "repair" ? "正在修复" : "正在验证"}案例「${demoTitle(demoId)}」` : null}
+              {verificationState === "repairing" ? `正在修复案例「${demoTitle(demoId)}」` : null}
+              {verificationState === "error" ? `${pendingAction === "repair" ? "修复未完成" : "案例加载失败"}：「${demoTitle(demoId)}」` : null}
+            </strong>
+            <p>
+              {verificationState === "idle" ? "旧案例结果已清除。点击「运行案例」生成当前案例的验证记录。" : null}
+              {verificationState === "loading" ? "正在生成验证记录，旧案例证据已清空。" : null}
+              {verificationState === "repairing" ? "候选补丁正在守卫检查和完整复验，旧结论暂不显示。" : null}
+              {verificationState === "error" ? `${error || "请求失败，请重试。"} 录制备用入口：` : null}
+            </p>
+          </div>
+          {verificationState === "error" ? <>
+            <button type="button" className="btn btn-sm" onClick={() => loadDemo(demoId)}>重新运行案例</button>
+            <Link className="btn btn-sm" href="/report?demo=case1_order">案例 1 备用入口</Link>
+            <Link className="btn btn-sm" href="/report?demo=case4_runtime">案例 4 备用入口</Link>
+          </> : null}
+        </section>
       ) : null}
       {session ? (
         <>
@@ -551,13 +653,19 @@ export default function VerificationConsole({
               <div className="vf-verdict-chips"><span>核验 {chip(session.status)}</span><span>发布门禁 {chip(session.gate.ready)}</span></div>
             </div>
             <p className="caption">{gateWhy(dimensions.find((item) => item.name === "executable")?.status, session.runtime?.status, session.gate.ready) || "核验结果来自静态验证器与运行时记录。"}</p>
+            <div className="vf-release-status" aria-label="发布状态分层">
+              <span><b>工作流</b>{session.gate.ready}</span>
+              <span><b>题包</b>待校验</span>
+              <span><b>审核</b>待人工审核</span>
+              <span><b>入库</b>未发布</span>
+            </div>
           </section>
           {scenarioInfo ? (
             <div className="vf-storyboard-container" role="region" aria-label="AI出题 VeriFlow 全链路业务故事看板">
               <div className="vf-storyboard-header">
                 <div className="vf-storyboard-title-box">
                   <span className="vf-storyboard-badge">业务流程 · AI 出题质检链路透视</span>
-                  <strong className="vf-storyboard-title">{scenarioInfo.title}</strong>
+                  <strong className="vf-storyboard-title">{storyTitle}</strong>
                 </div>
               </div>
 
@@ -570,11 +678,11 @@ export default function VerificationConsole({
                     <span className="vf-step-role">出题代理 (AI Agent) 任务编排</span>
                   </div>
                   <div className="vf-step-body">
-                    <strong className="vf-step-title">大模型自主编排出题流水线</strong>
-                    <p className="vf-step-desc">{scenarioInfo.roleStory?.input || scenarioInfo.scenario}</p>
+                    <strong className="vf-step-title">AI 提出工作流草案</strong>
+                    <p className="vf-step-desc">{storyInput}</p>
                   </div>
                   <div className="vf-step-foot">
-                    <span className="vf-step-tag">输入: 自然语言指令 → LLM 生成 6 步 DAG 任务链</span>
+                    <span className="vf-step-tag">输入：自然语言需求 · 输出：可验证工作流草案</span>
                   </div>
                 </div>
 
@@ -588,21 +696,21 @@ export default function VerificationConsole({
                   </div>
                   <div className="vf-step-body">
                     <strong className="vf-step-title">
-                      {session.status === "PASS"
-                        ? "补丁再验证通过，双核质检全绿！"
-                        : scenarioInfo.roleStory?.defectTitle || "双核质检发现缺陷"}
+                      {repairedReady
+                        ? "补丁已通过复验"
+                      : storyTitle || scenarioInfo.roleStory?.defectTitle || "双核质检发现缺陷"}
                     </strong>
                     <p className="vf-step-desc">
-                      {session.status === "PASS"
-                        ? "受约束修复补丁已通过守卫与回归测试，时序、数据流与安全规范全部达标。"
-                        : scenarioInfo.roleStory?.defect || scenarioInfo.verdict}
+                      {repairedReady
+                        ? "静态检查与运行复验通过；这表示当前工作流通过验证，不代表题包已经入库。"
+                        : storyDefect}
                     </p>
                   </div>
                   <div className="vf-step-foot">
-                    <span className={`vf-step-tag ${session.status === "PASS" ? "safe" : "danger"}`}>
-                      {session.status === "PASS"
-                        ? "形式化全绿 · 证据闭环"
-                        : scenarioInfo.roleStory?.defectTag || "发现规则违规 · 捕获最小反例"}
+                    <span className={`vf-step-tag ${repairedReady ? "safe" : "danger"}`}>
+                      {repairedReady
+                        ? "确定性复验通过"
+                        : caseOneRepaired ? "静态检查与运行复验通过" : scenarioInfo.roleStory?.defectTag || "发现规则违规 · 捕获最小反例"}
                     </span>
                   </div>
                 </div>
@@ -613,27 +721,27 @@ export default function VerificationConsole({
                 <div className="vf-story-card step-gate">
                   <div className="vf-step-head">
                     <span className={`vf-step-pill ${session.gate.ready === "READY" ? "safe" : "gate"}`}>
-                      阶段 3 · 终审出库
+                      阶段 3 · 发布门禁
                     </span>
                     <span className="vf-step-role">发布门禁决策 (Gate Engine)</span>
                   </div>
                   <div className="vf-step-body">
                     <strong className="vf-step-title">
                       {session.gate.ready === "READY"
-                        ? "门禁就绪准予发布 (READY)"
+                        ? "工作流 READY"
                         : "强制熔断阻断 (BLOCKED)"}
                     </strong>
                     <p className="vf-step-desc">
                       {session.gate.ready === "READY"
-                        ? "全量门禁检验通过，题目规格完整且无旁路风险，安全准予入库上线。"
+                        ? "工作流验证通过；题包校验、人工审核和最终入库仍是后续步骤。"
                         : scenarioInfo.roleStory?.defense || "一票否决非法发布，保卫题库安全。"}
                     </p>
                   </div>
                   <div className="vf-step-foot">
-                    <span className="vf-step-tag safe">
+                    <span className={`vf-step-tag ${session.gate.ready === "READY" ? "safe" : "danger"}`}>
                       {session.gate.ready === "READY"
-                        ? "已通过全量安全门禁，放行入库"
-                        : "杜绝残缺假题流入竞赛 OJ 题库"}
+                        ? "题包待校验 · 等待人工审核"
+                        : "未通过工作流门禁，停止后续流程"}
                     </span>
                   </div>
                 </div>
