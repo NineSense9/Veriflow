@@ -14,8 +14,8 @@ import styles from "../entry.module.css";
 const PIPE = [
   { label: "规格编译", hint: "自然语言抽取为可执行约束与 IR DAG" },
   { label: "多维验证", hint: "结构无环、语义对齐、时序与数据流" },
-  { label: "证据追溯", hint: "沙箱模拟异常轨迹与最小反例高亮" },
-  { label: "闭环门禁", hint: "受约束增量修复，确认后安全放行" },
+  { label: "证据追溯", hint: "模拟轨迹与反例证据高亮" },
+  { label: "闭环门禁", hint: "受约束修复复验，题包校验与人工审核" },
 ];
 
 export default function LoginPage() {
@@ -65,7 +65,7 @@ export default function LoginPage() {
           <Brand href={null} />
           <p className={styles.eyebrow}>AI 可靠性工程 · 验证工作台</p>
           <h1>让 AI 生成的工作流，<br /><span>经得起确定性验证。</span></h1>
-          <p className={styles.introDescription}>面向大模型出题与复杂自动化流水线的验证与门禁系统。<br />毫秒级缺陷捕获、反例执行轨迹回溯与受约束增量修复。</p>
+          <p className={styles.introDescription}>面向大模型出题工作流的验证与门禁系统。<br />确定性检查、模拟轨迹回溯与受约束修复。</p>
         </FadeContent>
       </section>
       <section className={styles.loginPanel} aria-labelledby="login-title">
@@ -148,7 +148,7 @@ export default function LoginPage() {
             </li>
           ))}
         </ol>
-        <p className={styles.loginPrinciple}><span aria-hidden="true">✓</span> 基于形式化规格约束与沙箱模拟执行，实现确定性安全放行。</p>
+        <p className={styles.loginPrinciple}><span aria-hidden="true">✓</span> 根据规格约束与模拟轨迹验证工作流，题包校验和人工审核通过后才能发布。</p>
       </section>
     </div>
   );

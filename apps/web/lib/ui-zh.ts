@@ -1,7 +1,7 @@
 /** User-visible Chinese. Protocol enums PASS/FAIL/READY stay English. */
 
 export const DEMO_TITLE_ZH: Record<string, string> = {
-  case4_runtime: "静态全绿 · 动态沙箱断流 (典型案例)",
+  case4_runtime: "静态通过 · 模拟轨迹中断 (典型案例)",
   case1_order: "缺少审题门 · 生成器直接入库",
   case2_dataflow: "类型不一致 · object 对 string",
   case3_safety: "明文密钥 · 生成器配置写死 api_key",
@@ -20,15 +20,15 @@ export const DEMO_SCENARIO_ZH: Record<
   { title: string; scenario: string; verdict: string; roleStory: RoleStory }
 > = {
   case4_runtime: {
-    title: "AI 自动出题流水线（时序违规与沙箱截断）",
+    title: "AI 出题工作流（模拟轨迹中断）",
     scenario: "出题流程是：生成器 → 范围守卫 → 支付状态分支（payment_status == success）→ 通知 → 审题门 → 入库。",
     verdict: "静态检查通过，审题门仍在图上。演示在支付状态分支之后截断轨迹（skip_after if_pay），通知和审题门没有被执行，门禁因此 BLOCKED。不是分支条件判断失败，也不是审题门被删掉。",
     roleStory: {
       input: "图上有 6 个节点，静态连线完整，审题门还在。",
       defect: "轨迹在支付状态分支之后终止，通知和审题门没有被执行。",
       defense: "VeriFlow 捕获反例时序切片，门禁判定 BLOCKED，阻止未完备试题污染题库。",
-      defectTitle: "静态分析全绿，沙箱捕获致命断流",
-      defectTag: "运行时断流 · 捕获最小反例",
+      defectTitle: "静态通过，模拟轨迹中断",
+      defectTag: "模拟轨迹中断 · 反例证据",
     },
   },
   case1_order: {
@@ -71,18 +71,18 @@ export const DEMO_SCENARIO_ZH: Record<
 
 export const ISSUE_TITLE_ZH: Record<string, { title: string; subtitle: string; tag: string }> = {
   "eventually publish_problem": {
-    title: "【致命断流】题目未能发布入库 (publish_problem 未执行)",
-    subtitle: "流水线在前半段异常中断，导致题目未达入库终态，沦为残缺草稿",
+    title: "【运行约束】未观察到入库动作 (publish_problem)",
+    subtitle: "模拟轨迹中未观察到入库动作，未满足最终执行 publish_problem 的要求。",
     tag: "执行未竟",
   },
   "if test_generator then human_gate": {
-    title: "【轨迹中断】审题门约束未满足",
-    subtitle: "审题门仍在图上。轨迹在它之前终止，所以「生成器执行后必须经过审题门」没有被观察到。",
+    title: "【运行约束】审题门约束未满足",
+    subtitle: "模拟轨迹中未观察到生成器执行后的审题门动作。",
     tag: "轨迹未达",
   },
   "exactly once publish_problem": {
-    title: "【幂等缺陷】未达成精准单次入库",
-    subtitle: "入库动作在执行轨迹中执行次数为 0，未达成规格要求",
+    title: "【动作次数】入库动作次数不满足要求",
+    subtitle: "模拟轨迹要求入库动作执行 1 次，请查看实际记录的动作次数。",
     tag: "未达成",
   },
   "MISSING_HUMAN_GATE": {
@@ -97,20 +97,34 @@ export const ISSUE_TITLE_ZH: Record<string, { title: string; subtitle: string; t
   },
   "TYPE_MISMATCH": {
     title: "【数据流异常】输入输出类型不匹配",
-    subtitle: "上游产出的数据字段或类型无法被下游沙箱接收",
+    subtitle: "上下游节点声明的数据类型不一致，请查看两端类型。",
     tag: "数据流",
   },
 };
 
-export function issueDisplayInfo(issue: { title?: string; code?: string; description?: string }) {
+export function issueDisplayInfo(issue: { title?: string; code?: string; description?: string; actual?: string | null }, nodes?: { kind?: string; tool?: string | null }[]) {
   const key = (issue.title || issue.code || "").trim();
+  if (key.includes("if test_generator then human_gate") && nodes) {
+    return {
+      ...ISSUE_TITLE_ZH["if test_generator then human_gate"],
+      subtitle: nodes.some((node) => node.kind === "human_gate" || node.tool === "human_gate")
+        ? "审题门仍在图上，模拟轨迹中未观察到生成器执行后的审题门动作。"
+        : "工作流图中缺少审题门，模拟轨迹也未观察到该动作。",
+    };
+  }
+  if ((key.includes("exactly once publish_problem") || issue.code === "tmp_once_pub") && issue.actual) {
+    return {
+      ...ISSUE_TITLE_ZH["exactly once publish_problem"],
+      subtitle: `模拟轨迹要求入库动作执行 1 次。实际记录：${issue.actual}。`,
+    };
+  }
   if (ISSUE_TITLE_ZH[key]) return ISSUE_TITLE_ZH[key];
   for (const [k, v] of Object.entries(ISSUE_TITLE_ZH)) {
     if (key.includes(k)) return v;
   }
   return {
     title: issue.title || issue.code || "未分类缺陷",
-    subtitle: issue.description || "沙箱监视器捕获到的运行异常",
+    subtitle: issue.description || "请查看预期、实际值和已记录证据。",
     tag: "缺陷",
   };
 }

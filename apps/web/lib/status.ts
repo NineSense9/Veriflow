@@ -47,6 +47,6 @@ export function gateWhy(executable: string | undefined, runtime: string | undefi
   }
   if (ready === "BLOCKED") return "存在阻断条件，请查看门禁原因。";
   if (ready === "REVIEW REQUIRED") return "存在未确定的检查项，需人工审题。";
-  if (ready === "READY") return "静态与运行时均未阻断，可以入库。";
+  if (ready === "READY") return "工作流验证通过；题包仍需校验，并等待人工审核与最终入库。";
   return "";
 }

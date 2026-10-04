@@ -12,7 +12,11 @@ OUT = ROOT / "competition_artifacts"
 
 
 def main() -> int:
+    preserved: list[tuple[str, bytes]] = []
     if OUT.exists():
+        for path in OUT.rglob("*"):
+            if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
+                preserved.append((str(path.relative_to(OUT)).replace("\\", "/"), path.read_bytes()))
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
     mapping = {
@@ -21,8 +25,8 @@ def main() -> int:
         "innovation.md": ROOT / "docs" / "INNOVATION.md",
         "application_value.md": ROOT / "docs" / "APPLICATION_VALUE.md",
         "known_limitations.md": ROOT / "docs" / "IMPLEMENTATION_AUDIT.md",
-        "deployment.md": ROOT / "docs" / "contest" / "03-部署说明.md",
-        "test_report.md": ROOT / "docs" / "contest" / "02-测试报告.md",
+        "deployment.md": ROOT / "docs" / "contest" / "05-安装部署.md",
+        "test_report.md": ROOT / "docs" / "contest" / "04-功能测试报告.md",
     }
     for dest, src in mapping.items():
         if src.exists():
@@ -33,18 +37,26 @@ def main() -> int:
     shutil.copytree(ROOT / "examples" / "ci", demo / "ci")
     metrics_dir = OUT / "metrics"
     metrics_dir.mkdir()
-    smoke = ROOT / "experiments" / "runs" / "smoke"
-    if (smoke / "metrics.json").exists():
-        shutil.copy2(smoke / "metrics.json", metrics_dir / "metrics.json")
-        if (smoke / "report.md").exists():
-            shutil.copy2(smoke / "report.md", OUT / "benchmark_report.md")
-        if (smoke / "cases.csv").exists():
-            shutil.copy2(smoke / "cases.csv", metrics_dir / "cases.csv")
+    bench = ROOT / "experiments" / "runs" / "competition"
+    if (bench / "metrics.json").exists():
+        for name in ("metrics.json", "ablation.json", "llm_judge.json", "cases.csv", "cases.json"):
+            source = bench / name
+            if source.exists():
+                shutil.copy2(source, metrics_dir / name)
+        readme = bench / "README.md"
+        if readme.exists():
+            shutil.copy2(readme, OUT / "benchmark_report.md")
     else:
         (OUT / "benchmark_report.md").write_text(
-            "Benchmark not run in this checkout. Run `python -m veriflow_cli bench`.\n",
+            "Competition benchmark not run in this checkout. Run `python scripts/competition_benchmark.py`.\n",
             encoding="utf-8",
         )
+    for relative, payload in preserved:
+        target = OUT / relative
+        if target.exists():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
     (OUT / "README.md").write_text(
         "\n".join(
             [
@@ -52,8 +64,8 @@ def main() -> int:
                 "",
                 f"Generated: {datetime.now(timezone.utc).isoformat()}",
                 "",
-                "Copied from the repository. Metrics are included only if `experiments/runs/smoke` exists.",
-                "No synthetic scores were inserted by this script.",
+                "Copied from the repository. Metrics come from `experiments/runs/competition` when that run exists.",
+                "Smoke results are not copied. No synthetic scores were inserted by this script.",
                 "",
             ]
         ),

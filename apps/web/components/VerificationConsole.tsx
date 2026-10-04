@@ -86,7 +86,7 @@ export default function VerificationConsole({
     right_gate: string;
   } | null>(null);
   const [graphMode, setGraphMode] = useState<"workflow" | "evidence">("workflow");
-  const [demoId, setDemoId] = useState(initialDemo);
+  const [demoId, setDemoId] = useState(initialSession?.ir.name || initialDemo);
   const [origin, setOrigin] = useState<VerifySession | null>(null);
   const [nodeNote, setNodeNote] = useState("");
   const { prefs, effects } = useEffects();
@@ -154,6 +154,7 @@ export default function VerificationConsole({
 
   function selectDemo(id: string) {
     if (id === demoId) return;
+    if (tourActive) stopTour();
     requestId.current += 1;
     setDemoId(id);
     clearEvidence();
@@ -165,6 +166,7 @@ export default function VerificationConsole({
   }
 
   function stopTour() {
+    requestId.current += 1;
     if (tourTimerRef.current) {
       clearTimeout(tourTimerRef.current);
       tourTimerRef.current = null;
@@ -172,58 +174,96 @@ export default function VerificationConsole({
     setTourActive(false);
     setTourStep(0);
     setTourMessage("");
+    setBusy("");
+    setScan(false);
+    setVerificationState(session ? "ready" : "idle");
+    setAmbientActivity("idle");
   }
 
   async function startTour() {
+    if (busy || initialLoading) return;
     stopTour();
+    const request = ++requestId.current;
+    const current = () => request === requestId.current;
+    clearEvidence();
+    setDemoId("case1_order");
+    setBusy("case1_order");
+    setPendingAction("verify");
+    setVerificationState("loading");
+    setError("");
+    setScan(true);
+    setAmbientActivity("executing");
     setTourActive(true);
     setTourStep(1);
-    setTourMessage("巡航演练 1/3 · 载入案例 1 (生成器直接入库，缺少审题门)，门禁 BLOCKED");
+    setTourMessage("巡航演练 1/3 · 验证案例 1：生成器直接入库，缺少审题门");
 
     try {
       const case1 = await api.reportSession({ demo: "case1_order" });
+      if (!current()) return;
       setDemoId("case1_order");
       apply(case1);
       scrollTo("workflow");
+      setBusy("");
+      setScan(false);
+      setAmbientActivity("idle");
 
       tourTimerRef.current = setTimeout(async () => {
+        if (!current()) return;
         setTourStep(2);
-        setTourMessage("巡航演练 2/3 · 正在调用受约束修复引擎，自动生成重构补丁...");
+        setTourMessage("巡航演练 2/3 · 正在生成受约束补丁并复验");
+        clearEvidence();
+        setPendingAction("repair");
+        setVerificationState("repairing");
         setBusy("repair");
         setScan(true);
+        setAmbientActivity("executing");
         try {
-          const repaired = await api.repairReportRun(case1.run_id!, true);
+          const repaired = await api.repairReportRun(case1.run_id!, prefs.aiRepair);
+          if (!current()) return;
           apply(repaired);
-          setTourMessage("巡航演练 2/3 · 受约束补丁再验证通过，门禁翻转为 READY");
+          setTourMessage(repaired.status === "PASS" && repaired.gate.ready === "READY"
+            ? "巡航演练 2/3 · 补丁复验通过，工作流 READY；题包待校验与人工审核"
+            : `巡航演练 2/3 · 补丁复验完成，工作流门禁 ${repaired.gate.ready}`);
 
           tourTimerRef.current = setTimeout(async () => {
+            if (!current()) return;
             setTourStep(3);
-            setTourMessage("巡航演练 3/3 · 载入案例 4 (静态全绿但沙箱运行时断流)，再次拦截熔断");
+            setTourMessage("巡航演练 3/3 · 验证案例 4：静态通过，模拟轨迹中断");
+            clearEvidence();
+            setDemoId("case4_runtime");
+            setPendingAction("verify");
+            setVerificationState("loading");
+            setBusy("case4_runtime");
+            setScan(true);
+            setAmbientActivity("executing");
             try {
               const case4 = await api.reportSession({ demo: "case4_runtime" });
+              if (!current()) return;
               setDemoId("case4_runtime");
               apply(case4);
               scrollTo("workflow");
 
               tourTimerRef.current = setTimeout(() => {
+                if (!current()) return;
                 setTourMessage("巡航演练完成 · 全流程闭环验证完毕");
                 tourTimerRef.current = setTimeout(() => {
                   stopTour();
                 }, 2500);
               }, 4500);
-            } catch {
-              stopTour();
+            } catch (err) {
+              if (current()) { stopTour(); setError((err as Error).message); setVerificationState("error"); }
+            } finally {
+              if (current()) { setBusy(""); setScan(false); setAmbientActivity("idle"); }
             }
           }, 4000);
-        } catch {
-          stopTour();
+        } catch (err) {
+          if (current()) { stopTour(); setError((err as Error).message); setVerificationState("error"); }
         } finally {
-          setBusy("");
-          setScan(false);
+          if (current()) { setBusy(""); setScan(false); setAmbientActivity("idle"); }
         }
       }, 3500);
-    } catch {
-      stopTour();
+    } catch (err) {
+      if (current()) { stopTour(); setError((err as Error).message); setVerificationState("error"); }
     }
   }
 
@@ -258,6 +298,7 @@ export default function VerificationConsole({
 
   function apply(next: VerifySession, opts?: { keepOrigin?: boolean }) {
     setSession(next);
+    setDemoId(next.ir.name);
     const firstIssue = next.static.issues[0] ?? next.runtime_findings?.[0] ?? null;
     setSelected(firstIssue);
     setFocused("");
@@ -340,7 +381,13 @@ export default function VerificationConsole({
     } else {
       loadDemo(initialDemo, { refreshHistory: false });
     }
-    return () => { cancelled = true; requestId.current++; setAmbientActivity("idle"); };
+    return () => {
+      cancelled = true;
+      requestId.current++;
+      if (tourTimerRef.current) clearTimeout(tourTimerRef.current);
+      tourTimerRef.current = null;
+      setAmbientActivity("idle");
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDemo, initialSession, latestOnOpen, reload]);
 
@@ -539,6 +586,7 @@ export default function VerificationConsole({
         <button
           type="button"
           className={`btn btn-sm ${tourActive ? "btn-warning vf-tour-active-btn" : ""}`}
+          disabled={!tourActive && (Boolean(busy) || initialLoading)}
           onClick={tourActive ? stopTour : startTour}
           title={tourActive ? "点击退出演练 (Esc)" : "自动串联演示：缺少审题门 -> 补丁修复 -> 门禁翻转 -> 运行时断流"}
         >
@@ -567,6 +615,7 @@ export default function VerificationConsole({
             ref={repairButton}
             disabled={Boolean(busy) || !canRepair}
             onClick={async () => {
+              if (tourActive) stopTour();
               const sourceSession = session;
               const request = ++requestId.current;
               setError("");
@@ -606,7 +655,7 @@ export default function VerificationConsole({
       {session && issues.length ? (
         <p className="caption vf-repair-hint">
           {tour ? "演示第三步：" : ""}
-          {runtimeOnly ? "运行时问题已定位，当前暂不支持自动修复。可切换「顺序失败」案例体验静态补丁与再验证；本次运行仍被门禁拦截。" : !canRepair ? "该历史记录缺少运行条件，请先重新运行案例，再执行修复。" : "受约束修复将针对当前缺陷生成最小补丁并执行守卫核验；再验证继承原始运行时条件，全量门禁就绪方可放行。"}
+          {runtimeOnly ? "运行时问题已定位，当前暂不支持自动修复。可切换「缺少审题门」案例体验静态补丁与再验证；本次运行仍被门禁拦截。" : !canRepair ? "该历史记录缺少运行条件，请先重新运行案例，再执行修复。" : "受约束修复针对当前缺陷生成补丁，执行守卫核验，并继承原始运行条件复验。工作流 READY 后，仍需题包校验和人工审核。"}
         </p>
       ) : null}
       {error && verificationState !== "error" ? (
@@ -710,7 +759,7 @@ export default function VerificationConsole({
                     <span className={`vf-step-tag ${repairedReady ? "safe" : "danger"}`}>
                       {repairedReady
                         ? "确定性复验通过"
-                        : caseOneRepaired ? "静态检查与运行复验通过" : scenarioInfo.roleStory?.defectTag || "发现规则违规 · 捕获最小反例"}
+                        : caseOneRepaired ? "静态检查与运行复验通过" : scenarioInfo.roleStory?.defectTag || "发现规则违规 · 查看反例证据"}
                     </span>
                   </div>
                 </div>
@@ -816,6 +865,7 @@ export default function VerificationConsole({
                     highlight={highlight}
                     failing={issues.flatMap((item) => item.affected_nodes || [])}
                     traceBreakFrom={traceBreakFrom}
+                    maxColumns={3}
                     onSelectNode={(id) => {
                       const hit = issues.find(
                         (item) => matchingIssueNodes(item, ir.nodes).includes(id),
@@ -865,7 +915,7 @@ export default function VerificationConsole({
               {issues.length === 0 ? <p className="ghost">无 Issue。静态与运行时均未给出 FAIL。</p> : null}
               <div className="vf-issue-list" role="group" aria-label="选择核验问题">
                 {issues.map((issue) => {
-                  const display = issueDisplayInfo(issue);
+                  const display = issueDisplayInfo(issue, session.ir.nodes);
                   return (
                     <button key={issue.id} type="button" className="vf-issue-option" aria-pressed={selected?.id === issue.id} onClick={() => focusIssue(issue)}>
                       {chip(issue.severity === "HIGH" || issue.severity === "CRITICAL" ? "FAIL" : issue.severity)}
@@ -884,16 +934,16 @@ export default function VerificationConsole({
                   <SpotlightCard className="vf-evidence-spotlight">
                   <div className="vf-evidence-heading"><span>证据溯源</span><span>{selected.detected_by || selected.category}</span></div>
                   <dl className="vf-kv vf-primary-evidence">
-                    <div><dt>缺陷诊断</dt><dd><strong>{issueDisplayInfo(selected).title}</strong><div style={{ color: "var(--muted)", fontSize: "12px", marginTop: "2px" }}>{issueDisplayInfo(selected).subtitle}</div></dd></div>
+                    <div><dt>缺陷诊断</dt><dd><strong>{issueDisplayInfo(selected, session.ir.nodes).title}</strong><p className="vf-diagnosis-description">{issueDisplayInfo(selected, session.ir.nodes).subtitle}</p></dd></div>
                     <div><dt>预期要求</dt><dd>{selected.expected ? `期望: ${selected.expected}` : "未提供预期值"}</dd></div>
-                    <div><dt>实际表现</dt><dd className="err">{selected.actual ? (selected.actual === "not in trace" ? "沙箱实测: 该动作在执行轨迹中完全缺失 (未被触发)" : `沙箱实测: ${selected.actual}`) : "未提供实际值"}</dd></div>
+                    <div><dt>实际表现</dt><dd className="err">{selected.actual ? (selected.category === "runtime" ? (selected.actual === "not in trace" ? "模拟轨迹：未观察到该动作" : `模拟轨迹：${selected.actual}`) : `实际值：${selected.actual}`) : "未提供实际值"}</dd></div>
                     <div><dt>反例路径</dt><dd className="mono vf-witness-path" key={selected.id}>{(highlight?.path ?? selected.witness_path ?? []).length ? (highlight?.path ?? selected.witness_path).map((id, index) => <span key={`${id}-${index}`} style={{ animationDelay: `${index * 70}ms` }}>{index ? "→ " : ""}{id}</span>) : "无已记录反例路径"}</dd></div>
                   </dl>
                   </SpotlightCard>
                   <details className="vf-evidence-details"><summary>查看根因与完整证据</summary><dl className="vf-kv">
                     <div><dt>根因</dt><dd>{root?.summary ?? selected.root_cause_id ?? "—"}</dd></div>
                   <div>
-                    <dt>最小反例</dt>
+                    <dt>反例切片</dt>
                     <dd>
                       {mini
                         ? `节点 ${mini.minimized_nodes.join(", ") || "—"} · 路径 ${(mini.witness_path || []).join(" → ") || "—"} · ${mini.globally_minimal ? "全局最小" : "近似切片，不保证全局最小"}`

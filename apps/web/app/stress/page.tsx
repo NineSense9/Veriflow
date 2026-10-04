@@ -187,7 +187,7 @@ function StressInner() {
           </div>
           <div className="stress-banner">
             <span className="stress-banner-tag">对拍机制</span>
-            <span>已加载该题预置测资生成器与暴力标程，点击「开拍」即在沙箱中高频对比 50~200 轮，毫秒级捕获边界反例。</span>
+            <span>使用测资生成器与暴力解在沙箱中按所选轮次比较程序输出，发现差异后记录反例和耗时。</span>
           </div>
           {seedNotice ? (
             <div className="stress-banner vf-stress-imported-banner" style={{ borderColor: "var(--brand, #4f46e5)", background: "rgba(79, 70, 229, 0.08)" }}>

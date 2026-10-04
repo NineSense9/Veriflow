@@ -49,6 +49,22 @@ test("runtime-only failures explain why static automatic repair is unavailable",
   await expect(page.locator('.vf-verdict [data-status="BLOCKED"]')).toBeVisible();
 });
 
+test("case 4 keeps workflow labels readable beside full-width diagnosis text", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openCase(page, "case4_runtime");
+  const title = page.locator(".graph-surface .rf-node strong").first();
+  const actualFontSize = () => title.evaluate(el => {
+    const node = el.closest(".rf-node") as HTMLElement;
+    return parseFloat(getComputedStyle(el).fontSize) * node.getBoundingClientRect().width / node.offsetWidth;
+  });
+  await expect.poll(actualFontSize).toBeGreaterThanOrEqual(11.5);
+  const diagnosis = page.locator(".vf-diagnosis-description");
+  await expect(diagnosis).toHaveCSS("display", "block");
+  expect(await diagnosis.evaluate(el => el.getBoundingClientRect().width / el.parentElement!.getBoundingClientRect().width)).toBeGreaterThan(.95);
+  await expect(page.locator(".vf-current-issue")).not.toContainText("沙箱实测");
+  await page.locator(".vf-evidence-grid").screenshot({ path: path.join(output, "case4-readable-workbench.png") });
+});
+
 test("static repair uses the recorded run and renders its saved comparison", async ({ page }) => {
   await openCase(page, "case1_order");
   const session = cases.case1_order;
@@ -68,7 +84,7 @@ for (const name of ["case1_order", "case2_dataflow", "case3_safety", "case4_runt
     await openCase(page, name);
     await expect.poll(async () => (await bounds(page, 0)).contained).toBe(true);
     expect((await bounds(page, 0)).overlap).toBe(false);
-    expect((await bounds(page)).height).toBeLessThanOrEqual(300);
+    expect((await bounds(page)).height).toBeLessThanOrEqual(360);
     const viewport = page.locator(".graph-surface .react-flow__viewport");
     const original = await viewport.getAttribute("style");
     for (const node of cases[name].ir.nodes) {

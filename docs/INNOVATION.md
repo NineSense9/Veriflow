@@ -29,7 +29,7 @@ Mandatory checkpoint 现为 **avoidance reachability**（删掉 checkpoint 后 s
 
 **Why:** 整图重写不可控。  
 **Implementation:** `repair/{patch,guard,planner,select,loop,diff}.py`.  
-**Evaluation:** `test_guarded_repair_fixes_missing_gate`；bench `repair_success_rate`, `average_patch_operations`, `repair_regression_rate` 来自 `experiments/runs/smoke`.  
+**Evaluation:** `test_guarded_repair_fixes_missing_gate`；主基准来自 `experiments/runs/competition`：45条适用静态故障中38条最终静态PASS。smoke中的补丁操作数和回退率仅作小样本记录，不混入主结果。
 **Evidence:** lexicographic selection；拒绝码 `REPAIR_REJECTED_REGRESSION` / `INVALID_PATCH` / `NO_IMPROVEMENT`.
 
 ## 5. Ground-truth IR mutants
@@ -59,13 +59,13 @@ CASE 4 (`examples/golden/case4_runtime_ir.json`): static graph PASS, runtime `sk
 
 ## Incremental verification
 
-`workflow_changes` + `impact_set` + scoped `verify_scoped`. Parameter edits re-run safety only. Topology edits fall back to full verification. Equivalence vs full is compared every time (`equivalence_report.disagreements`). Not hardcoded 100%.
+`workflow_changes` + `impact_set` + scoped `verify_scoped`. Parameter edits re-run safety only. Topology edits fall back to full verification. Selected verifier categories rerun over the whole graph/spec. Tests and the explicit incremental comparison path compare status, issue codes and failed constraints through `equivalence_report`; repair screening does not call this report for every candidate. Competition speedup remains NOT MEASURED.
 
 Repair candidates: Patch Guard → incremental screen → full verify before accept.
 
 ## CI gate
 
-`veriflow gate` exit 0 = READY, 1 = quality fail, 2 = tool error. Policy: `examples/veriflow-policy.yaml`. GitHub Action runs pytest + commit A PASS / commit B FAIL.
+`veriflow gate` exit 0 includes READY and REVIEW REQUIRED; exit 1 is BLOCKED, exit 2 is a tool error. Read the gate status as well as the exit code. Policy: `examples/veriflow-policy.yaml`. GitHub Action runs pytest + commit A PASS / commit B FAIL.
 
 ## Adapter 边界
 
@@ -75,8 +75,8 @@ compose-json 完整。n8n：**JSON 子集往返已测**；**live instance 未接
 
 - Safety：config 启发式，不是完整 taint
 - Spec compiler：启发式；DeepSeek 仍用于 IR 生成
-- Evidence bundle：有 JSON，无独立下载按钮
-- Ablation / LLM judge baseline：**未跑**，指标 N/A
+- Evidence bundle：证据链分析可导出 JSON 与 Markdown，并声明不是形式化证明
+- Ablation：已写入 `experiments/runs/competition/ablation.json`。LLM-as-judge 状态是 NOT RUN，没有分数
 
 ## Planned
 

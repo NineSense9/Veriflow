@@ -29,6 +29,7 @@ export function irToFlow(
   highlight?: { nodes: string[]; path: string[] },
   failing?: string[],
   traceBreakFrom?: string | null,
+  maxColumns?: number,
 ): { nodes: Node[]; edges: Edge[] } {
   const errorIds = new Set(
     [
@@ -94,7 +95,11 @@ export function irToFlow(
     return {
       id: node.id,
       type: "kind",
-      position: { x: col * COLUMN_STEP, y: ((maxRows - (counts.get(col) || 1)) / 2 + row) * ROW_STEP },
+      position: {
+        x: (maxColumns ? col % maxColumns : col) * COLUMN_STEP,
+        y: ((maxRows - (counts.get(col) || 1)) / 2 + row) * ROW_STEP
+          + (maxColumns ? Math.floor(col / maxColumns) * (maxRows * ROW_STEP + 28) : 0),
+      },
       style: { width: NODE_WIDTH, height: NODE_HEIGHT },
       data: {
         label,

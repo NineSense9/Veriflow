@@ -759,11 +759,11 @@ export default function ProblemPage() {
                 ))}
               </div>
             )}
-            <h2>最小反例</h2>
+            <h2>失败测试反例</h2>
             {result?.counterexample ? (
               <>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--error)", background: "var(--wa-soft)", padding: "2px 8px", borderRadius: "4px", marginBottom: "8px" }}>
-                  <span>沙箱捕获错误边界 · 提取最小反例</span>
+                  <span>沙箱判题返回的失败测试</span>
                 </div>
                 <div className="sample-head">
                   <span>{result.verdict} · 第一条反例</span>
@@ -791,7 +791,7 @@ export default function ProblemPage() {
                 </div>
               </>
             ) : (
-              <p className="ghost">提交后若 WA/RE，沙箱将自动抓取挂掉的最短测试用例，在此三列（输入/期望/实际）并排呈现。</p>
+              <p className="ghost">提交判题失败后，这里会显示首个失败测试的输入、期望输出和实际输出。公开测试先于隐藏测试运行，各组内按输入长度排序。</p>
             )}
             <h2>对照</h2>
             {contrast?.reference_source ? (
@@ -828,7 +828,7 @@ export default function ProblemPage() {
               </div>
             ) : (
               <p className="ghost">
-                {canTutor ? "已自动捕获最小反例！点击顶栏「启发教练」，AI 将针对反例进行追问，引导你自主纠错。" : "当提交遇到 WA 且提取出最小反例后，可在此开启引导式启发思考。"}
+                {canTutor ? "已记录失败测试反例。点击顶栏「启发教练」，AI 会围绕反例提问，帮助你检查思路。" : "提交遇到 WA 并记录反例后，可在此开启启发教练。"}
               </p>
             )}
             {error ? <p className="err" role="alert">{error}</p> : null}
@@ -960,10 +960,10 @@ export default function ProblemPage() {
               {busy ? (
                 <div style={{ padding: "16px 0", textAlign: "center" }}>
                   <p style={{ margin: "0 0 8px", fontSize: "14px", fontWeight: 500 }}>
-                    安全沙箱正在运行，测试点高频校验中…
+                    沙箱正在执行测试，请等待判题结果…
                   </p>
                   <p className="caption" style={{ margin: 0 }}>
-                    Docker 裁判环境：C++17 (g++ -O2) / Python3 · 毫秒级防挂保护
+                    C++17 (g++ -O2) / Python3 · 执行受时间与资源限制
                   </p>
                 </div>
               ) : result ? (
@@ -1027,7 +1027,7 @@ export default function ProblemPage() {
                   {result.counterexample ? (
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                        <strong style={{ fontSize: "13px" }}>沙箱捕获失败测试用例 (最小反例)</strong>
+                        <strong style={{ fontSize: "13px" }}>沙箱判题返回的失败测试</strong>
                         <CopyButton
                           text={`输入:\n${result.counterexample.stdin}\n期望:\n${result.counterexample.expected}\n实际:\n${result.counterexample.actual}`}
                           label="复制反例"

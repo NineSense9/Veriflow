@@ -24,7 +24,7 @@ const CORE = [
 
 const LAB_LINKS = [
   { href: "/benchmark", label: "评测基准", description: "55 组全量验证与变异评测" },
-  { href: "/evidence", label: "证据链分析", description: "缺陷溯源与最小反例轨迹" },
+  { href: "/evidence", label: "证据链分析", description: "缺陷溯源与反例证据" },
   { href: "/algorithms", label: "算法矩阵", description: "确定性验证器与监控器" },
   { href: "/architecture", label: "系统架构", description: "模块交互与数据流向地图" },
   { href: "/history", label: "历史记录", description: "历史核验与门禁放行报告" },

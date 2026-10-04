@@ -1,4 +1,4 @@
-# 验流 Veriflow
+# VeriFlow
 
 **Specification-Guided Verification and Guarded Self-Repair for LLM-generated problem-setting workflows.**
 
@@ -56,6 +56,7 @@ Bench：页面和 `/api/bench/latest` 用的是 `experiments/runs/competition/`�
 
 文档：
 
+- [`docs/contest/README.md`](docs/contest/README.md)（参赛五份说明与测试、部署）
 - [`docs/CURRENT_ARCHITECTURE.md`](docs/CURRENT_ARCHITECTURE.md)
 - [`docs/UPGRADE_PLAN.md`](docs/UPGRADE_PLAN.md)
 - [`docs/INNOVATION.md`](docs/INNOVATION.md)
@@ -101,7 +102,7 @@ http://127.0.0.1:3000  账号 `demo` / `demo`。出题页打开残缺示例后�
 python scripts/competition_smoke.py
 ```
 
-黄金演示：`examples/golden/case1_order.json`（顺序）、`case2_dataflow.json`（类型/数据流）、`case3_safety.json`（硬编码密钥）、`case4_runtime.json`（静态 PASS / 运行时 FAIL）。CI 回归：`examples/ci/commit_{a,b,c}.json`。
+黄金演示：`examples/golden/case1_order.json`（缺人工审题门和范围守卫）、`case2_dataflow.json`（类型/数据流）、`case3_safety.json`（硬编码密钥）、`case4_runtime.json`（静态 PASS / 运行时 FAIL）。CI 回归：`examples/ci/commit_{a,b,c}.json`。
 
 ## Limitations
 
@@ -109,9 +110,9 @@ python scripts/competition_smoke.py
 - Safety 是风险检测，不是形式化安全证明，也不是 formal verification
 - Spec compiler 默认启发式；DeepSeek 用于 IR 生成，需 Key
 - Bench 数字来自仓库内 gold IR 的合成变异，不是外部竞赛榜
-- Ablation 与 LLM-judge baseline 未跑：指标为 N/A，禁止填假数
+- 消融在 `experiments/runs/competition/ablation.json`。大模型对照在同目录 `llm_judge.json`，状态是 NOT RUN（没有评测 Key），禁止填假分数。增量加速 NOT MEASURED
 - 静态分支约束在 compose IR 上多为 UNKNOWN；运行时 IF_BRANCH_THEN 仅在 mock trace 记录了 branch 时判定
-- Incremental 在节点增删时仍全量验证（保证与 full 一致）
+- Incremental 在节点增删时仍全量验证（测试比较总状态、问题码和失败约束）
 
 ## 目录
 

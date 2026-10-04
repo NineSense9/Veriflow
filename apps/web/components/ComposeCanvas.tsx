@@ -51,14 +51,14 @@ const nodeTypes = { kind: KindNode };
 
 const ComposeCanvas = forwardRef<GraphHandle, {
   ir: WorkflowIR; errors: ComposeError[]; highlight?: { nodes: string[]; path: string[] }; failing?: string[];
-  onSelectNode?: (id: string) => void; height?: number; traceBreakFrom?: string | null;
-}>(function ComposeCanvas({ ir, errors, highlight, failing, onSelectNode, height, traceBreakFrom }, ref) {
+  onSelectNode?: (id: string) => void; height?: number; traceBreakFrom?: string | null; maxColumns?: number;
+}>(function ComposeCanvas({ ir, errors, highlight, failing, onSelectNode, height, traceBreakFrom, maxColumns }, ref) {
   const { nodes, edges } = useMemo(
-    () => irToFlow(ir, errors, highlight, failing, traceBreakFrom),
-    [ir, errors, highlight, failing, traceBreakFrom],
+    () => irToFlow(ir, errors, highlight, failing, traceBreakFrom, maxColumns),
+    [ir, errors, highlight, failing, traceBreakFrom, maxColumns],
   );
   // Selection is deliberately absent: it must never change the viewport.
-  const layoutKey = JSON.stringify([ir.name, ir.nodes.map((node) => [node.id, node.kind, node.tool, node.expr]), ir.edges]);
+  const layoutKey = JSON.stringify([ir.name, ir.nodes.map((node) => [node.id, node.kind, node.tool, node.expr]), ir.edges, maxColumns]);
   return <GraphSurface ref={ref} nodes={nodes} edges={edges} nodeTypes={nodeTypes} layoutKey={layoutKey}
     label="完整工作流链路" onSelectNode={onSelectNode} height={height} />;
 });

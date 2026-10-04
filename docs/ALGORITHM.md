@@ -27,14 +27,14 @@ Consistency: pairwise reverse ordering, unknown refs, exactly_one∩optional.
 `verify_workflow` (`packages/verify/veriflow_verify/result.py`):
 
 - Structural: existing `check_workflow` (whitelist, on_fail, guard AST, types, dead nodes, human gate).
-- Semantic: match nodes by id/kind/tool; ordering uses path enumeration `paths_to` (DFS-style stack, cap 16 paths) and BFS `shortest_path`.
+- Semantic: match nodes by id/kind/tool; ordering uses checkpoint-avoidance `bypass_path` and breadth-first `shortest_path`; selectors may match multiple nodes.
 - Dataflow: `out_type`/`in_type` mismatch + spec producer→consumer reachability.
 - Safety: config key heuristics, URL heuristic, bounds keywords. **Risk detected, not a proof.**
 - Branch constraints: **UNKNOWN** (no IF interpreter on compose IR).
 
 Overall status: FAIL if high/critical issues; WARNING if only milder issues; UNKNOWN if no FAIL but unknown constraints remain; else PASS.
 
-Graph search: `O(|V|+|E|)` BFS; `paths_to` is exponential in worst case, bounded by `limit=16`.
+Graph search: `bypass_path` uses parent pointers and costs O(V+E). `shortest_path` copies a path for each enqueued node, adding worst-case O(V²). The helper `paths_to` stops after 16 found paths, but can explore exponentially many branches before finding them; it is not the mandatory-checkpoint check. With P publication nodes, graph integrity adds P checkpoint searches. Semantic and dependency costs also depend on selector match combinations.
 
 ## Counterexample
 
@@ -44,23 +44,23 @@ Root-cause grouping: same `affected_nodes` bucket. Rule-based, not causal infere
 
 ## Repair
 
-1. `plan_candidates` ≤3 deterministic patch lists from the planner.
+1. `plan_candidates` keeps at most 3 candidates: rule patches and optional model proposals. Model output must pass the same guards and verification.
 2. `validate_preconditions` then `apply_patches` then `validate_postconditions`.
 3. Lexicographic pick: target issue fixed; no new HIGH/CRITICAL; fewer failed constraints; executable not worse; fewer node/edge/param edits; fewer ops.
 4. Accept only `REPAIR_ACCEPTED`. Otherwise keep original IR (`REPAIR_REJECTED_*`).
 5. Loop at most 3 times; duplicate issue fingerprint stops.
 
-This is **minimal guarded repair**, not LLM regenerate.
+A candidate can be accepted after improving its target while other issues remain. Competition repair success separately requires final static PASS; it does not establish runtime or problem-package completion.
 
 ## Fault injection / bench
 
 Mutations must change serialized IR or raise `InvalidMutation`. Metrics are computed from that run. Localization: node/edge fields vs issue `affected_nodes`/`affected_edges`.
 
-LLM-as-judge baseline: **N/A** unless a Key is configured and a runner exists. Do not invent scores.
+The competition runner exists. Saved competition-v2 LLM baseline is **NOT RUN**, with zero repeats and empty scores. Full benchmark: 5 clean + 50 faulty, F1 1.000, localization 35/50, final static repair PASS 38/45. Incremental speedup is NOT MEASURED in that suite.
 
 ## Runtime alignment
 
-`runtime.alignment` (`packages/runtime/veriflow_runtime/align.py`): happens-before closure + spec BEFORE, Kahn extension biased by observed order, Needleman–Wunsch DP, then relabel HB reversals as `OUT_OF_ORDER`. Incomparable nodes are not forced into a unique linear order. Cost = sequential edit distance + order violations. Not Petri-net process mining.
+`runtime.alignment` (`packages/runtime/veriflow_runtime/align.py`): happens-before closure + spec BEFORE, Kahn extension biased by observed order, Needleman–Wunsch DP, then relabel HB reversals as `OUT_OF_ORDER`. Incomparable nodes are not forced into a unique linear order. Cost = sequential edit distance + order violations. Closure searches from each node, O(V(V+E)); repeatedly sorting ready nodes adds worst-case O(V² log V); edit-distance DP is O(nm), with additional selector matching and branch checks. Not Petri-net process mining.
 
 ## Minimized counterexample
 
@@ -82,7 +82,7 @@ Coverage: executed nodes / IR node count; required actions seen; verifiable cons
 
 Diff kinds: NODE_ADDED/REMOVED, NODE_TYPE_CHANGED, PARAMETER_CHANGED, EDGE_ADDED/REMOVED, CONDITION_CHANGED, BINDING_CHANGED, TRIGGER_CHANGED.
 
-Impact = changed nodes ∪ downstream. Re-run only affected verifier categories when a previous result exists. Node add/remove → full `verify_workflow`. Equivalence compares status, issue codes, failed constraint ids.
+Impact = changed nodes ∪ downstream. Re-run affected verifier categories over the whole graph/spec when a previous result exists. The impact node/constraint lists describe changes; they do not directly scope computation. Diff and output lists include sorting. Node add/remove → full `verify_workflow`. Equivalence compares status, issue codes, failed constraint ids.
 
 ## Reliability gate
 

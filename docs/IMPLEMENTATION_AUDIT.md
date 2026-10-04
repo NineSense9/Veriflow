@@ -34,19 +34,19 @@ Status values: IMPLEMENTED | PARTIAL | NOT IMPLEMENTED | BROKEN
 | Guarded Repair | Patch DSL + guard + lex | repair tests | IMPLEMENTED |
 | Repair + incremental screen | `select.py` then full before accept | loop fields | IMPLEMENTED |
 | Fault Injection | IR mutants | `test_mutation_must_change_graph` | IMPLEMENTED |
-| Benchmark | `verify/bench.py` | `experiments/runs/smoke` | IMPLEMENTED (in-repo gold only) |
+| Benchmark | `scripts/competition_benchmark.py` | `experiments/runs/competition` | IMPLEMENTED (55 in-repo synthetic cases; smoke is separate) |
 | Live n8n instance | `n8n_live.py` env + fetch | unavailable without env | NOT IMPLEMENTED (no fake) |
 | Dify adapter | raises NotImplementedError | — | NOT IMPLEMENTED |
 | Verification cache | — | — | NOT IMPLEMENTED |
-| Reliability history / corpus | — | — | NOT IMPLEMENTED |
-| Ablation / LLM-judge baseline | — | — | NOT IMPLEMENTED (N/A) |
+| Reliability history / corpus | `verify/history.py` and history API | repository history tests | IMPLEMENTED for saved runs; external corpus unavailable |
+| Ablation / LLM-judge baseline | competition runner and result files | methodology tests | Ablations recorded; LLM runner implemented, saved baseline NOT RUN |
 | SMT/Z3 | — | — | NOT IMPLEMENTED |
 | Frontend Studio | Runtime / Changes / Gate on existing compose page | tsc | IMPLEMENTED (no restyle) |
 | CLI | spec/verify/repair/runtime/gate/incremental/bench | smoke | IMPLEMENTED |
 
 ## Honest gaps
 
-- Incremental verification **does not skip work** on node add/remove; it records impact and full-verifies. Parameter-only edits re-run safety and merge.
+- Incremental verification **does not skip work** on node add/remove; it records impact and full-verifies. Parameter-only edits re-run the safety category over the entire graph and merge. Equivalence checks compare status, codes and failed constraints only.
 - n8n support is **JSON shape round-trip**, not a control plane.
 - Runtime traces are **mock DAG walks**. Truncation (`skip_after`) is how CASE 4 injects a runtime miss.
 - No production customers. Metrics are in-repo.

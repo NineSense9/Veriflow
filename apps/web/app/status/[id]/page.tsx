@@ -99,7 +99,7 @@ export default function SubmissionPage() {
               <section className="vf-status-ce-section">
                 <div className="vf-status-ce-head">
                   <h2>
-                    <span>沙箱捕获失败测试用例 (最小反例)</span>
+                    <span>沙箱判题返回的失败测试</span>
                   </h2>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                     <button

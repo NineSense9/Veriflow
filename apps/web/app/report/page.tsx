@@ -34,11 +34,11 @@ function ReportBody() {
         <div>
           <p className="kicker">AI 出题质检门禁</p>
           <h1>AI 出题流水线全链路质检</h1>
-          <p className="lead">面向 AI 自动生成算法题的多维确定性分析：静态检查拓扑与类型，沙箱模拟真实执行轨迹；严防残缺题目、未审题目流入 OJ 题库。</p>
+          <p className="lead">对 AI 提出的出题工作流进行确定性验证：静态检查拓扑与类型，使用模拟轨迹检查运行约束。题包校验和人工审核通过后，才能发布入库。</p>
           <ol className="judge-path" aria-label="核心验证流程">
-            <li><span>1</span> 门禁拦截：沙箱模拟捕获隐蔽时序跳步与未闭合分支</li>
-            <li><span>2</span> 证据溯源：提取最小反例与执行违规轨迹</li>
-            <li><span>3</span> 闭环修复：生成确定性补丁复验，门禁就绪后安全入库</li>
+            <li><span>1</span> 门禁拦截：通过模拟轨迹发现缺失动作与时序违规</li>
+            <li><span>2</span> 证据溯源：查看反例切片与违反约束的模拟轨迹</li>
+            <li><span>3</span> 闭环修复：受约束补丁复验，工作流 READY 后继续题包校验与人工审核</li>
           </ol>
         </div>
       </header>

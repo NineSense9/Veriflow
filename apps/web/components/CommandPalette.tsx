@@ -22,7 +22,7 @@ const STATIC_PAGES = [
   { title: "需求出题", path: "/compose", category: "功能导航" as const, desc: "自然语言编译为可验证出题流水线" },
   { title: "竞赛题单", path: "/sets", category: "功能导航" as const, desc: "ACM 体系化进阶题单分类" },
   { title: "评测基准", path: "/benchmark", category: "功能导航" as const, desc: "55 组全量验证与变异评测" },
-  { title: "证据链分析", path: "/evidence", category: "功能导航" as const, desc: "缺陷溯源与最小反例轨迹" },
+  { title: "证据链分析", path: "/evidence", category: "功能导航" as const, desc: "缺陷溯源与反例证据" },
   { title: "算法矩阵", path: "/algorithms", category: "功能导航" as const, desc: "确定性验证器与监控器定义" },
   { title: "系统架构", path: "/architecture", category: "功能导航" as const, desc: "模块交互与数据流向地图" },
   { title: "个人中心", path: "/account", category: "功能导航" as const, desc: "难度攻克看板与算法图谱" },

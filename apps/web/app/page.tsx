@@ -55,12 +55,12 @@ export default function HomePage() {
           <div className="vf-home-hero-copy">
             <p className="vf-home-kicker">可验证算法训练平台 · AI 出题质检门禁{name ? ` · ${name}` : ""}</p>
             <h1>
-              让 AI 出题，
+              AI 提出草案，
               <br />
-              但不让 AI 当裁判。
+              确定性规则当裁判。
             </h1>
             <p className="lead">
-              对外是算法竞赛训练站，内核是「编译—对抗—环境裁判」。选手享受 Docker 沙箱真实评测、三列最小反例与启发式教练；AI 出题流水线在入库前经由确定性时序仿真与门禁熔断，严防脏题。
+              算法竞赛训练支持沙箱判题、三列失败反例与启发教练。AI 提出的出题工作流先经过静态检查和模拟轨迹验证，再进行题包校验、人工审核与发布入库。
             </p>
             <div className="vf-home-ctas">
               <Link className="btn btn-primary" href="/problems">
@@ -92,7 +92,7 @@ export default function HomePage() {
           </div>
           <div>
             <strong>{benchNum(bench?.repair_success_rate)}</strong>
-            <span>静态修复接受率</span>
+            <span>最终静态修复通过率</span>
           </div>
           <div>
             <strong>
@@ -104,23 +104,23 @@ export default function HomePage() {
 
         <section className="vf-home-capabilities" aria-label="核心能力">
           <Link className="vf-home-cap" href="/problems/VF1001">
-            <h2>沙箱裁判与最小反例</h2>
-            <p className="vf-home-cap-en">Docker 真实评测 → 三列对比精准定位</p>
-            <p>拒绝冰冷 WA；输入、期望与实际输出并排高亮，毫秒级抓取边界挂点</p>
+            <h2>沙箱判题与失败反例</h2>
+            <p className="vf-home-cap-en">执行测试 → 输入、期望与实际输出</p>
+            <p>记录失败测试与评测耗时，三列输出并排显示，便于检查结果差异。</p>
           </Link>
           <Link className="vf-home-cap" href="/stress">
             <h2>智能对抗与沙箱对拍</h2>
-            <p className="vf-home-cap-en">生成器 + 暴力解 → 极端边界高频扫荡</p>
-            <p>无需编写脚本，预置标程在沙箱内 50~200 轮自动并发对拍抓 Bug</p>
+            <p className="vf-home-cap-en">生成器 + 暴力解 → 比较程序输出</p>
+            <p>预置生成器与暴力解在沙箱内按所选轮次运行，发现输出差异后记录反例。</p>
           </Link>
           <Link className="vf-home-cap" href="/problems/VF1001">
-            <h2>启发式防剧透教练</h2>
-            <p className="vf-home-cap-en">苏格拉底追问 → 严禁剧透完整代码</p>
-            <p>针对最小反例启发算法思维，大模型受限只引导思路、保护思考深度</p>
+            <h2>启发教练</h2>
+            <p className="vf-home-cap-en">围绕反例提问 → 检查算法思路</p>
+            <p>根据已记录的失败测试提问，帮助你检查边界条件与算法思路。</p>
           </Link>
           <Link className="vf-home-cap" href="/report?demo=case4_runtime">
             <h2>AI 出题时序质检门禁</h2>
-            <p className="vf-home-cap-en">自然语言编译 → 拓扑检查与沙箱防跳步</p>
+            <p className="vf-home-cap-en">需求规格 → 静态检查与模拟轨迹验证</p>
             <p>静态检查可以通过。CASE 4 的轨迹在支付分支后截断，审题门仍在图上，门禁因此拦截。</p>
           </Link>
         </section>
@@ -168,17 +168,17 @@ export default function HomePage() {
             </section>
             <section className="vf-home-panel vf-home-check" aria-labelledby="home-check">
               <div className="vf-home-check-body">
-                <h2 id="home-check">安全门禁与修复验证机制</h2>
+                <h2 id="home-check">门禁与修复验证</h2>
                 <ol className="vf-home-steps">
                   <li>需求规格抽取</li>
                   <li>多维静态与时序检查</li>
-                  <li>最小约束补丁生成</li>
-                  <li>门禁复核与增量发布</li>
+                  <li>受约束补丁与完整复验</li>
+                  <li>题包校验、人工审核与发布</li>
                 </ol>
                 <p>
                   <span className="verdict WA">高风险</span> MISSING_HUMAN_GATE
                 </p>
-                <p className="caption">工作流缺少人工审题节点时，门禁将强制阻断；执行受约束修复后方可放行。</p>
+                <p className="caption">工作流缺少审题门时会被拦截。修复后需复验，题包校验和人工审核通过后才能发布。</p>
                 <div className="vf-home-check-actions">
                   <Link className="btn btn-sm" href="/compose?story=1">
                     体验缺少审题门案例

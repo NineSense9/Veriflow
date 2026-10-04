@@ -50,7 +50,7 @@ export default function StatusPage() {
       <main className="page wide">
         <header className="page-head">
           <h1>沙箱判题记录</h1>
-          <p className="lead">实时监控与回溯 Docker 沙箱判题结果，毫秒级捕获运行耗时、内存占用与失败反例。点击任意记录可查阅源码与测试点详情。</p>
+          <p className="lead">查看沙箱判题结果、运行耗时和失败反例。点击记录可查阅源码与测试详情；内存数据在评测环境提供时显示。</p>
         </header>
         {error ? <p className="err" role="alert">{error}</p> : null}
 

@@ -1,91 +1,37 @@
-# Veriflow 当前架构（以仓库代码为准）
+# VeriFlow 当前架构（以仓库代码为准）
 
-日期：2026-09-10（productization 轮已补 runtime / gate / incremental 包）  
-范围：本文件只描述**已经存在并运行**的代码。n8n **live instance 仍未接**；存在的是 JSON 子集往返与 mock runtime。
+核对日期：2026-10-05。参赛说明以 `docs/contest/` 为准。9 月 10 日旧稿里的这些说法已经作废：公网入口不带端口、修复只是整图重生成、没有评测基准页、测试只有数十项。
 
-分层（少 box，按层）：
+公网演示：http://116.62.5.67:8081/
+在线软件提交：以同一端口下 `/api/version` 为准；87257ea 为历史发布记录。
+仓库：<https://github.com/NineSense9/Veriflow>
 
-1. Requirement / Spec — `packages/spec`
-2. IR — `packages/ir`（compose-json；n8n subset）
-3. Static verification — `staticcheck` + `packages/verify`
-4. Runtime — `packages/runtime`（mock trace, temporal monitor, side-effect guard）
-5. Evidence — Issue / witness / trace slice / evidence bundle
-6. Repair — `packages/repair`（guard → incremental screen → full commit）
-7. CI / Integration — `veriflow gate`, `.github/workflows/veriflow.yml`, optional n8n env
-
----
+80 端口是主机默认站点。VeriFlow 在 8081。
 
 ## 产品是什么
 
-验流 Veriflow 是 **可验证算法训练平台**。
+VeriFlow 检查大模型或手工产生的出题工作流，并用沙箱判断选手程序。模型可以提案。门禁只读验证器的结果。
 
-- 对外：ACM 训练测评站（题库、提交、对拍、教练、报告）
-- 对内：自然语言题意 → Workflow IR → 静态检查 → 弱测资攻击 → 人工审题门 → 入库；选手代码由 **Docker / 进程沙箱** 判定，模型不当裁判
+对外页面：控制台、题库训练、沙箱判题、智能对拍、出题质检、需求出题。验证实验室含评测基准、证据链分析、算法矩阵、系统架构、历史记录。
 
-仓库：<https://github.com/NineSense9/Veriflow>  
-公网 Demo：http://116.62.5.67/
+## 分层
 
-## 目录与包
+1. 需求 / 规格 — `packages/spec`
+2. 中间表示 — `packages/ir`（compose-json；n8n 仅节点和连线子集往返）
+3. 静态验证 — `packages/verify` 的结构、语义、数据流、可达、安全；`packages/staticcheck` 保留编译期规则
+4. 运行 — `packages/runtime` 的模拟执行与时序监视
+5. 证据 — 问题、见证、轨迹；前端可导出 JSON / Markdown，`not_a_formal_proof` 为真
+6. 修复 — `packages/repair` 的 `verify_repair_loop`（补丁、拒绝、回滚）。按题意重编译整图是另一条草稿路径，不计入基准接受率
+7. 门禁 — `veriflow gate`。模型不作为输入
+8. 判题 — `packages/sandbox`、对拍、Python 参考解变异
+9. 基准 — `scripts/competition_benchmark.py`，结果在 `experiments/runs/competition/`
 
-| 路径 | 职责 |
-|---|---|
-| `packages/ir/veriflow_ir` | Workflow IR + Problem Spec IR + 守卫表达式 |
-| `packages/staticcheck/veriflow_staticcheck` | 七条编译期规则（白名单、on_fail、守卫、类型、死节点、审题门） |
-| `packages/sandbox/veriflow_sandbox` | 沙箱工厂、评测、对拍 |
-| `packages/compare/veriflow_compare` | token 比较 |
-| `packages/mutate/veriflow_mutate` | Python 参考解 AST 变异与杀死率 |
-| `services/api/veriflow_api` | FastAPI：登录、题库、提交、出题、教练、报告 |
-| `apps/web` | Next.js 训练站 |
-| `examples/problems` | VF1001–VF1030 题包 |
-| `examples/compose` | 出题 IR：`valid_lis` / `missing_gate` / `missing_bounds` |
-| `examples/appendix` | 报销 IR（附录，证明 IR 非 OJ 死结构） |
-| `scripts/eval.py` | 对照评测 |
-| `tests/` | pytest |
+接口在 `services/api`，页面在 `apps/web`。nginx 的 8081 把 `/api` 转到 8010，其余转到 127.0.0.1:3000。
 
-**仍不存在：** SMT/Z3、Dify 产品化、live n8n control plane、独立 Benchmark Dashboard 应用。n8n JSON subset 在 `packages/ir/veriflow_ir/n8n_subset.py`。
+## 基准口径
 
-## 两套 IR
+competition-v2：5 条正常流程，50 条故障，合计 55。完整模式检测 F1 为 1.000，诊断 1.000，定位 0.700，45条静态故障中修复结束后静态PASS为38条，比例38/45 = 0.844。四行消融已写入 `ablation.json`。大模型对照是 NOT RUN。增量加速 NOT MEASURED。`experiments/runs/smoke/` 只作冒烟，不作为主结果。
 
-1. **ProblemSpec**（`veriflow_ir.spec`）：题目元数据、时限、样例、隐藏策略。
-2. **WorkflowIR**（`veriflow_ir.workflow`）：出题图。节点 kind 仅 `tool | guard | human_gate | transform | branch | notify`。域 `compose | campus`。
+## 仍然没有的东西
 
-出题约定边：
-
-```text
-test_generator → bounds guard → (run_brute) → human_gate → publish_problem
-```
-
-## 已有验证
-
-`check_workflow` 确定性规则：
-
-- `TOOL_NOT_ALLOWED`
-- `MISSING_ON_FAIL`
-- `GUARD_NOT_EXPR` / `UNDEF_VAR`
-- `TYPE_MISMATCH`
-- `DEAD_NODE`
-- `MISSING_HUMAN_GATE`
-
-`attack_compose`：弱测资（有生成器无上界）、跳过审题。
-
-判定：沙箱 CE/WA/TLE/MLE/RE/AC，WA 带最小反例。
-
-## 已有「修复」
-
-`POST /api/compose/{id}/repair`：把 NL + 上次错误再交给 compiler（DeepSeek JSON 或 **关键词 fallback 换示例 IR**）。  
-这是 **LLM/规则重新生成整图**，不是受约束 Patch。
-
-## 已有变异
-
-针对选手 **Python 参考解 AST**（比较符、range±1 等），不是对 WorkflowIR 注入 ground-truth 故障。
-
-## 前端
-
-训练站：工作台、题库、做题台、状态、题单、对拍、出题画布、报告、设置。  
-出题页：NL → React Flow DAG → 静态错误列表 → 审题门 → 入库。  
-**不是**「Upload n8n JSON → 三个 Score Card」。
-
-## 模型
-
-DeepSeek OpenAI 兼容，Key 仅服务端。无 Key 时 compiler / solver / tutor 走 fallback。  
-角色：Compiler / Solver / Attacker / Tutor；Checker = 静态检查 + 沙箱。
+SMT/Z3、Dify、真实 n8n、特殊评判、交互题、Java、C++ 语法树变异。安全检查和证据包都不是形式化证明。

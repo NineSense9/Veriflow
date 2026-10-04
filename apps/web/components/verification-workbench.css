@@ -331,6 +331,7 @@
 .vf-workbench-console .vf-kv > div { grid-template-columns: 65px minmax(0,1fr); line-height: 1.6; }
 .vf-workbench-console .vf-kv dt { color: var(--muted); }
 .vf-workbench-console .vf-kv dd { overflow-wrap: anywhere; margin: 0; }
+.vf-workbench-console .vf-diagnosis-description { display: block; margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .vf-primary-evidence > div:first-child { display: grid; }
 .vf-witness-path span { display: inline-block; color: var(--accent); animation: vf-witness-arrive 300ms both ease-out; }
 @keyframes vf-witness-arrive { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: none; } }

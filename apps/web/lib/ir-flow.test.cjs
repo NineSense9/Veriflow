@@ -40,6 +40,16 @@ test('places a linear workflow on one horizontal rail', () => {
   assert.equal(dagFrameHeight({ maxRows: 1, nodeCount: 6 }), 260);
 });
 
+test('workbench three-column layout folds a long chain while preserving every edge and breakpoint', () => {
+  const { irToFlow } = mod();
+  const { nodes, edges } = irToFlow(ir, [], undefined, undefined, 'branch', 3);
+  assert.deepEqual(Array.from(nodes, (n) => n.position.x), [0, 220, 440, 0, 220, 440]);
+  assert.equal(new Set(nodes.map(n => n.position.y)).size, 2);
+  assert.ok(nodes[3].position.y >= nodes[0].position.y + nodes[0].style.height + 24);
+  assert.equal(edges.length, ir.edges.length);
+  assert.match(edges.find(edge => edge.source === 'branch').label, /轨迹在此终止/);
+});
+
 test('fork nodes occupy separate centered rails and labels cannot overlap', () => {
   const { irToFlow } = mod();
   const fork = { nodes: [{ id: 'a', kind: 'branch' }, { id: 'b', kind: 'tool' }, { id: 'c', kind: 'tool' }, { id: 'd', kind: 'tool' }], edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }, { from: 'b', to: 'd' }, { from: 'c', to: 'd' }] };
